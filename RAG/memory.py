@@ -15,10 +15,12 @@
 #      added to the answer prompt as background. The answer is still taken from the
 #      sources only.
 
-import re, json, sqlite3
+import re, json, sqlite3, logging
 from datetime import datetime
 
 from RAG.rag_common import HERE, BACKEND, LLM_MODEL, chat
+
+logger = logging.getLogger("rag.memory")
 
 MEMORY_DB = HERE / "chat_history.db"
 MEMORY_TURNS = 3         # previous question/answer pairs used for follow-ups
@@ -65,12 +67,15 @@ def now():
 def get_session(mem, name, create=True):
     row = mem.execute("SELECT id FROM sessions WHERE name = ?", (name,)).fetchone()
     if row:
+        logger.debug('Conversation "%s" found (id %d)', name, row[0])
         return row[0]
     if not create:
+        logger.debug('Conversation "%s" not found', name)
         return None
     cur = mem.execute("INSERT INTO sessions (name, created, updated) VALUES (?, ?, ?)",
                       (name, now(), now()))
     mem.commit()
+    logger.info('Started conversation "%s" (id %d)', name, cur.lastrowid)
     return cur.lastrowid
 
 
@@ -78,6 +83,7 @@ def recent_turns(mem, session_id, n=MEMORY_TURNS):
     """The last n (question, answer) pairs, oldest first."""
     rows = mem.execute("SELECT standalone, answer FROM turns WHERE session_id = ? "
                        "ORDER BY id DESC LIMIT ?", (session_id, n)).fetchall()
+    logger.debug("Using %d earlier turns as context", len(rows))
     return rows[::-1]
 
 
@@ -88,6 +94,8 @@ def save_turn(mem, session_id, question, standalone, answer, sources, system):
                  f"{BACKEND}: {LLM_MODEL}", now()))
     mem.execute("UPDATE sessions SET updated = ? WHERE id = ?", (now(), session_id))
     mem.commit()
+    logger.info("Saved the %s answer to conversation id %d (%d sources)", system, session_id,
+                len(sources))
 
 
 # ---------- Using the history ----------
@@ -112,7 +120,9 @@ def rewrite_question(question, turns):
     reply = chat(messages, temperature=0.0).strip().strip('"').strip()
     # Fall back to the original if the model replied with something that isn't a question
     if not reply or len(reply) > 4 * len(question) + 200 or "\n\n" in reply:
+        logger.warning("Rewrite reply unusable, searching the original question: %r", reply[:300])
         return question
+    logger.info("Follow-up %r rewritten as %r", question, reply.splitlines()[0])
     return reply.splitlines()[0]
 
 
@@ -158,6 +168,7 @@ def handle_memory_commands(args):
             mem.execute("DELETE FROM sessions WHERE id = ?", (sid,))
             mem.commit()
             print(f'Deleted conversation "{args.forget}".')
+            logger.info('Deleted conversation "%s"', args.forget)
     return True
 
 
@@ -217,6 +228,7 @@ def run_chat(answer_fn, system, session_name):
         if question.lower() == "/history":
             show_session(mem, session_name)
             continue
+        logger.debug("Chat input: %r", question)
         if question.lower() == "/new":
             session_name = datetime.now().strftime("chat-%Y%m%d-%H%M%S")
             sid = get_session(mem, session_name)
