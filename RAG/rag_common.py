@@ -21,6 +21,8 @@ import numpy as np
 import requests
 from dotenv import load_dotenv
 
+from RAG import cost
+
 load_dotenv()
 # Chroma's telemetry is turned off with an env var, not with Settings(anonymized_telemetry=False):
 # the RAGs/ modules open the same folder with default settings in the same process, and Chroma
@@ -135,10 +137,12 @@ def _post_with_deadline(url, payload):
         return r
 
 
-def post(endpoint, payload, retries=6, can_split=False):
+def post(endpoint, payload, retries=6, can_split=False, step=None):
     """POST to OpenRouter, retrying when the free models are busy.
     can_split=True: on a server error, return None at once (no retries), so the caller
-    can send the texts in smaller requests instead."""
+    can send the texts in smaller requests instead.
+    Every successful reply is recorded in cost.py under the given step (what it cost)."""
+    payload = {**payload, "usage": {"include": True}}   # ask for the cost in every reply
     for attempt in range(retries):
         try:
             started = time.perf_counter()
@@ -148,6 +152,8 @@ def post(endpoint, payload, retries=6, can_split=False):
             if r.status_code == 200:
                 data = r.json()
                 if "error" not in data:
+                    cost.record(step, payload.get("model"), data.get("usage"),
+                                time.perf_counter() - started)
                     return data
                 logger.warning("OpenRouter %s API error: %s", endpoint, str(data["error"])[:500])
             elif r.status_code == 422 and "content safety" in r.text:
@@ -174,11 +180,18 @@ def post(endpoint, payload, retries=6, can_split=False):
 
 
 # ---------- Ollama (local) ----------
-def ollama_call(fn, **kwargs):
-    """Call the local Ollama server with clear messages for the usual problems."""
+def ollama_call(fn, step=None, **kwargs):
+    """Call the local Ollama server with clear messages for the usual problems.
+    The call is recorded in cost.py as free ("local"), with its token counts."""
     import ollama
     try:
-        return getattr(ollama, fn)(**kwargs)
+        started = time.perf_counter()
+        r = getattr(ollama, fn)(**kwargs)
+        cost.record(step, kwargs.get("model"),
+                    {"prompt_tokens": r.get("prompt_eval_count") or 0,
+                     "completion_tokens": r.get("eval_count") or 0},
+                    time.perf_counter() - started, local=True)
+        return r
     except ollama.ResponseError as e:
         if "not found" in str(e).lower():
             fail(f"The model {kwargs.get('model')} is not installed. Run:  ollama pull {kwargs.get('model')}")
@@ -188,16 +201,18 @@ def ollama_call(fn, **kwargs):
 
 
 # ---------- Embeddings and chat (same functions for both backends) ----------
-def embed_texts(texts, is_query=False, skip_rejected=False):
+def embed_texts(texts, is_query=False, skip_rejected=False, step=None):
     """Embed a list of texts -> float32 array (len(texts), DIMS), normalized.
     Questions use is_query=True (some embedding models expect a different prefix).
     skip_rejected=True (ingest): texts the content safety screen refuses get None instead of
-    a vector, and a list is returned. Otherwise a refused text stops with ContentRejected."""
+    a vector, and a list is returned. Otherwise a refused text stops with ContentRejected.
+    step names the request in the cost record (default: embed_query / embed_chunks)."""
     prefix = QUERY_PREFIX if is_query else DOC_PREFIX
+    step = step or ("embed_query" if is_query else "embed_chunks")
     out, started = [], time.perf_counter()
     batches = embed_batches([prefix + t for t in texts])
     for batch in batches:
-        for v in _embed_batch(batch, skip_rejected):
+        for v in _embed_batch(batch, skip_rejected, step):
             if v is None:
                 out.append(None)
                 continue
@@ -239,23 +254,24 @@ def embed_batches(texts):
     return batches
 
 
-def _embed_batch(batch, skip_rejected=False):
+def _embed_batch(batch, skip_rejected=False, step=None):
     """Embed one request's texts. If OpenRouter rejects a request of several texts as too
     big after all, send each half on its own instead of retrying the same request.
     The same halving finds a text the content safety screen refuses; with skip_rejected
     it gets None, so the other texts of the request are still embedded."""
     if BACKEND == "ollama":
-        return ollama_call("embed", model=EMBED_MODEL, input=batch)["embeddings"]
+        return ollama_call("embed", step=step, model=EMBED_MODEL, input=batch)["embeddings"]
     try:
-        data = post("embeddings", {"model": EMBED_MODEL, "input": batch}, can_split=len(batch) > 1)
+        data = post("embeddings", {"model": EMBED_MODEL, "input": batch},
+                    can_split=len(batch) > 1, step=step)
     except ContentRejected:
         if len(batch) > 1:
             half = len(batch) // 2
             logger.info("Content safety screen refused a request of %d texts; "
                         "sending %d and %d separately to find the refused one",
                         len(batch), half, len(batch) - half)
-            return (_embed_batch(batch[:half], skip_rejected) +
-                    _embed_batch(batch[half:], skip_rejected))
+            return (_embed_batch(batch[:half], skip_rejected, step) +
+                    _embed_batch(batch[half:], skip_rejected, step))
         if skip_rejected:
             logger.warning("Content safety screen refused this text, skipped: %r", batch[0][:200])
             return [None]
@@ -264,18 +280,20 @@ def _embed_batch(batch, skip_rejected=False):
         half = len(batch) // 2
         logger.warning("OpenRouter rejected %d texts in one request; sending %d and %d separately",
                        len(batch), half, len(batch) - half)
-        return _embed_batch(batch[:half]) + _embed_batch(batch[half:])
+        return (_embed_batch(batch[:half], skip_rejected, step) +
+                _embed_batch(batch[half:], skip_rejected, step))
     data = sorted(data["data"], key=lambda d: d.get("index", 0))
     return [d["embedding"] for d in data]
 
 
-def chat(messages, temperature=None, json_schema=None):
+def chat(messages, temperature=None, json_schema=None, step="answer"):
     """Send messages to the LLM and return its reply. json_schema forces a JSON reply
-    of that shape (local models only; online models are asked for JSON in the prompt)."""
+    of that shape (local models only; online models are asked for JSON in the prompt).
+    step names the request in the cost record (rewrite, grade, answer, ...)."""
     temp = TEMPERATURE if temperature is None else temperature
     started = time.perf_counter()
     if BACKEND == "ollama":
-        r = ollama_call("chat", model=LLM_MODEL, messages=messages, format=json_schema,
+        r = ollama_call("chat", step=step, model=LLM_MODEL, messages=messages, format=json_schema,
                         options={"temperature": temp, "num_ctx": OLLAMA_NUM_CTX})
         reply = r["message"]["content"]
         # Ollama silently drops the start of a prompt that doesn't fit, system prompt included
@@ -287,9 +305,8 @@ def chat(messages, temperature=None, json_schema=None):
     else:
         data = post("chat/completions", {"model": LLM_MODEL, "messages": messages,
                                          "temperature": temp,
-                                         "reasoning": {"enabled": REASONING}})
+                                         "reasoning": {"enabled": REASONING}}, step=step)
         reply = data["choices"][0]["message"]["content"]
-        logger.debug("usage: %s", data.get("usage"))
     logger.debug("chat %s temperature=%s json=%s, %d prompt chars, %.2fs -> %r",
                  LLM_MODEL, temp, json_schema is not None,
                  sum(len(m["content"]) for m in messages), time.perf_counter() - started,
