@@ -23,6 +23,7 @@ from RAG.rag_common import RAGError, TOP_K, embed_texts, chat, open_store, store
 import RAG.rag_common as rag_common
 from RAGs.logger_config import setup_logging
 import RAG.memory as memory
+from RAG import cost
 
 logger = logging.getLogger("rag.ask")
 
@@ -66,8 +67,15 @@ def list_files(col):
 
 
 def answer(col, question, turns, args):
-    """Answer one question (a follow-up if turns holds earlier ones), print it, and
-    return (answer, sources, standalone question) for the chat memory."""
+    """Answer one question (a follow-up if turns holds earlier ones), print it and what it
+    cost, and return (answer, sources, standalone question, cost in USD) for the chat memory."""
+    with cost.track("naive", question) as qc:
+        reply, sources, standalone = _answer(col, question, turns, args)
+    print("\n=== Cost ===\n" + qc.summary())
+    return reply, sources, standalone, qc.total_usd
+
+
+def _answer(col, question, turns, args):
     logger.info("Question: %s", question)
     standalone = memory.rewrite_question(question, turns)
     if standalone != question:
@@ -135,8 +143,8 @@ def run():
         return
     mem = memory.open_memory()
     sid = memory.get_session(mem, args.session)
-    reply, sources, standalone = answer(col, question, memory.recent_turns(mem, sid), args)
-    memory.save_turn(mem, sid, question, standalone, reply, sources, "naive")
+    reply, sources, standalone, cost_usd = answer(col, question, memory.recent_turns(mem, sid), args)
+    memory.save_turn(mem, sid, question, standalone, reply, sources, "naive", cost_usd)
 
 
 def main():

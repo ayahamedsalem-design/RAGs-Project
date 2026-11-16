@@ -22,6 +22,7 @@ from RAG.rag_common import (RAGError, DOCS_DIR, STORE_DIR, COLLECTION, CHUNK_CHA
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from RAGs.logger_config import setup_logging
+from RAG import cost
 
 logger = logging.getLogger("rag.ingest")
 
@@ -330,6 +331,9 @@ def run():
         old = by_path.get(rel)
         done = stored_chunks(col, digest) if digest in stored else set()
         print(f"{'Continuing' if done else 'Updating' if old else 'Adding'}: {rel}")
+        # Each document's embedding cost is its own row in cost_log.csv (system "ingest").
+        # A document cut short is saved too: its chunks are kept, so that money was spent.
+        qc = cost.start_query("ingest", rel)
         try:
             if add_file(col, path, rel, digest, done):
                 stored[digest] = {"path": rel, "complete": True}   # a later identical copy is skipped
@@ -344,6 +348,11 @@ def run():
             failed += 1
             print(f"  failed: {e}")
             logger.exception("Failed to add %s", rel)
+        finally:
+            cost.finish_query()
+            if qc.calls:
+                print(f"  cost: ${qc.total_usd:.6f} ({qc.n_calls} requests, "
+                      f"{qc.prompt_tokens:,} tokens)")
 
     files = stored_files(col)
     kept = sorted(f["path"] for f in files.values() if f["path"] not in on_disk)

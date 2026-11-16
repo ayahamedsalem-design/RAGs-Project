@@ -3,6 +3,7 @@ import logging
 import RAG.ask
 import RAG.ask_crag
 import RAG.memory as memory
+from RAG import cost
 
 from RAGs.logger_config import setup_logging
 from RAG.rag_common import RAGError, open_store, store_exists, TOP_K, MAX_CONTEXT, chat
@@ -22,8 +23,16 @@ def _open_collection():
     return col if col.count() else None
 
 
+# Both runners track what the question cost (cost.py): it is saved to RAG/cost_log.csv and
+# with the turn in chat_history.db, and the UI can read it with cost.last_query().
+
 # ----------------- 1. Naive RAG Runner -----------------
 def run_naive_rag(session_name: str, query: str):
+    with cost.track("naive", query) as qc:
+        return _run_naive_rag(session_name, query, qc)
+
+
+def _run_naive_rag(session_name, query, qc):
     try:
         col = _open_collection()
     except RAGError as e:
@@ -56,12 +65,17 @@ def run_naive_rag(session_name: str, query: str):
 
     # 3. Saving the conversation to the history
     sources = [f"{path} | {loc}" for _, path, loc, _ in results]
-    memory.save_turn(mem, sid, query, standalone, answer, sources, "naive")
+    memory.save_turn(mem, sid, query, standalone, answer, sources, "naive", qc.total_usd)
 
     return answer, retrieved_contexts
 
 # ----------------- 2. Corrective RAG (CRAG) Runner -----------------
 def run_corrective_rag(session_name: str, query: str):
+    with cost.track("crag", query) as qc:
+        return _run_corrective_rag(session_name, query, qc)
+
+
+def _run_corrective_rag(session_name, query, qc):
     try:
         col = _open_collection()
     except RAGError as e:
@@ -86,7 +100,7 @@ def run_corrective_rag(session_name: str, query: str):
     if not chunks:
         answer = RAG.ask_crag.NOT_COVERED
         # Save the turn, even if no answer is found, to keep track of the conversation context
-        memory.save_turn(mem, sid, query, standalone, answer, [], "crag")
+        memory.save_turn(mem, sid, query, standalone, answer, [], "crag", qc.total_usd)
         return answer, [], log
 
     # 4. Recalculating the similarity based on the original query vector
@@ -126,7 +140,7 @@ def run_corrective_rag(session_name: str, query: str):
 
     # 7. Save the turn to the in-memory database chat_history.db
     sources = [f"{c['path']} | {c['loc']}" for c in chunks]
-    memory.save_turn(mem, sid, query, standalone, answer, sources, "crag")
+    memory.save_turn(mem, sid, query, standalone, answer, sources, "crag", qc.total_usd)
     
     return answer, retrieved_contexts, log
 

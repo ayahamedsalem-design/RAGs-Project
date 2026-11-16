@@ -54,9 +54,15 @@ def open_memory():
             sources TEXT,         -- JSON list of "file | location" strings
             system TEXT,          -- "naive" or "crag"
             model TEXT,           -- backend and LLM that answered
-            created TEXT
+            created TEXT,
+            cost_usd REAL         -- what answering cost (see cost.py)
         );
     """)
+    # Databases made before cost tracking don't have the cost_usd column yet
+    if "cost_usd" not in [row[1] for row in db.execute("PRAGMA table_info(turns)")]:
+        db.execute("ALTER TABLE turns ADD COLUMN cost_usd REAL")
+        db.commit()
+        logger.info("Added the cost_usd column to %s", MEMORY_DB.name)
     return db
 
 
@@ -87,11 +93,11 @@ def recent_turns(mem, session_id, n=MEMORY_TURNS):
     return rows[::-1]
 
 
-def save_turn(mem, session_id, question, standalone, answer, sources, system):
+def save_turn(mem, session_id, question, standalone, answer, sources, system, cost_usd=None):
     mem.execute("INSERT INTO turns (session_id, question, standalone, answer, sources, system, "
-                "model, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "model, created, cost_usd) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (session_id, question, standalone, answer, json.dumps(sources), system,
-                 f"{BACKEND}: {LLM_MODEL}", now()))
+                 f"{BACKEND}: {LLM_MODEL}", now(), cost_usd))
     mem.execute("UPDATE sessions SET updated = ? WHERE id = ?", (now(), session_id))
     mem.commit()
     logger.info("Saved the %s answer to conversation id %d (%d sources)", system, session_id,
@@ -117,7 +123,7 @@ def rewrite_question(question, turns):
     messages = [{"role": "system", "content": REWRITE_PROMPT},
                 {"role": "user", "content": f"CONVERSATION SO FAR:\n\n{format_history(turns)}"
                                             f"\n\nFOLLOW-UP: {question}"}]
-    reply = chat(messages, temperature=0.0).strip().strip('"').strip()
+    reply = chat(messages, temperature=0.0, step="rewrite").strip().strip('"').strip()
     # Fall back to the original if the model replied with something that isn't a question
     if not reply or len(reply) > 4 * len(question) + 200 or "\n\n" in reply:
         logger.warning("Rewrite reply unusable, searching the original question: %r", reply[:300])
@@ -209,7 +215,7 @@ def show_session(mem, name, last=None):
 
 
 def run_chat(answer_fn, system, session_name):
-    """Interactive loop. answer_fn(question, turns) -> (answer, sources, standalone)."""
+    """Interactive loop. answer_fn(question, turns) -> (answer, sources, standalone, cost_usd)."""
     mem = open_memory()
     sid = get_session(mem, session_name)
     count = mem.execute("SELECT COUNT(*) FROM turns WHERE session_id = ?", (sid,)).fetchone()[0]
@@ -235,7 +241,7 @@ def run_chat(answer_fn, system, session_name):
             print(f'Started a new conversation "{session_name}".\n')
             continue
         turns = recent_turns(mem, sid)
-        answer, sources, standalone = answer_fn(question, turns)
-        save_turn(mem, sid, question, standalone, answer, sources, system)
+        answer, sources, standalone, cost_usd = answer_fn(question, turns)
+        save_turn(mem, sid, question, standalone, answer, sources, system, cost_usd)
         print()
     print(f'Saved. Continue later with:  --chat --session "{session_name}"')
