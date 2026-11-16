@@ -39,7 +39,7 @@ if BACKEND == "ollama":
     QUERY_PREFIX, DOC_PREFIX = "search_query: ", "search_document: "   # nomic-embed-text expects these
 elif BACKEND == "openrouter":
     EMBED_MODEL = "nvidia/nemotron-3.5-embed-1b:free"
-    LLM_MODEL = "nvidia/nemotron-3.5-lightning:free"   # any OpenRouter chat model works
+    LLM_MODEL = "deepseek/deepseek-v4-flash"   # any OpenRouter chat model works
     DIMS = 2048          # lower to 512 to save memory on the device (needs --rebuild)
     QUERY_PREFIX, DOC_PREFIX = "", ""
 else:
