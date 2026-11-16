@@ -11,12 +11,14 @@
 # Supported: .pdf .docx .pptx .txt .md .csv .html .htm
 # Files can be on any topic and can sit in subfolders; folder names don't matter.
 
-import sys, csv, time, hashlib, logging, argparse
+import sys, re, csv, time, hashlib, logging, argparse
 from datetime import datetime
 
-from RAG.rag_common import (RAGError, DOCS_DIR, STORE_DIR, COLLECTION, CHUNK_WORDS, OVERLAP_WORDS, BACKEND, BATCH,
+from RAG.rag_common import (RAGError, DOCS_DIR, STORE_DIR, COLLECTION, CHUNK_CHARS, OVERLAP_CHARS, BACKEND, BATCH,
                         EMBED_MODEL, embed_texts, open_store, store_exists, delete_store,
                         stored_files, fail)
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from RAGs.logger_config import setup_logging
 
 logger = logging.getLogger("rag.ingest")
@@ -137,26 +139,42 @@ def format_location(kind, labels):
     return f"{kind}: {shown}" + (" ..." if len(labels) > 3 else "")
 
 
-def make_chunks(kind, units):
-    """Sliding window of CHUNK_WORDS words with OVERLAP_WORDS overlap.
-    Each word remembers its label, so each chunk knows where it came from."""
-    words, labels = [], []
-    for label, text in units:
-        w = text.split()
-        words += w
-        labels += [label] * len(w)
+# Same splitter, size, overlap and cleaning as RAGs/extract_and_chunk_pdf.py (Basic/Hybrid RAG)
+SPLITTER = RecursiveCharacterTextSplitter(chunk_size=CHUNK_CHARS, chunk_overlap=OVERLAP_CHARS,
+                                          separators=["\n\n", "\n", " ", ""])
 
-    chunks, start, step = [], 0, CHUNK_WORDS - OVERLAP_WORDS
-    while start < len(words):
-        end = min(start + CHUNK_WORDS, len(words))
-        chunks.append((format_location(kind, labels[start:end]),
-                       " ".join(words[start:end])))
-        if end == len(words):
-            break
-        start += step
-    logger.debug("%d words in %d %ss -> %d chunks of up to %d words (%d overlap)",
-                 len(words), len(units), kind, len(chunks), CHUNK_WORDS, OVERLAP_WORDS)
-    return chunks, len(words)
+
+def make_blocks(kind, units):
+    """Pages and slides are split one by one, as in RAGs/. Units that are tiny on their own
+    (lines, rows, paragraphs, sections) are joined into blocks of a few chunks first."""
+    if kind in ("page", "slide"):
+        return [([label], text) for label, text in units]
+    blocks, labels, parts, size = [], [], [], 0
+    for label, text in units:
+        labels.append(label)
+        parts.append(text)
+        size += len(text)
+        if size >= 4 * CHUNK_CHARS:
+            blocks.append((labels, "\n".join(parts)))
+            labels, parts, size = [], [], 0
+    if parts:
+        blocks.append((labels, "\n".join(parts)))
+    return blocks
+
+
+def make_chunks(kind, units):
+    """Split every block into CHUNK_CHARS-character chunks with OVERLAP_CHARS overlap.
+    Each chunk remembers its page/slide/section, so the answer can say where it came from."""
+    chunks = []
+    for labels, text in make_blocks(kind, units):
+        for piece in SPLITTER.split_text(text):
+            cleaned = re.sub(r"\s+", " ", piece).strip()
+            if len(cleaned) > 30:
+                chunks.append((format_location(kind, labels), cleaned))
+    n_words = sum(len(text.split()) for _, text in units)
+    logger.debug("%d words in %d %ss -> %d chunks of up to %d characters (%d overlap)",
+                 n_words, len(units), kind, len(chunks), CHUNK_CHARS, OVERLAP_CHARS)
+    return chunks, n_words
 
 
 # ---------- Store maintenance ----------

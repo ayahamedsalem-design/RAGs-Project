@@ -46,13 +46,15 @@ else:
     raise RAGError(f'Unknown RAG_BACKEND "{BACKEND}". Use "ollama" or "openrouter".')
 
 OLLAMA_NUM_CTX = 16384   # how much text the local LLM can read at once (grading needs ~13,000 tokens)
-CHUNK_WORDS = 600        # ~950 tokens on average, up to ~1,700 for reference lists. nomic-embed-text
-                         # reads at most 2,048 tokens, so stay at or below ~700 words with it
-OVERLAP_WORDS = 100
+# Chunking is the same as the RAGs/ pipelines (Basic and Hybrid RAG), so every RAG in the
+# project searches identically sized chunks: 1000 characters, 200 overlap (LangChain's
+# RecursiveCharacterTextSplitter, see RAG/ingest.py).
+CHUNK_CHARS = 1000
+OVERLAP_CHARS = 200
 BATCH = 16               # most chunks per embedding request (also: chunks saved at a time by ingest.py)
 # OpenRouter's free embedding model rejects big requests (HTTP 502 "service inference failed";
 # measured 2026-11-07): one chunk of 1,900 tokens works, two chunks of ~900 tokens don't, many
-# tiny texts do. So 600-word chunks go one per request, and only small texts are grouped:
+# tiny texts do. So chunks of this size go a few per request, and only small texts are grouped:
 # (number of texts) x (longest text) must stay within EMBED_MAX_TOKENS estimated tokens.
 EMBED_MAX_TOKENS = 1000 if BACKEND == "openrouter" else None
 TOP_K = 4               # chunks given to the LLM
@@ -261,7 +263,7 @@ def delete_store():
 
 # Settings that decide what the stored chunks and vectors look like
 STORE_SETTINGS = {"embed_model": EMBED_MODEL, "dims": DIMS,
-                  "chunk_words": CHUNK_WORDS, "overlap_words": OVERLAP_WORDS}
+                  "chunk_chars": CHUNK_CHARS, "overlap_chars": OVERLAP_CHARS}
 
 
 def open_store(check=True):
