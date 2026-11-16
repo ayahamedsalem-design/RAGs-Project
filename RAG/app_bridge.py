@@ -1,27 +1,42 @@
 import json
 import logging
-import RAG.ask 
+import RAG.ask
 import RAG.ask_crag
-import RAG.memory as memory
 import RAG.memory as memory
 
 from RAGs.logger_config import setup_logging
-from RAG.rag_common import open_db, TOP_K, MAX_CONTEXT, chat
+from RAG.rag_common import RAGError, open_store, store_exists, TOP_K, MAX_CONTEXT, chat
 
 setup_logging()
 
 logger = logging.getLogger(__name__)
 
+EMPTY_STORE_MSG = "The Ext knowledge base is empty. Run: python -m RAG.ingest"
+
+
+def _open_collection():
+    """The Ext collection, or None if it doesn't exist or holds no chunks yet."""
+    if not store_exists():
+        return None
+    col = open_store()
+    return col if col.count() else None
+
+
 # ----------------- 1. Naive RAG Runner -----------------
 def run_naive_rag(session_name: str, query: str):
-    db = open_db()
+    try:
+        col = _open_collection()
+    except RAGError as e:
+        return str(e), []
+    if col is None:
+        return EMPTY_STORE_MSG, []
     mem = memory.open_memory()
     sid = memory.get_session(mem, session_name)
     turns = memory.recent_turns(mem, sid)
 
     # 1. Rephrasing a follow-up question so that it is self-explanatory
     standalone = memory.rewrite_question(query, turns)
-    results = RAG.ask.search(db, standalone, TOP_K)
+    results = RAG.ask.search(col, standalone, TOP_K)
 
     # 2. Prompt construction and incorporating previous conversation
     prompt_msgs = RAG.ask.build_prompt(standalone, results)
@@ -47,8 +62,13 @@ def run_naive_rag(session_name: str, query: str):
 
 # ----------------- 2. Corrective RAG (CRAG) Runner -----------------
 def run_corrective_rag(session_name: str, query: str):
-    db = open_db()
-    
+    try:
+        col = _open_collection()
+    except RAGError as e:
+        return str(e), [], RAG.ask_crag.Log()
+    if col is None:
+        return EMPTY_STORE_MSG, [], RAG.ask_crag.Log()
+
     # 1. Accessing memory and reading previous rounds for the specified session
     mem = memory.open_memory()
     sid = memory.get_session(mem, session_name)
@@ -60,7 +80,7 @@ def run_corrective_rag(session_name: str, query: str):
     log = RAG.ask_crag.Log()
     
     # 3. Running corrective search and evaluation using the standalone question
-    chunks, status, missing = RAG.ask_crag.corrective_retrieve(db, standalone, log)
+    chunks, status, missing = RAG.ask_crag.corrective_retrieve(col, standalone, log)
     
     # If no results are found at all
     if not chunks:
@@ -72,7 +92,7 @@ def run_corrective_rag(session_name: str, query: str):
     # 4. Recalculating the similarity based on the original query vector
     for c in chunks:
         if c.get("via") != "question":
-            c["sim"] = RAG.ask_crag.similarity_to(db, log.qvec, c["id"])
+            c["sim"] = RAG.ask_crag.similarity_to(col, log.qvec, c["id"])
             
     chunks = sorted(chunks, key=lambda c: -c["sim"])[:MAX_CONTEXT]
     results = [(c["sim"], c["path"], c["loc"], c["text"]) for c in chunks]
