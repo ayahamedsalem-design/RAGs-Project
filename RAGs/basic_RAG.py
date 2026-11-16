@@ -7,7 +7,7 @@ import chromadb
 import ollama
 
 try:
-    from RAGs.logger_config import setup_logging
+    from logger_config import setup_logging
     from RAGs.chat_history import persist_chat_history, load_file_history
     from RAGs.extract_and_chunk_pdf import (
         initialize_api, 
@@ -33,7 +33,7 @@ except ModuleNotFoundError:
 
 setup_logging()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"RAGProj.{__name__}")
 
 logger.info("Initializing OpenRouter API Client for Basic RAG...")
 
@@ -70,7 +70,7 @@ def index_basic_rag(pdf_source):
     # Extract and split text using the shared utility
     logger.info(f"Starting Extraction & Standard Chunking for '{file_name}'...")
     chunks, metadatas = extract_and_chunk_standard(
-        pdf_source, chunk_size=1000, chunk_overlap=200
+        pdf_source, chunk_size=2048, chunk_overlap=200
     )
 
     if not chunks:
@@ -79,13 +79,15 @@ def index_basic_rag(pdf_source):
 
     # Generate embeddings in batches with retry logic
     embeddings_list = []
-    batch_size = 15
+    batch_size = 32
     total_batches = (len(chunks) + batch_size - 1) // batch_size
     logger.info(f"Generating embeddings via OpenRouter in {total_batches} batches...")
 
     for idx, i in enumerate(range(0, len(chunks), batch_size), start=1):
         batch = chunks[i : i + batch_size]
         success = False
+
+        logger.info(f"Batch {idx} / {total_batches} - Progress: {(idx / total_batches) * 100:.1f}%")
 
         for attempt in range(3):
             try:
@@ -169,6 +171,7 @@ def run_basic_RAG(user_query, top_k_per_query=3, history_limit=5):
     formatted_contexts = list(unique_chunks_dict.values())
     full_context_text = "\n\n---\n\n".join(formatted_contexts)
     logger.info(f"Retrieved {len(formatted_contexts)} unique chunks across all sub-queries.")
+    logger.info(f"Final Compiled Context for LLM: \n{full_context_text}")
 
     # 3. Load rolling window history
     logger.info("Loading global conversation history...")
@@ -177,6 +180,10 @@ def run_basic_RAG(user_query, top_k_per_query=3, history_limit=5):
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
     )
     logger.info(f"Using {len(recent_history)} recent turns from history (Total saved: {len(global_history)}).")
+    for h in recent_history:
+            query_text = str(h.get('query', ''))
+            answer_text = str(h.get('answer', ''))[:50]
+            logger.debug(f"History - User: {query_text} | Assistant: {answer_text}...")
 
     # 4. Build prompt and invoke local Ollama LLM
     prompt = f"""[Context from Global Database]:
@@ -193,22 +200,17 @@ def run_basic_RAG(user_query, top_k_per_query=3, history_limit=5):
 
     messages_to_send.append({"role": "user", "content": prompt})
 
-    logger.info("Invoking Ollama 'llama3.2:1b'...")
+    logger.info(f"Sending prompt to generation LLM '{CHAT_MODEL}' - for user query={user_query}") 
     try:
-        response = ollama.chat(
-            model="llama3.2:1b",
-            messages=messages_to_send,
-            options={
-                "temperature": 0.0,
-                "top_p": 0.1,
-                "num_ctx": 4096,
-            },
-        )
-        assistant_reply = response["message"]["content"]
-        logger.info("Ollama global response generated successfully.")
+            completion = client_ai.chat.completions.create(
+                model=CHAT_MODEL,
+                messages=messages_to_send,
+            )
+            assistant_reply = completion.choices[0].message.content
+            logger.info(f"LLM response generated successfully. Model_reply={assistant_reply}") 
     except Exception as e:
-        logger.critical(f"Ollama execution failed: {e}", exc_info=True)
-        raise e
+            logger.critical(f"LLM generation failed: {e}", exc_info=True)
+            raise e
 
     # 5. Persist chat history
     persist_chat_history(GLOBAL_SESSION_ID, user_query, assistant_reply, full_context_text)

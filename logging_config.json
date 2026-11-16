@@ -19,9 +19,9 @@
         },
         "file_rotating": {
             "class": "logging.handlers.RotatingFileHandler",
-            "level": "INFO",
+            "level": "DEBUG",
             "formatter": "standard",
-            "filename": "logs\\app.log",
+            "filename": "logs/app.log",
             "maxBytes": 5242880,
             "backupCount": 5,
             "encoding": "utf-8"
@@ -30,7 +30,7 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "ERROR",
             "formatter": "standard",
-            "filename": "logs\\errors.log",
+            "filename": "logs/errors.log",
             "maxBytes": 5242880,
             "backupCount": 3,
             "encoding": "utf-8"
@@ -43,6 +43,10 @@
                 "file_rotating",
                 "error_file"
             ],
+            "level": "DEBUG",
+            "propagate": true
+        },
+        "RAGProj": {
             "level": "DEBUG",
             "propagate": true
         },

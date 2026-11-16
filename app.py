@@ -1,18 +1,21 @@
 import os
 import logging
+
 import streamlit as st
 from dotenv import load_dotenv
 
 # Global RAG imports from RAGs package
-from RAGs.logger_config import setup_logging
+from logger_config import setup_logging
 from RAGs.basic_RAG import run_basic_RAG, index_basic_rag
 from RAGs.parent_child_RAG import (
     run_parent_child_chunking_RAG,
     index_parent_child_rag,
 )
 from RAGs.hybrid_RAG import run_hybrid_chat_session, initialize_hybrid_index
-from RAGs.corrective_parent_child_RAG import run_corrective_parent_child_rag
-from RAGs.corrective_hybrid_RAG import run_corrective_hybrid_rag
+#from RAGs.corrective_parent_child_RAG import run_corrective_parent_child_rag
+#from RAGs.corrective_hybrid_RAG import run_corrective_hybrid_rag
+from RAGs.parent_child_corrective_RAG import run_parent_child_corrective_rag
+from RAGs.hybrid_corrective_RAG import run_hybrid_corrective_rag
 from RAGs.history_summarizer import summarize_cross_file_history
 from RAGs.RAG_service import execute_with_retry
 from RAGs.chat_history import load_file_history, clear_all_history, load_all_history
@@ -69,8 +72,8 @@ with st.sidebar:
             "Basic RAG",
             "Parent-Child (Hierarchical) RAG",
             "Hybrid RAG",
-            "Corrective Parent-Child RAG",
-            "Corrective Hybrid RAG",
+            "Parent-Child Corrective RAG",
+            "Hybrid Corrective RAG",
             "Ext Naive RAG",
             "Ext Corrective RAG"
          ),
@@ -150,13 +153,13 @@ if user_query:
                     answer, retrieved_contexts = execute_with_retry(
                         run_hybrid_chat_session, user_query
                     )
-                elif rag_type == "Corrective Parent-Child RAG":
+                elif rag_type == "Parent-Child Corrective RAG":
                     answer, retrieved_contexts = execute_with_retry(
-                        run_corrective_parent_child_rag, user_query
+                        run_parent_child_corrective_rag, user_query
                     )
-                elif rag_type == "Corrective Hybrid RAG":
+                elif rag_type == "Hybrid Corrective RAG":
                     answer, retrieved_contexts = execute_with_retry(
-                        run_corrective_hybrid_rag, user_query
+                        run_hybrid_corrective_rag, user_query
                     )
 
                 # Route to External Architectures (Session Name + Query)

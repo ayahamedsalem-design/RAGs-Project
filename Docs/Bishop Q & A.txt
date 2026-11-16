@@ -1,0 +1,58 @@
+1. **Question:** What is the field of pattern recognition concerned with? **Answer:** The automatic discovery of regularities in data through the use of computer algorithms and with the use of these regularities to take actions such as classifying the data into different categories. **Page:** 1.
+
+
+2. **Question:** In a supervised machine learning approach, what is a training set? **Answer:** A large set of data examples whose true categories are known in advance, used to tune the parameters of an adaptive model. **Page:** 2.
+
+
+3. **Question:** What does the term generalization refer to in pattern recognition? **Answer:** The ability to categorize correctly new test examples that differ from those used during the training phase. **Page:** 2.
+
+
+4. **Question:** What is another term used for the pre-processing stage where original input variables are transformed into a new space of variables to make the problem easier to solve? **Answer:** Feature extraction. **Page:** 2.
+
+
+5. **Question:** What is the primary difference between supervised and unsupervised learning? **Answer:** In supervised learning, the training data comprises examples of the input vectors along with their corresponding target vectors, whereas in unsupervised learning, the training data consists of input vectors without any corresponding target values. **Page:** 3.
+
+
+6. **Question:** What defines a classification problem? **Answer:** A supervised learning problem where the aim is to assign each input vector to one of a finite number of discrete categories. **Page:** 3.
+
+
+7. **Question:** What is the credit assignment problem in reinforcement learning? **Answer:** The challenge of attributing a reward appropriately to all of the sequential moves or actions that led to it, even though some moves may have been good and others less so. **Page:** 3.
+
+
+8. **Question:** What does the root-mean-square (RMS) error allow us to do when evaluating different models? **Answer:** It allows us to compare different sizes of data sets on an equal footing by dividing by $N$, and ensures the error is measured on the exact same scale and units as the target variable. **Page:** 7.
+
+
+9. **Question:** What is the phenomenon of over-fitting in polynomial curve fitting? **Answer:** When a highly flexible polynomial fits the training data exactly but oscillates wildly between points, resulting in a very poor representation of the underlying generating function and poor predictive performance on new data. **Page:** 6-7.
+
+
+10. **Question:** How does regularization help control the over-fitting phenomenon? **Answer:** By adding a penalty term to the error function to discourage the model parameters (polynomial coefficients) from reaching excessively large magnitudes. **Page:** 10.
+
+
+11. **Question:** What are the two fundamental rules of probability theory used to manipulate uncertainty? **Answer:** The sum rule and the product rule. **Page:** 13-14.
+
+
+12. **Question:** How is Bayes' theorem stated in words regarding model parameters and data? **Answer:** posterior $\propto$ likelihood $\times$ prior. **Page:** 22.
+
+
+13. **Question:** From a frequentist viewpoint, how is the maximum likelihood estimator defined? **Answer:** It is the setting of the parameter vector $w$ to the exact value that maximizes the likelihood function $p(\mathcal{D}\vert{}w)$, which corresponds to maximizing the probability of the observed data set. **Page:** 23.
+
+
+14. **Question:** What are the two distinct parameters that strictly govern the univariate Gaussian (normal) distribution? **Answer:** The mean ($\mu$) and the variance ($\sigma^2$). **Page:** 24.
+
+
+15. **Question:** When assuming a Gaussian noise distribution on the target variables, maximizing the likelihood function is mathematically equivalent to minimizing which error function? **Answer:** The sum-of-squares error function. **Page:** 29.
+
+
+16. **Question:** What is S-fold cross-validation used for? **Answer:** It partitions the available data into $S$ groups, using $S-1$ groups to train the model and the remaining group for evaluation, repeating this process to utilize all data for both training and testing when data is scarce. **Page:** 32-33.
+
+
+17. **Question:** What is the "curse of dimensionality"? **Answer:** The severe geometric and computational difficulty that arises in spaces of many dimensions, where the number of regions in a regular grid grows exponentially with the dimensionality, requiring an exponentially large volume of training data to prevent cells from being empty. **Page:** 35-36.
+
+
+18. **Question:** In decision theory, what is the specific role of a loss matrix? **Answer:** It provides a matrix containing elements $L_{kj}$ that define the exact overall measure of cost or penalty incurred when a data point belonging to the true class $\mathcal{C}_k$ is assigned to class $\mathcal{C}_j$. **Page:** 41.
+
+
+19. **Question:** What is the structural difference between generative and discriminative models? **Answer:** Generative models explicitly or implicitly model the distribution of inputs as well as outputs to find joint probabilities $p(x,\mathcal{C}_k)$, while discriminative models solve the inference problem by modeling the posterior class probabilities $p(\mathcal{C}_k\vert{}x)$ directly. **Page:** 43.
+
+
+20. **Question:** According to Shannon's noiseless coding theorem, what fundamental physical or informational quantity does the entropy of a random variable represent? **Answer:** It represents the absolute lower bound on the average number of bits needed to transmit the state of a random variable. **Page:** 50.

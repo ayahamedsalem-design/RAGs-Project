@@ -120,8 +120,8 @@ streamlit run app.py
 │   ├── basic_RAG.py                  # Global Basic RAG implementation
 │   ├── parent_child_RAG.py           # Global Hierarchical implementation
 │   ├── hybrid_RAG.py                 # Global Dense + Sparse (BM25) implementation
-│   ├── corrective_parent_child_RAG.py# CRAG applied to Hierarchical chunks
-│   ├── corrective_hybrid_RAG.py      # CRAG applied to Hybrid chunks
+│   ├── parent_child_corrective_RAG.py# CRAG applied to Hierarchical chunks
+│   ├── hybrid_corrective_RAG.py      # CRAG applied to Hybrid chunks
 │   ├── extract_and_chunk_pdf.py      # Standard & Hierarchical chunking engine
 │   ├── chat_history.py               # Rolling window memory & JSON persistence
 │   ├── history_summarizer.py         # LLM-powered cross-file history summarization

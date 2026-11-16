@@ -3,13 +3,15 @@ import re
 import uuid
 import logging
 import tempfile
+import json
+
 from openai import OpenAI
 from pypdf import PdfReader
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 try:
-    from RAGs.logger_config import setup_logging
+    from logger_config import setup_logging
 except ModuleNotFoundError:
     from logger_config import setup_logging
 
@@ -19,7 +21,7 @@ except ModuleNotFoundError:
 
 setup_logging()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"RAGProj.{__name__}")
 
 # prompts.py
 
@@ -74,13 +76,51 @@ def get_full_text(pdf_path):
     return "".join([page.extract_text() or "" for page in reader.pages])
 
 def decompose_multi_questions(user_query: str) -> list:
-    """Decomposes compound queries into individual sub-questions."""
-    parts = re.split(r"[\n?؟;]+", user_query)
-    sub_queries = [p.strip() for p in parts if len(p.strip()) > 5]
-    if not sub_queries:
-        sub_queries = [user_query.strip()]
-    logger.info(f"Query decomposed into {len(sub_queries)} sub-questions: {sub_queries}")
-    return sub_queries
+    """Decomposes compound queries using an LLM to guarantee high accuracy."""
+
+    logger.info(f"Using LLM to decompose query: '{user_query}'")
+
+    client_ai = initialize_api()
+
+    CHAT_MODEL = os.getenv("CHAT_MODEL")
+    
+    extraction_prompt = f"""You are a strict text extraction assistant. Your ONLY task is to identify and extract all distinct questions from the provided user input.
+
+Rules:
+1. DO NOT answer the questions.
+2. DO NOT generate, hallucinate, or add any new questions.
+3. Extract only the questions exactly as they are implied or stated in the user input.
+4. If the user input contains multiple questions merged together, separate them logically.
+5. If there is no question in the input, return an empty list.
+
+Output your response STRICTLY in valid JSON format using the following structure:
+{{"questions": ["question 1", "question 2"]}}
+
+User Input:
+{user_query}"""
+
+    try:
+        response = client_ai.chat.completions.create(
+            model=CHAT_MODEL, 
+            messages=[{"role": "user", "content": extraction_prompt}],
+            temperature=0.0, 
+            response_format={"type": "json_object"} 
+        )
+        
+        result_text = response.choices[0].message.content
+        parsed_json = json.loads(result_text)
+        
+        extracted_questions = parsed_json.get("questions", [])
+        
+        if not extracted_questions:
+            return [user_query.strip()]
+            
+        logger.info(f"LLM extracted {len(extracted_questions)} sub-questions: {extracted_questions}")
+        return extracted_questions
+        
+    except Exception as e:
+        logger.error(f"LLM Decomposition failed ({e}), falling back to original query.")
+        return [user_query.strip()]
 
 # ==========================================
 # 2. Chunking Function 1: Standard (For Basic & Hybrid)

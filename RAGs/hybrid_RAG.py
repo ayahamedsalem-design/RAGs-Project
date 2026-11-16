@@ -8,7 +8,7 @@ import chromadb
 from rank_bm25 import BM25Okapi
 
 try:    
-    from RAGs.logger_config import setup_logging
+    from logger_config import setup_logging
     from RAGs.chat_history import persist_chat_history, load_file_history
     from RAGs.extract_and_chunk_pdf import (    
         initialize_api,
@@ -33,7 +33,7 @@ except ModuleNotFoundError:
 # ==========================================
 
 setup_logging()
-logger = logging.getLogger("Global_Hybrid_RAG")
+logger = logging.getLogger(f"RAGProj.{__name__}")
 
 logger.info("Initializing Global Hybrid RAG System...")
 client_ai = initialize_api()
@@ -111,7 +111,7 @@ def initialize_hybrid_index(pdf_source):
     # Extract and split text using the shared utility
     logger.info(f"Starting Extraction & Standard Chunking for '{file_name}'...")
     chunks, metadatas = extract_and_chunk_standard(
-        pdf_source, chunk_size=1000, chunk_overlap=200
+        pdf_source, chunk_size=2048, chunk_overlap=200
     )
 
     if not chunks:
@@ -120,13 +120,15 @@ def initialize_hybrid_index(pdf_source):
 
     # Generate dense embeddings in batches with retry logic
     embeddings_list = []
-    batch_size = 15
+    batch_size = 32
     total_batches = (len(chunks) + batch_size - 1) // batch_size
     logger.info(f"Generating embeddings via OpenRouter in {total_batches} batches...")
 
     for idx, i in enumerate(range(0, len(chunks), batch_size), start=1):
         batch = chunks[i : i + batch_size]
         success = False
+
+        logger.info(f"Batch {idx} / {total_batches} - Progress: {(idx / total_batches) * 100:.1f}%")
 
         for attempt in range(3):
             try:
@@ -246,6 +248,7 @@ def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int 
 
     # 1. Retrieve consolidated hybrid context
     full_context_text, formatted_contexts = retrieve_hybrid_context(user_query, top_k=top_k)
+    logger.info(f"Final Compiled Context for LLM: \n{full_context_text}")
 
     # 2. Load rolling window history
     logger.info("Loading global conversation history...")
@@ -254,6 +257,10 @@ def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int 
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
     )
     logger.info(f"Using {len(recent_history)} recent turns from history (Total saved: {len(global_history)}).")
+    for h in recent_history:
+            query_text = str(h.get('query', ''))
+            answer_text = str(h.get('answer', ''))[:50]
+            logger.debug(f"History - User: {query_text} | Assistant: {answer_text}...")
 
     # 3. Build prompt and invoke LLM
     current_turn_prompt = f"""[Context from Global Database]:
@@ -270,7 +277,7 @@ def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int 
 
     messages_to_send.append({"role": "user", "content": current_turn_prompt})
 
-    logger.info("Invoking LLM 'nvidia/nemotron-3.5-lightning:free'...")
+    logger.info(f"Sending prompt to generation LLM '{CHAT_MODEL}' - for user query={user_query}.")
     try:
         completion = client_ai.chat.completions.create(
             model=CHAT_MODEL,
@@ -278,7 +285,7 @@ def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int 
             temperature=0.2,
         )
         assistant_reply = completion.choices[0].message.content
-        logger.info("LLM global response generated successfully.")
+        logger.info(f"LLM response generated successfully. Model_reply={assistant_reply}.")
     except Exception as e:
         logger.critical(f"LLM generation failed: {e}", exc_info=True)
         raise e

@@ -1,7 +1,7 @@
 import time
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"RAGProj.{__name__}")
 
 def execute_with_retry(rag_func, *args, max_retries=3, delay=2, **kwargs):
     for attempt in range(1, max_retries + 1):

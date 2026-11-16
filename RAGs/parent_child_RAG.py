@@ -5,7 +5,7 @@ import time
 import logging
 import chromadb
 try:       
-    from RAGs.logger_config import setup_logging
+    from logger_config import setup_logging
     from RAGs.chat_history import persist_chat_history, load_file_history
     from RAGs.extract_and_chunk_pdf import (
         initialize_api, 
@@ -31,7 +31,7 @@ except ModuleNotFoundError:
 
 setup_logging()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"RAGProj.{__name__}")
 
 logger.info("Initializing OpenRouter API Client for Parent-Child RAG...")
 
@@ -56,6 +56,7 @@ def index_parent_child_rag(pdf_source):
     """
     Indexes a PDF document into the global parent and child collections.
     Skips indexing if the file already exists in the database.
+    Includes explicit embedding generation for Parent chunks to ensure matching dimensions.
     """
     file_name = resolve_file_name(pdf_source)
     logger.info(f"--- Checking Global Hierarchical DB for '{file_name}' ---")
@@ -71,8 +72,8 @@ def index_parent_child_rag(pdf_source):
     parent_texts, parent_ids, child_chunks, child_metadatas, child_ids = (
         extract_and_chunk_hierarchical(
             pdf_source,
-            parent_chunk_words=300,
-            child_chunk_words=70,
+            parent_chunk_words=600,
+            child_chunk_words=140,
             child_overlap=15,
         )
     )
@@ -81,18 +82,48 @@ def index_parent_child_rag(pdf_source):
         logger.warning(f"No valid chunks extracted from '{file_name}'.")
         return
 
+    # Generate embeddings for Parent chunks (New Addition to fix dimension mismatch)
+    logger.info(f"Generating embeddings for {len(parent_texts)} parent chunks...")
+    parent_embeddings = []
+    parent_batch_size = 32
+    p_total_batches = math.ceil(len(parent_texts) / parent_batch_size)
+
+    for idx, i in enumerate(range(0, len(parent_texts), parent_batch_size), start=1):
+        batch = parent_texts[i : i + parent_batch_size]
+        success = False
+        logger.info(f"Parent Batch {idx} / {p_total_batches} - Progress: {(idx / p_total_batches) * 100:.1f}%")
+        
+        for attempt in range(3):
+            try:
+                response = client_ai.embeddings.create(
+                    model=EMBEDDING_MODEL,
+                    input=batch,
+                )
+                parent_embeddings.extend([item.embedding for item in response.data])
+                success = True
+                time.sleep(3)
+                break
+            except Exception as e:
+                logger.warning(f"Parent Batch {idx} attempt {attempt + 1} failed: {e}. Retrying in 2s...")
+                time.sleep(2)
+
+        if not success:
+            logger.error(f"Failed to generate embeddings for parent batch {idx}. Halting indexing.")
+            raise RuntimeError("Embeddings service failed to respond for parent chunks.")
+        
     # Store parent documents with source metadata
     parent_metadatas = [{"source": file_name} for _ in parent_texts]
     logger.info(f"Saving {len(parent_texts)} parent blocks to Global Parent DB...")
     global_parent_col.add(
         documents=parent_texts,
+        embeddings=parent_embeddings,
         metadatas=parent_metadatas,
         ids=parent_ids,
     )
 
     # Generate embeddings for child chunks in batches with retry logic
     child_embeddings = []
-    batch_size = 15
+    batch_size = 32
     total_batches = math.ceil(len(child_chunks) / batch_size)
     logger.info(f"Generating embeddings for {len(child_chunks)} child chunks in {total_batches} batches...")
 
@@ -100,6 +131,8 @@ def index_parent_child_rag(pdf_source):
         batch = child_chunks[i : i + batch_size]
         success = False
 
+        logger.info(f"Batch {idx} / {total_batches} - Progress: {(idx / total_batches) * 100:.1f}%")
+        
         for attempt in range(3):
             try:
                 response = client_ai.embeddings.create(
@@ -148,6 +181,7 @@ def run_parent_child_chunking_RAG(user_query, max_parents=6, history_limit=5):
 
     # 1. Decompose query and retrieve matching parent IDs across all sub-queries
     sub_queries = decompose_multi_questions(user_query)
+    
     matched_parent_ids = []
 
     for idx, sub_q in enumerate(sub_queries, start=1):
@@ -194,6 +228,7 @@ def run_parent_child_chunking_RAG(user_query, max_parents=6, history_limit=5):
         formatted_contexts.append(f":\n{doc}")
 
     full_context_text = "\n\n---\n\n".join(formatted_contexts)
+    logger.info(f"Final Compiled Context for LLM: \n{full_context_text}")
 
     # 3. Load rolling window history
     logger.info("Loading global conversation history...")
@@ -202,6 +237,10 @@ def run_parent_child_chunking_RAG(user_query, max_parents=6, history_limit=5):
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
     )
     logger.info(f"Using {len(recent_history)} recent turns from history (Total saved: {len(global_history)}).")
+    for h in recent_history:
+            query_text = str(h.get('query', ''))
+            answer_text = str(h.get('answer', ''))[:50]
+            logger.debug(f"History - User: {query_text} | Assistant: {answer_text}...")
 
     # 4. Build prompt and invoke LLM
     prompt = f"""[Context from Global Database]:
@@ -218,14 +257,14 @@ def run_parent_child_chunking_RAG(user_query, max_parents=6, history_limit=5):
 
     messages_to_send.append({"role": "user", "content": prompt})
 
-    logger.info("Invoking LLM 'nvidia/nemotron-3.5-super-vl:free'...")
+    logger.info(f"Sending prompt to generation LLM '{CHAT_MODEL}' - for user query={user_query}.")
     try:
         completion = client_ai.chat.completions.create(
             model=CHAT_MODEL,
             messages=messages_to_send,
         )
         assistant_reply = completion.choices[0].message.content
-        logger.info("LLM response generated successfully.")
+        logger.info(f"LLM response generated successfully. Model_reply={assistant_reply}.")
     except Exception as e:
         logger.critical(f"LLM generation failed: {e}", exc_info=True)
         raise e

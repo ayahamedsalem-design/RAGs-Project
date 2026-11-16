@@ -53,6 +53,10 @@ DEFAULT_LOGGING_CONFIG = {
             "level": "DEBUG",
             "propagate": True,
         },
+        "RAGProj": {
+            "level": "DEBUG",
+            "propagate": True
+        },
         "urllib3": {
             "handlers": ["console"],
             "level": "WARNING",
