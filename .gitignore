@@ -108,3 +108,10 @@ predictions/
 *~
 .DS_Store
 Thumbs.db
+
+# ==========================================
+# Vector stores (built locally by each person: python -m RAG.ingest and the RAGs/ uploads)
+# ==========================================
+# Chroma keeps its index in *.bin files next to chroma.sqlite3, and *.bin is ignored above,
+# so a committed chroma.sqlite3 alone is an inconsistent store. Keep the whole folder local.
+chroma_db_global/
