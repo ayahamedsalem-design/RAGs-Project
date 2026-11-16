@@ -13,6 +13,15 @@ try:
 except ModuleNotFoundError:
     from logger_config import setup_logging
 
+# Cost tracking (RAG/cost.py) is shared with the Ext pipelines, so every RAG in the app is
+# measured the same way. If this file runs on its own (from inside RAGs/), RAG/ can't be
+# imported: cost tracking is then simply off and nothing else changes.
+try:
+    import httpx
+    from RAG import cost
+except ImportError:
+    cost = None
+
 # ==========================================
 # 1. Utility Functions (Setup & File Handling)
 # ==========================================
@@ -35,7 +44,39 @@ Answer all aspects of the user's question(s) thoroughly and accurately based on 
 def initialize_api():
     load_dotenv()
     api_key = os.getenv("OPENROUTER_API_KEY")
-    return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=30)
+    if cost is None:
+        return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=30)
+    # COST TRACKING: every RAGs/ module gets its client from this function, so this is the only
+    # change needed for all of them. The http_client below is the same HTTP client the OpenAI
+    # library would use anyway, plus one "event hook": after each reply arrives from OpenRouter,
+    # _record_cost() reads the token counts and the price from it. The requests, prompts and
+    # answers are not changed in any way.
+    return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=30,
+                  http_client=httpx.Client(event_hooks={"response": [_record_cost]}))
+
+
+def _record_cost(response):
+    """Called by httpx for every reply from OpenRouter (chat and embeddings).
+
+    OpenRouter adds a "usage" block to each reply: tokens in / out / reasoning / cached, and
+    "cost" = the US dollars it actually charged for that request. This hands that block to
+    RAG/cost.py, which adds it to the question being tracked (app.py starts the tracking for
+    each question with cost.track(...)) and, at the end, writes one row to RAG/cost_log.csv.
+
+    It only reads the reply. If anything goes wrong here, it is ignored, so cost tracking can
+    never break or change an answer."""
+    try:
+        if response.status_code != 200:
+            return                                  # failed attempts are not billed
+        response.read()                             # load the body (the OpenAI library reuses it)
+        data = response.json()
+        # Requests are labelled by type only: "embedding" (search vectors) or "chat" (answers,
+        # grading, query rewriting, ...). The Ext pipelines label their steps in more detail.
+        step = "embedding" if "/embeddings" in str(response.url) else "chat"
+        cost.record(step, data.get("model"), data.get("usage"),
+                    response.elapsed.total_seconds())
+    except Exception as e:
+        logger.debug(f"Cost tracking skipped one reply: {e}")
 
 
 def resolve_file_name(pdf_source) -> str:
