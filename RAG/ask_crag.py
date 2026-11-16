@@ -13,25 +13,30 @@
 #                 without asking the LLM to answer at all.
 #
 # Usage:
-#   uv run rag/ask_crag.py "your question"
-#   uv run rag/ask_crag.py "your question" --trace        show every grading decision
-#   uv run rag/ask_crag.py "your question" --show-prompt  print the prompt sent to the LLM
-#   uv run rag/ask_crag.py --chat                         interactive chat with follow-up questions
+#   python -m RAG.ask_crag "your question"
+#   python -m RAG.ask_crag "your question" --trace        show every grading decision
+#   python -m RAG.ask_crag "your question" --quiet        hide the corrective steps
+#   python -m RAG.ask_crag "your question" --show-prompt  print the prompt sent to the LLM
+#   python -m RAG.ask_crag --chat                         interactive chat with follow-up questions
 #   (--session, --sessions, --show and --forget work as in ask.py; see memory.py)
 #
 # ask.py (the original, naive RAG) answers the same way as before, so both can be compared
 # on the same questions. Follow-ups are rewritten into a stand-alone question first,
 # and that question is what gets retrieved and graded.
 
-import sys, re, json, argparse
+import sys, re, json, logging, argparse
 
 import numpy as np
 
-from RAG.rag_common import (DB_PATH, CANDIDATES, MAX_CONTEXT, MIN_SIMILARITY, MAX_EXTRA_QUERIES,
+from RAG.rag_common import (RAGError, CANDIDATES, MAX_CONTEXT, MIN_SIMILARITY, MAX_EXTRA_QUERIES,
                         EXTRA_PER_QUERY, PER_FILE, MAX_GRADED, GRADER_TEMPERATURE, GRADING,
-                        REFERENCE_THRESHOLD, embed_texts, chat, open_db, to_blob)
+                        REFERENCE_THRESHOLD, embed_texts, chat, open_store, store_exists,
+                        stored_files, get_embedding, search, fail)
 from RAG.ask import build_prompt
-import RAG.memory
+from RAGs.logger_config import setup_logging
+import RAG.memory as memory
+
+logger = logging.getLogger("rag.crag")
 
 NOT_COVERED = "The documents do not cover this question. No relevant passages were found."
 
@@ -117,53 +122,47 @@ def citation_density(text):
 def read_json(reply):
     m = re.search(r"\{.*\}", reply or "", re.DOTALL)
     if not m:
+        logger.warning("No JSON in the grader's reply: %r", (reply or "")[:300])
         return None
     try:
         return json.loads(m.group(0))
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logger.warning("Grader's JSON could not be read (%s): %r", e, m.group(0)[:300])
         return None
 
 
 # ---------- Retrieval ----------
-def knn(db, qvec, k):
+def knn(col, qvec, k):
     """Nearest chunks to one query vector, with their ids (so duplicates can be removed)."""
-    rows = db.execute("""
-        WITH knn AS (
-            SELECT rowid, distance FROM vec_chunks
-            WHERE embedding MATCH ? AND k = ?
-        )
-        SELECT chunks.id, knn.distance, files.path, chunks.location, chunks.text
-        FROM knn
-        JOIN chunks ON chunks.id = knn.rowid
-        JOIN files  ON files.id = chunks.file_id
-        ORDER BY knn.distance
-    """, (to_blob(qvec), k)).fetchall()
-    # normalized vectors: cosine similarity = 1 - distance^2 / 2
-    return [{"id": cid, "sim": 1 - d * d / 2, "path": p, "loc": loc, "text": t, "via": "question"}
-            for cid, d, p, loc, t in rows]
+    return [{**c, "via": "question"} for c in search(col, qvec, k)]
 
 
-def similarity_to(db, qvec, chunk_id):
+def similarity_to(col, qvec, chunk_id):
     """Similarity between the original question and a chunk found by another query."""
-    blob = db.execute("SELECT embedding FROM vec_chunks WHERE rowid = ?", (chunk_id,)).fetchone()[0]
-    return float(np.dot(qvec, np.frombuffer(blob, dtype=np.float32)))
+    return float(np.dot(qvec, get_embedding(col, chunk_id)))
 
 
-def knn_per_file(db, qvec, n, skip=lambda c: False):
+def knn_per_file(col, qvec, n, skip=lambda c: False):
     """The n closest usable chunks from EACH document, so no document is crowded out.
     Chunks for which skip(chunk) is true (already seen, reference lists) don't count."""
-    total = db.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
     best = {}
-    for c in knn(db, qvec, min(total, 500)):
+    for c in knn(col, qvec, min(col.count(), 500)):
         group = best.setdefault(c["path"], [])
         if len(group) < n and not skip(c):
             group.append(c)
+    logger.debug("Closest %d new chunks per document: %s", n,
+                 ", ".join(f"{path}: {len(g)}" for path, g in best.items()))
     return [c for group in best.values() for c in group]
 
 
 class Log(list):
-    """The list of steps shown to the user (also carries the question vector)."""
+    """The list of steps shown to the user (also carries the question vector).
+    Every step is also written to the log file, including the ones only shown with --trace."""
     qvec = None
+
+    def append(self, line):
+        logger.info(line, stacklevel=2)     # name the function that added the step
+        super().append(line)
 
 
 # ---------- Grading ----------
@@ -204,6 +203,8 @@ def grade(question, cands):
     Reference lists are removed first without asking the LLM."""
     refs = [i for i, c in enumerate(cands, 1) if citation_density(c["text"]) >= REFERENCE_THRESHOLD]
     others = [(i, c) for i, c in enumerate(cands, 1) if i not in refs]
+    logger.debug("Grading %d chunks (%s mode); %d reference-list chunks removed first",
+                 len(others), GRADING, len(refs))
     if not others:
         g = grade_sufficiency(question, []) or {"sufficient": False, "missing": "", "queries": [],
                                                 "multi_document": False}
@@ -228,11 +229,15 @@ def grade_per_chunk(question, numbered):
         if r is None:
             unreadable += 1
             relevant.append(i)          # can't tell: keep it, the answer step can still ignore it
+            logger.warning("Chunk %d (%s | %s): grader reply unreadable, kept", i, c["path"], c["loc"])
         elif bool(r.get("relevant")):
             relevant.append(i)
+        logger.debug("Chunk %d of %d (%s | %s): %s", i, len(numbered), c["path"], c["loc"],
+                     "relevant" if i in relevant else "not relevant")
     kept = [c for i, c in numbered if i in relevant]
     g = grade_sufficiency(question, kept)
     if g is None:
+        logger.warning("Completeness check unreadable; treating the kept chunks as enough")
         g = {"sufficient": bool(kept), "missing": "", "queries": [], "multi_document": False}
     return {**g, "relevant": relevant, "unreadable": unreadable}
 
@@ -246,7 +251,12 @@ def grade_sufficiency(question, kept):
     messages = [{"role": "system", "content": SUFFICIENCY_PROMPT},
                 {"role": "user", "content": f"QUESTION: {question}\n\nPASSAGES:\n\n{listing}"}]
     r = read_json(chat(messages, temperature=GRADER_TEMPERATURE, json_schema=SUFFICIENCY_SCHEMA))
-    return None if r is None else parse_parts(r, bool(kept))
+    if r is None:
+        return None
+    g = parse_parts(r, bool(kept))
+    logger.debug("Completeness check on %d passages: sufficient=%s, missing=%r, multi_document=%s",
+                 len(kept), g["sufficient"], g["missing"], g["multi_document"])
+    return g
 
 
 def grade_batch(question, cands):
@@ -258,6 +268,7 @@ def grade_batch(question, cands):
     g = parse_grade(chat(messages, temperature=GRADER_TEMPERATURE, json_schema=GRADE_SCHEMA), len(cands))
     if g is None:
         # Grader reply unreadable: fall back to plain RAG behaviour (top 4 by similarity)
+        logger.warning("Batch grader reply unreadable; falling back to the top 4 chunks")
         return {"relevant": list(range(1, min(4, len(cands)) + 1)), "sufficient": True,
                 "missing": "", "queries": [], "multi_document": False, "failed": True}
     return g
@@ -275,13 +286,13 @@ def log_decisions(log, cands, g):
 
 
 # ---------- The corrective pipeline ----------
-def corrective_retrieve(db, question, log):
-    n_files = db.execute("SELECT COUNT(*) FROM files").fetchone()[0]
+def corrective_retrieve(col, question, log):
+    n_files = len(stored_files(col))
     qvec = embed_texts([question], is_query=True)[0]
     log.qvec = qvec
 
     # 1. Retrieve wider than plain RAG, and drop chunks that are clearly unrelated
-    cands = [c for c in knn(db, qvec, CANDIDATES) if c["sim"] >= MIN_SIMILARITY]
+    cands = [c for c in knn(col, qvec, CANDIDATES) if c["sim"] >= MIN_SIMILARITY]
     log.append(f"Retrieved {len(cands)} candidates (similarity >= {MIN_SIMILARITY})")
     if not cands:
         return [], "NOT FOUND", ""
@@ -315,7 +326,7 @@ def corrective_retrieve(db, question, log):
     new = []
     qvecs = embed_texts(queries, is_query=True)
     for qi, v in enumerate(qvecs, 1):
-        for c in knn(db, v, EXTRA_PER_QUERY):
+        for c in knn(col, v, EXTRA_PER_QUERY):
             if (c["id"] not in seen and c["sim"] >= MIN_SIMILARITY
                     and citation_density(c["text"]) < REFERENCE_THRESHOLD):
                 c["via"] = f"new query {qi}"
@@ -324,11 +335,14 @@ def corrective_retrieve(db, question, log):
         # the closest chunks from each document, for the question and for every new query
         usable_seen = lambda c: c["id"] in seen or citation_density(c["text"]) >= REFERENCE_THRESHOLD
         for v in [qvec, *qvecs]:
-            for c in knn_per_file(db, v, PER_FILE, skip=usable_seen):
+            for c in knn_per_file(col, v, PER_FILE, skip=usable_seen):
                 if c["id"] not in seen:
                     c["via"] = "per-document search"
                     seen.add(c["id"]); new.append(c)
     log.append(f"Corrective search found {len(new)} new candidates")
+    if len(relevant + new) > MAX_GRADED:
+        logger.warning("Only the first %d of %d candidates can be graded (MAX_GRADED)",
+                       MAX_GRADED, len(relevant + new))
     if not new:
         return relevant, ("PARTIAL" if relevant else "NOT FOUND"), g["missing"]
 
@@ -347,20 +361,23 @@ def corrective_retrieve(db, question, log):
     return relevant2, ("CORRECTED" if g2["sufficient"] else "PARTIAL"), g2["missing"]
 
 
-def answer(db, question, turns, args):
+def answer(col, question, turns, args):
     """Answer one question (a follow-up if turns holds earlier ones), print it, and
     return (answer, sources, standalone question) for the chat memory."""
-    standalone = RAG.memory.rewrite_question(question, turns)
+    logger.info("Question: %s", question)
+    standalone = memory.rewrite_question(question, turns)
     if standalone != question:
         print(f"(searching for: {standalone})\n")
 
     log = Log()
-    chunks, status, missing = corrective_retrieve(db, standalone, log)
+    chunks, status, missing = corrective_retrieve(col, standalone, log)
+    logger.info("Corrective step: %s", status)
 
     print(f"=== Corrective step: {status} ===")
-    for line in log:
-        if args.trace or not line.startswith("   ["):
-            print(line)
+    if not args.quiet:
+        for line in log:
+            if args.trace or not line.startswith("   ["):
+                print(line)
 
     if not chunks:
         print("\n=== Answer ===\n")
@@ -372,8 +389,11 @@ def answer(db, question, turns, args):
     # so the numbers stay comparable with ask.py.
     for c in chunks:
         if c["via"] != "question":
-            c["sim"] = similarity_to(db, log.qvec, c["id"])
+            c["sim"] = similarity_to(col, log.qvec, c["id"])
     chunks = sorted(chunks, key=lambda c: -c["sim"])[:MAX_CONTEXT]
+    for i, c in enumerate(chunks, 1):
+        logger.info("Source %d: %s | %s | similarity %.3f | via %s",
+                    i, c["path"], c["loc"], c["sim"], c["via"])
     results = [(c["sim"], c["path"], c["loc"], c["text"]) for c in chunks]
     messages = build_prompt(standalone, results)
     if status == "PARTIAL":
@@ -381,13 +401,15 @@ def answer(db, question, turns, args):
         messages[1]["content"] += ("\n\nNOTE: the search could not find everything." + gap +
                                    " Answer what the sources support and say clearly "
                                    "which parts the documents do not cover.")
-    RAG.memory.add_history_to_prompt(messages, turns)
+    memory.add_history_to_prompt(messages, turns)
+    logger.debug("Prompt:\n%s", "\n".join(f"--- {m['role']} ---\n{m['content']}" for m in messages))
     if args.show_prompt:
         print("\n=== Prompt sent to the LLM ===\n")
         for m in messages:
             print(f"--- {m['role']} ---\n{m['content']}\n")
 
     reply = chat(messages)
+    logger.info("Answer: %s", reply)
     print("\n=== Answer ===\n")
     print(reply)
 
@@ -398,35 +420,45 @@ def answer(db, question, turns, args):
     return reply, [f"{c['path']} | {c['loc']}" for c in chunks], standalone
 
 
-def main():
+def run():
     parser = argparse.ArgumentParser(description="Ask questions with Corrective RAG")
     parser.add_argument("question", nargs="*")
     parser.add_argument("--trace", action="store_true", help="show every grading decision")
+    parser.add_argument("--quiet", action="store_true", help="don't print the corrective steps")
     parser.add_argument("--show-prompt", action="store_true", help="print the prompt sent to the LLM")
-    RAG.memory.add_memory_args(parser)
+    memory.add_memory_args(parser)
     args = parser.parse_args()
 
-    if RAG.memory.handle_memory_commands(args):
+    if memory.handle_memory_commands(args):
         return
-    if not DB_PATH.exists():
-        sys.exit(f"{DB_PATH.name} not found. First run: uv run rag/ingest.py")
+    if not store_exists():
+        fail("The vector store doesn't exist yet. First run: python -m RAG.ingest")
     if not args.question and not args.chat:
-        sys.exit('Usage: uv run rag/ask_crag.py "your question"   (or --chat)')
-    db = open_db()
+        sys.exit('Usage: python -m RAG.ask_crag "your question"   (or --chat)')
+    col = open_store()
 
     if args.chat:
-        RAG.memory.run_chat(lambda q, turns: answer(db, q, turns, args), "crag",
+        memory.run_chat(lambda q, turns: answer(col, q, turns, args), "crag",
                         args.session or "default")
         return
 
     question = " ".join(args.question)
     if not args.session:
-        answer(db, question, [], args)      # no memory: answered on its own, not saved
+        answer(col, question, [], args)     # no memory: answered on its own, not saved
         return
-    mem = RAG.memory.open_memory()
-    sid = RAG.memory.get_session(mem, args.session)
-    reply, sources, standalone = answer(db, question, RAG.memory.recent_turns(mem, sid), args)
-    RAG.memory.save_turn(mem, sid, question, standalone, reply, sources, "crag")
+    mem = memory.open_memory()
+    sid = memory.get_session(mem, args.session)
+    reply, sources, standalone = answer(col, question, memory.recent_turns(mem, sid), args)
+    memory.save_turn(mem, sid, question, standalone, reply, sources, "crag")
+
+
+def main():
+    setup_logging()
+    try:
+        run()
+    except RAGError as e:
+        print(e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
