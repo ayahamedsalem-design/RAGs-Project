@@ -85,6 +85,12 @@ def fail(message):
     raise RAGError(message)
 
 
+class ContentRejected(RAGError):
+    """OpenRouter's content safety screen refused the input. Sending the same text again
+    gets the same answer, so it is never retried. (Seen on the free embedding model with
+    reference-list chunks that start with a bare DOI link.)"""
+
+
 # ---------- OpenRouter ----------
 def _headers():
     key = os.environ.get("OPENROUTER_API_KEY")
@@ -123,6 +129,8 @@ def post(endpoint, payload, retries=6, can_split=False):
                 if "error" not in data:
                     return data
                 logger.warning("OpenRouter %s API error: %s", endpoint, str(data["error"])[:500])
+            elif r.status_code == 422 and "content safety" in r.text:
+                raise ContentRejected(f"OpenRouter's content safety screen refused the {endpoint} input")
             elif r.status_code in (400, 401, 402, 403, 404):
                 # These won't fix themselves by waiting (bad key, bad model name, ...)
                 fail(f"HTTP {r.status_code}: {r.text[:300]}")
@@ -159,20 +167,25 @@ def ollama_call(fn, **kwargs):
 
 
 # ---------- Embeddings and chat (same functions for both backends) ----------
-def embed_texts(texts, is_query=False):
+def embed_texts(texts, is_query=False, skip_rejected=False):
     """Embed a list of texts -> float32 array (len(texts), DIMS), normalized.
-    Questions use is_query=True (some embedding models expect a different prefix)."""
+    Questions use is_query=True (some embedding models expect a different prefix).
+    skip_rejected=True (ingest): texts the content safety screen refuses get None instead of
+    a vector, and a list is returned. Otherwise a refused text stops with ContentRejected."""
     prefix = QUERY_PREFIX if is_query else DOC_PREFIX
     out, started = [], time.perf_counter()
     batches = embed_batches([prefix + t for t in texts])
     for batch in batches:
-        for v in _embed_batch(batch):
+        for v in _embed_batch(batch, skip_rejected):
+            if v is None:
+                out.append(None)
+                continue
             v = np.array(v, dtype=np.float32)[:DIMS]
             out.append(v / (np.linalg.norm(v) or 1.0))
     logger.debug("embed %d %s with %s in %d requests, %.2fs", len(texts),
                  "queries" if is_query else "chunks", EMBED_MODEL, len(batches),
                  time.perf_counter() - started)
-    return np.vstack(out)
+    return out if skip_rejected else np.vstack(out)
 
 
 def estimate_tokens(text):
@@ -199,12 +212,27 @@ def embed_batches(texts):
     return batches
 
 
-def _embed_batch(batch):
+def _embed_batch(batch, skip_rejected=False):
     """Embed one request's texts. If OpenRouter rejects a request of several texts as too
-    big after all, send each half on its own instead of retrying the same request."""
+    big after all, send each half on its own instead of retrying the same request.
+    The same halving finds a text the content safety screen refuses; with skip_rejected
+    it gets None, so the other texts of the request are still embedded."""
     if BACKEND == "ollama":
         return ollama_call("embed", model=EMBED_MODEL, input=batch)["embeddings"]
-    data = post("embeddings", {"model": EMBED_MODEL, "input": batch}, can_split=len(batch) > 1)
+    try:
+        data = post("embeddings", {"model": EMBED_MODEL, "input": batch}, can_split=len(batch) > 1)
+    except ContentRejected:
+        if len(batch) > 1:
+            half = len(batch) // 2
+            logger.info("Content safety screen refused a request of %d texts; "
+                        "sending %d and %d separately to find the refused one",
+                        len(batch), half, len(batch) - half)
+            return (_embed_batch(batch[:half], skip_rejected) +
+                    _embed_batch(batch[half:], skip_rejected))
+        if skip_rejected:
+            logger.warning("Content safety screen refused this text, skipped: %r", batch[0][:200])
+            return [None]
+        fail("The embedding model's content safety screen refused this text. Try rephrasing it.")
     if data is None:
         half = len(batch) // 2
         logger.warning("OpenRouter rejected %d texts in one request; sending %d and %d separately",
@@ -305,15 +333,18 @@ def get_embedding(col, chunk_id):
 
 
 def stored_files(col):
-    """Every file in the store, by hash: {hash: {path, file_type, added, chunks, stored, complete}}.
-    A file is complete when all its chunks were saved (an import cut short leaves fewer)."""
+    """Every file in the store, by hash:
+    {hash: {path, file_type, added, chunks, skipped, stored, complete}}.
+    A file is complete when all its chunks were saved (an import cut short leaves fewer),
+    apart from the ones the embedding model refused ("skipped", set once the import ends)."""
     files = {}
     for m in col.get(include=["metadatas"])["metadatas"]:
         f = files.setdefault(m["hash"], {"path": m["path"], "file_type": m["file_type"],
-                                         "added": m["added"], "chunks": m["chunks"], "stored": 0})
+                                         "added": m["added"], "chunks": m["chunks"],
+                                         "skipped": m.get("skipped", 0), "stored": 0})
         f["stored"] += 1
     for f in files.values():
-        f["complete"] = f["stored"] == f["chunks"]
+        f["complete"] = f["stored"] + f["skipped"] >= f["chunks"]
     logger.debug("Store holds %d files (%d incomplete)", len(files),
                  sum(not f["complete"] for f in files.values()))
     return files

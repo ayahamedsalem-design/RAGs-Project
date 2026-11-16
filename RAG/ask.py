@@ -59,6 +59,8 @@ def list_files(col):
         return
     for f in files:
         unfinished = "" if f["complete"] else f"   NOT FINISHED: {f['stored']} saved, run ingest again"
+        if f["skipped"]:
+            unfinished += f"   ({f['skipped']} skipped: refused by the embedding model)"
         print(f"{f['path']:50} {f['file_type']:5} {f['chunks']:4} chunks   added {f['added']}{unfinished}")
     print(f"\n{len(files)} files, {sum(f['chunks'] for f in files)} chunks")
 

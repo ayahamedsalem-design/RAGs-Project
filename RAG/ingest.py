@@ -14,6 +14,8 @@
 import sys, re, csv, time, hashlib, logging, argparse
 from datetime import datetime
 
+import numpy as np
+
 from RAG.rag_common import (RAGError, DOCS_DIR, STORE_DIR, COLLECTION, CHUNK_CHARS, OVERLAP_CHARS, BACKEND, BATCH,
                         EMBED_MODEL, embed_texts, open_store, store_exists, delete_store,
                         stored_files, fail)
@@ -215,22 +217,41 @@ def add_file(col, path, rel, digest, done=frozenset()):
     # The ids come from the file's content, so writing the same file again overwrites its
     # chunks instead of adding copies. Until every chunk is saved, the file counts as
     # incomplete (fewer chunks stored than "chunks" says).
+    # Chunks the embedding model's content safety screen refuses are skipped (they can't get
+    # a vector). Once the whole file has been through, every stored chunk records how many were
+    # skipped, so the file counts as complete without them.
     added = datetime.now().isoformat(timespec="seconds")
+    rejected = []
     for start in range(0, len(todo), BATCH):
         part = todo[start:start + BATCH]
-        vectors = embed_texts([chunks[i][1] for i in part])
-        col.upsert(
-            ids=[f"{digest}:{i}" for i in part],
-            embeddings=vectors,
-            documents=[chunks[i][1] for i in part],
-            metadatas=[{"path": rel, "location": chunks[i][0], "hash": digest,
-                        "file_type": path.suffix.lower().lstrip("."), "added": added,
-                        "chunk": i, "chunks": len(chunks)}
-                       for i in part])
+        vectors = embed_texts([chunks[i][1] for i in part], skip_rejected=True)
+        keep = [(i, v) for i, v in zip(part, vectors) if v is not None]
+        rejected += [i for i, v in zip(part, vectors) if v is None]
+        if keep:
+            col.upsert(
+                ids=[f"{digest}:{i}" for i, _ in keep],
+                embeddings=np.vstack([v for _, v in keep]),
+                documents=[chunks[i][1] for i, _ in keep],
+                metadatas=[{"path": rel, "location": chunks[i][0], "hash": digest,
+                            "file_type": path.suffix.lower().lstrip("."), "added": added,
+                            "chunk": i, "chunks": len(chunks)}
+                           for i, _ in keep])
         saved = len(done) + start + len(part)
         print(f"  saved {saved}/{len(chunks)} chunks")
-        logger.debug("Saved %d chunks of %s, %d of %d done", len(part), rel, saved, len(chunks))
-    logger.info("Embedded %s (%s): %d words -> %d chunks", rel, digest[:12], n_words, len(chunks))
+        logger.debug("Saved %d chunks of %s, %d of %d done", len(keep), rel, saved, len(chunks))
+
+    if rejected:
+        ids = col.get(where={"hash": digest}, include=[])["ids"]
+        if ids:
+            col.update(ids=ids, metadatas=[{"skipped": len(rejected)}] * len(ids))
+        print(f"  skipped {len(rejected)} chunks the embedding model refused (content safety screen): "
+              + ", ".join(chunks[i][0] for i in rejected))
+        logger.warning("Skipped %d chunks of %s refused by the content safety screen: %s",
+                       len(rejected), rel, ", ".join(f"chunk {i} ({chunks[i][0]})" for i in rejected))
+        if not ids:
+            return 0                       # nothing stored: the file stays out of the store
+    logger.info("Embedded %s (%s): %d words -> %d chunks, %d skipped", rel, digest[:12],
+                n_words, len(chunks), len(rejected))
     return len(chunks)
 
 

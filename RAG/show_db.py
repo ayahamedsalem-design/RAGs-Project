@@ -22,13 +22,27 @@ def folder_size(path):
 
 
 def group_files(metadatas):
-    """{hash: {path, file_type, added, chunks, stored}} from the chunks' metadata."""
+    """{key: {path, file_type, added, chunks, skipped, stored}} from the chunks' metadata.
+    Our chunks are grouped by file hash. The RAGs/ collections (Aya's) only store "source"
+    (and "page"), so their files are grouped by that and the other fields stay empty."""
     files = {}
     for m in metadatas:
-        f = files.setdefault(m["hash"], {"path": m["path"], "file_type": m["file_type"],
-                                         "added": m["added"], "chunks": m["chunks"], "stored": 0})
+        m = m or {}
+        key = m.get("hash") or m.get("source") or "(no file name)"
+        f = files.setdefault(key, {"path": m.get("path") or m.get("source") or key,
+                                   "file_type": m.get("file_type", ""), "added": m.get("added", ""),
+                                   "chunks": m.get("chunks"), "skipped": m.get("skipped", 0),
+                                   "stored": 0})
         f["stored"] += 1
     return files
+
+
+def file_state(f):
+    if f["chunks"] is None:
+        return f"{f['stored']} chunks"
+    if f["stored"] + f["skipped"] < f["chunks"]:
+        return f"NOT FINISHED ({f['stored']} saved)"
+    return f"complete, {f['skipped']} skipped" if f["skipped"] else "complete"
 
 
 def overview(client):
@@ -44,8 +58,10 @@ def overview(client):
         print(f"=== {col.name}  ({col.count()} chunks, {len(files)} files)")
         print(f"    settings: {settings}")
         for h, f in sorted(files.items(), key=lambda x: x[1]["path"]):
-            state = "complete" if f["stored"] == f["chunks"] else f"NOT FINISHED ({f['stored']} saved)"
-            print(f"    {f['path']:50} {f['file_type']:5} {f['chunks']:4} chunks  {state:22} "
+            if f["chunks"] is None:            # a RAGs/ collection: no hash, size or date stored
+                print(f"    {f['path']:50} {file_state(f)}")
+                continue
+            print(f"    {f['path']:50} {f['file_type']:5} {f['chunks']:4} chunks  {file_state(f):22} "
                   f"added {f['added']}  hash {h[:12]}")
         print()
     logger.info("Showed %d collections", len(collections))
