@@ -1,5 +1,18 @@
 # Shared settings and helpers for the multi-file RAG pipeline.
 # Used by ingest.py (add documents), ask.py (plain RAG) and ask_crag.py (Corrective RAG).
+#
+# Settings read from .env (repo root) or the environment:
+#   OPENROUTER_API_KEY   required for the openrouter backend
+#   CHAT_MODEL           OpenRouter chat model     (default deepseek/deepseek-v4-flash)
+#   EMBEDDING_MODEL      OpenRouter embedding model (default openai/text-embedding-3-small)
+#                        CHAT_MODEL and EMBEDDING_MODEL are the names the RAGs/ pipelines read
+#                        too, so every pipeline in the evaluation runs on the same models.
+#                        A different EMBEDDING_MODEL needs:  python -m RAG.ingest --rebuild
+#   RAG_BACKEND          "openrouter" (default) or "ollama" (local models, see below)
+#   RAG_EMBED_DIMS       optional: keep only the first N numbers of each vector (needs --rebuild).
+#                        Unset = the model's full vector length.
+#   RAG_REASONING        "on" lets the chat model think before answering (thinking tokens are
+#                        billed as output). Default off: chat requests send reasoning disabled.
 
 import os, re, sys, time, logging
 from pathlib import Path
@@ -17,8 +30,8 @@ logger = logging.getLogger("rag.common")
 
 # ---------- Settings ----------
 # Where the models run:
-#   "openrouter" = OpenRouter's free online models (default; needs OPENROUTER_API_KEY)
-#   "ollama"     = on this computer (offline, no daily limits, slower)
+#   "openrouter" = online models through OpenRouter (default; needs OPENROUTER_API_KEY)
+#   "ollama"     = on this computer (offline, free, slower)
 # To use the local models for one terminal:  $env:RAG_BACKEND = "ollama"
 class RAGError(RuntimeError):
     """A problem the user can fix (missing key, empty store, ...). The CLIs print it and exit;
@@ -35,15 +48,21 @@ COLLECTION = f"ext_chunks_{BACKEND}"           # "ext_" keeps it apart from the 
 if BACKEND == "ollama":
     EMBED_MODEL = "nomic-embed-text"     # install once with:  ollama pull nomic-embed-text
     LLM_MODEL = "gemma3:4b"
-    DIMS = 768
     QUERY_PREFIX, DOC_PREFIX = "search_query: ", "search_document: "   # nomic-embed-text expects these
 elif BACKEND == "openrouter":
-    EMBED_MODEL = "nvidia/nemotron-3.5-embed-1b:free"
-    LLM_MODEL = "deepseek/deepseek-v4-flash"   # any OpenRouter chat model works
-    DIMS = 2048          # lower to 512 to save memory on the device (needs --rebuild)
+    # "or": an empty CHAT_MODEL= line in .env also falls back to the default
+    LLM_MODEL = os.environ.get("CHAT_MODEL") or "deepseek/deepseek-v4-flash"
+    EMBED_MODEL = os.environ.get("EMBEDDING_MODEL") or "openai/text-embedding-3-small"
     QUERY_PREFIX, DOC_PREFIX = "", ""
 else:
     raise RAGError(f'Unknown RAG_BACKEND "{BACKEND}". Use "ollama" or "openrouter".')
+
+# The vector length comes from the model itself (it is recorded in the collection on the first
+# ingest and checked after that). RAG_EMBED_DIMS only cuts the vectors shorter when set.
+DIMS = int(os.environ["RAG_EMBED_DIMS"]) if os.environ.get("RAG_EMBED_DIMS") else None
+
+# Thinking tokens are billed as output, and grading/answering from given sources doesn't need them
+REASONING = os.environ.get("RAG_REASONING", "off").strip().lower() in ("1", "on", "true", "yes")
 
 OLLAMA_NUM_CTX = 16384   # how much text the local LLM can read at once (grading needs ~13,000 tokens)
 # Chunking is the same as the RAGs/ pipelines (Basic and Hybrid RAG), so every RAG in the
@@ -51,12 +70,14 @@ OLLAMA_NUM_CTX = 16384   # how much text the local LLM can read at once (grading
 # RecursiveCharacterTextSplitter, see RAG/ingest.py).
 CHUNK_CHARS = 1000
 OVERLAP_CHARS = 200
-BATCH = 16               # most chunks per embedding request (also: chunks saved at a time by ingest.py)
-# OpenRouter's free embedding model rejects big requests (HTTP 502 "service inference failed";
-# measured 2026-11-07): one chunk of 1,900 tokens works, two chunks of ~900 tokens don't, many
-# tiny texts do. So chunks of this size go a few per request, and only small texts are grouped:
-# (number of texts) x (longest text) must stay within EMBED_MAX_TOKENS estimated tokens.
-EMBED_MAX_TOKENS = 1000 if BACKEND == "openrouter" else None
+# Embedding requests: at most BATCH texts and EMBED_MAX_TOKENS estimated tokens each.
+# NVIDIA's free Nemotron embedder on OpenRouter rejects big requests (HTTP 502 "service
+# inference failed"; measured 2026-11-07): one chunk of 1,900 tokens works, two chunks of
+# ~900 tokens don't, many tiny texts do. For Nemotron only, (number of texts) x (longest text)
+# must stay within 1,000 estimated tokens. Other models take big requests.
+NEMOTRON_EMBED = "nemotron" in EMBED_MODEL.lower()
+BATCH = 16 if NEMOTRON_EMBED else 64     # also: chunks saved at a time by ingest.py
+EMBED_MAX_TOKENS = 1000 if NEMOTRON_EMBED else 100_000
 TOP_K = 4               # chunks given to the LLM
 TEMPERATURE = 0.2
 
@@ -180,7 +201,9 @@ def embed_texts(texts, is_query=False, skip_rejected=False):
             if v is None:
                 out.append(None)
                 continue
-            v = np.array(v, dtype=np.float32)[:DIMS]
+            v = np.array(v, dtype=np.float32)
+            if DIMS:
+                v = v[:DIMS]
             out.append(v / (np.linalg.norm(v) or 1.0))
     logger.debug("embed %d %s with %s in %d requests, %.2fs", len(texts),
                  "queries" if is_query else "chunks", EMBED_MODEL, len(batches),
@@ -195,18 +218,22 @@ def estimate_tokens(text):
 
 
 def embed_batches(texts):
-    """Group texts into requests: at most BATCH each and, for OpenRouter, only as many as keep
-    (number of texts) x (longest text) within EMBED_MAX_TOKENS. A single text too long for
-    that still gets a request of its own (one chunk of up to ~1,900 tokens is accepted)."""
-    batches, current, longest = [], [], 0
+    """Group texts into requests of at most BATCH texts and EMBED_MAX_TOKENS estimated tokens:
+    the sum of the texts, or for Nemotron (number of texts) x (longest text). A single text
+    too long for that still gets a request of its own."""
+    batches, current, longest, total = [], [], 0, 0
     for t in texts:
         tokens = estimate_tokens(t)
-        too_big = EMBED_MAX_TOKENS and (len(current) + 1) * max(longest, tokens) > EMBED_MAX_TOKENS
-        if current and (len(current) == BATCH or too_big):
+        if NEMOTRON_EMBED:
+            size = (len(current) + 1) * max(longest, tokens)
+        else:
+            size = total + tokens
+        if current and (len(current) == BATCH or size > EMBED_MAX_TOKENS):
             batches.append(current)
-            current, longest = [], 0
+            current, longest, total = [], 0, 0
         current.append(t)
         longest = max(longest, tokens)
+        total += tokens
     if current:
         batches.append(current)
     return batches
@@ -259,8 +286,10 @@ def chat(messages, temperature=None, json_schema=None):
         logger.debug("prompt tokens evaluated: %d of num_ctx %d", tokens, OLLAMA_NUM_CTX)
     else:
         data = post("chat/completions", {"model": LLM_MODEL, "messages": messages,
-                                         "temperature": temp})
+                                         "temperature": temp,
+                                         "reasoning": {"enabled": REASONING}})
         reply = data["choices"][0]["message"]["content"]
+        logger.debug("usage: %s", data.get("usage"))
     logger.debug("chat %s temperature=%s json=%s, %d prompt chars, %.2fs -> %r",
                  LLM_MODEL, temp, json_schema is not None,
                  sum(len(m["content"]) for m in messages), time.perf_counter() - started,
@@ -290,7 +319,8 @@ def delete_store():
 
 
 # Settings that decide what the stored chunks and vectors look like
-STORE_SETTINGS = {"embed_model": EMBED_MODEL, "dims": DIMS,
+# (the vector length is recorded separately, by check_dims(), once the first vectors exist)
+STORE_SETTINGS = {"embed_model": EMBED_MODEL,
                   "chunk_chars": CHUNK_CHARS, "overlap_chars": OVERLAP_CHARS}
 
 
@@ -311,12 +341,31 @@ def open_store(check=True):
     return col
 
 
+def check_dims(col, n, record=False):
+    """The collection's vectors all have the same length, recorded as "dims" in its metadata.
+    record=True (ingest): the first vectors set it. A different length later means the model
+    or RAG_EMBED_DIMS changed since the store was built."""
+    meta = dict(col.metadata or {})
+    stored = meta.get("dims")
+    if stored is None:
+        if record:
+            meta["dims"] = n
+            col.modify(metadata=meta)
+            logger.info("%s holds vectors of %d numbers (%s)", COLLECTION, n, EMBED_MODEL)
+        return
+    if stored != n:
+        fail(f"The {COLLECTION} store holds vectors of {stored} numbers, but {EMBED_MODEL} "
+             f"now gives {n} (embedding model or RAG_EMBED_DIMS changed).\n"
+             "Run:  python -m RAG.ingest --rebuild")
+
+
 def search(col, qvec, k):
     """The k chunks closest to a query vector, most similar first, as dicts:
     {"id", "sim", "path", "loc", "text"}."""
     k = min(k, col.count())
     if k == 0:
         return []
+    check_dims(col, len(qvec))
     r = col.query(query_embeddings=[qvec], n_results=k,
                   include=["distances", "documents", "metadatas"])
     hits = [{"id": cid, "sim": 1 - d, "path": m["path"], "loc": m["location"], "text": t}

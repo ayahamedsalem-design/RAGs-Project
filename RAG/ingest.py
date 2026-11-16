@@ -18,7 +18,7 @@ import numpy as np
 
 from RAG.rag_common import (RAGError, DOCS_DIR, STORE_DIR, COLLECTION, CHUNK_CHARS, OVERLAP_CHARS, BACKEND, BATCH,
                         EMBED_MODEL, embed_texts, open_store, store_exists, delete_store,
-                        stored_files, fail)
+                        stored_files, check_dims, fail)
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from RAGs.logger_config import setup_logging
@@ -228,6 +228,7 @@ def add_file(col, path, rel, digest, done=frozenset()):
         keep = [(i, v) for i, v in zip(part, vectors) if v is not None]
         rejected += [i for i, v in zip(part, vectors) if v is None]
         if keep:
+            check_dims(col, len(keep[0][1]), record=True)
             col.upsert(
                 ids=[f"{digest}:{i}" for i, _ in keep],
                 embeddings=np.vstack([v for _, v in keep]),
