@@ -20,6 +20,9 @@ from RAGs.chat_history import load_file_history, clear_all_history, load_all_his
 # Legacy RAG imports from RAG package
 from RAG.app_bridge import run_naive_rag, run_corrective_rag, load_db_history
 
+# Cost tracking for every pipeline (see RAG/cost.py): tokens and US dollars per question
+from RAG import cost
+
 # Initializes logging (writes logging_config.json on first run)
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -28,6 +31,42 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 st.set_page_config(page_title="Global Knowledge Base RAG", page_icon="🤖", layout="wide")
+
+# ==========================================
+# Cost tracking
+# ==========================================
+# Every request to OpenRouter reports what it cost (tokens and US dollars). RAG/cost.py adds
+# those up per question and writes one row per question to RAG/cost_log.csv, which the
+# evaluation and the Usage page read.
+#   - Ext Naive / Ext Corrective RAG track themselves (inside RAG/app_bridge.py).
+#   - The RAGs/ pipelines below are tracked here: cost.track(...) starts a new total before the
+#     pipeline runs and saves it when it ends. Their requests are recorded by the hook in
+#     RAGs/extract_and_chunk_pdf.py (initialize_api).
+# Names used in the "system" column of cost_log.csv:
+COST_SYSTEM = {
+    "Basic RAG": "basic",
+    "Parent-Child (Hierarchical) RAG": "parent_child",
+    "Hybrid RAG": "hybrid",
+    "Corrective Parent-Child RAG": "crag_parent_child",
+    "Corrective Hybrid RAG": "crag_hybrid",
+}
+
+
+def run_tracked(rag_type, rag_func, user_query):
+    """Run one RAGs/ pipeline (with the usual retries) and record what the question cost.
+    Requests from a failed attempt that was retried are included: they were paid for too."""
+    with cost.track(COST_SYSTEM[rag_type], user_query):
+        return execute_with_retry(rag_func, user_query)
+
+
+def show_cost(user_query):
+    """One line under the answer: what this question cost (all its model requests together)."""
+    qc = cost.last_query()
+    if qc is None or not qc.calls or qc.question != user_query:
+        return                      # nothing was recorded for this question
+    reasoning = f" (+{qc.reasoning_tokens:,} reasoning)" if qc.reasoning_tokens else ""
+    st.caption(f"💰 This answer: {qc.n_calls} requests · {qc.prompt_tokens:,} tokens in / "
+               f"{qc.completion_tokens:,} out{reasoning} · ${qc.total_usd:.5f}")
 st.title("Enterprise Global RAG System ")
 st.markdown(
     "Query across **ALL** your indexed documents using Global architectures or External RAG pipelines."
@@ -50,10 +89,13 @@ with st.sidebar:
         if st.button("Index File into Global DB", use_container_width=True):
             with st.spinner(f"Indexing '{uploaded_file.name}' across Basic, Hierarchical, and Hybrid DBs..."):
                 try:
-                    # Index into all Global RAG architectures simultaneously
-                    index_basic_rag(uploaded_file)
-                    index_parent_child_rag(uploaded_file)
-                    initialize_hybrid_index(uploaded_file)
+                    # Index into all Global RAG architectures simultaneously.
+                    # The embedding cost of all three is saved as one "ingest_global" row in
+                    # RAG/cost_log.csv (the Ext pipelines' indexing is "ingest").
+                    with cost.track("ingest_global", uploaded_file.name):
+                        index_basic_rag(uploaded_file)
+                        index_parent_child_rag(uploaded_file)
+                        initialize_hybrid_index(uploaded_file)
 
                     logger.info(f"Successfully indexed '{uploaded_file.name}' into all Global DBs.")
                     st.success(f"'{uploaded_file.name}' added to the Global Database!")
@@ -94,7 +136,9 @@ with st.sidebar:
                     [f"Q: {item.get('query')} | A: {item.get('answer')}" for item in all_history]
                 )
                 try:
-                    summary = summarize_cross_file_history(history_text)
+                    # The summary is a model request too, so it gets its own cost row
+                    with cost.track("history_summary", "Summarize History"):
+                        summary = summarize_cross_file_history(history_text)
                     st.markdown("**📝 Global History Summary**")
                     st.info(summary)
                 except Exception as e:
@@ -138,25 +182,26 @@ if user_query:
         with st.spinner(f"Running {rag_type}..."):
             try:
                 # Route to Global Multi-Document Architectures
+                # (run_tracked = the usual execute_with_retry + cost tracking, see the top)
                 if rag_type == "Basic RAG":
-                    answer, retrieved_contexts = execute_with_retry(
-                        run_basic_RAG, user_query
+                    answer, retrieved_contexts = run_tracked(
+                        rag_type, run_basic_RAG, user_query
                     )
                 elif rag_type == "Parent-Child (Hierarchical) RAG":
-                    answer, retrieved_contexts = execute_with_retry(
-                        run_parent_child_chunking_RAG, user_query
+                    answer, retrieved_contexts = run_tracked(
+                        rag_type, run_parent_child_chunking_RAG, user_query
                     )
                 elif rag_type == "Hybrid RAG":
-                    answer, retrieved_contexts = execute_with_retry(
-                        run_hybrid_chat_session, user_query
+                    answer, retrieved_contexts = run_tracked(
+                        rag_type, run_hybrid_chat_session, user_query
                     )
                 elif rag_type == "Corrective Parent-Child RAG":
-                    answer, retrieved_contexts = execute_with_retry(
-                        run_corrective_parent_child_rag, user_query
+                    answer, retrieved_contexts = run_tracked(
+                        rag_type, run_corrective_parent_child_rag, user_query
                     )
                 elif rag_type == "Corrective Hybrid RAG":
-                    answer, retrieved_contexts = execute_with_retry(
-                        run_corrective_hybrid_rag, user_query
+                    answer, retrieved_contexts = run_tracked(
+                        rag_type, run_corrective_hybrid_rag, user_query
                     )
 
                 # Route to External Architectures (Session Name + Query)
@@ -175,6 +220,7 @@ if user_query:
 
                 st.subheader("Model Response")
                 st.write(answer)
+                show_cost(user_query)          # what this question cost (tokens, USD)
 
                 with st.expander("View Retrieved Context Chunks"):
                     if isinstance(retrieved_contexts, list):
