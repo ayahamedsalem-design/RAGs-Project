@@ -1,0 +1,1396 @@
+[
+  {
+    "id": 1,
+    "question": "Which decision-making method did the battery study use to compare geometries, and why was it chosen over the alternatives?",
+    "answer": "Based on the provided context, the battery study used the **Multi-Attribute Utility Theory (MAUT)** method to compare the different battery geometries (cylindrical, prismatic, pouch, blade, and structural) [Source: HummesETAL_Lajer_2023-2.pdf, p. 4 (Conclusions)].\n\nHowever, the available database does not contain any explanation or justification for why MAUT was chosen over alternative decision-making methods. The context only describes the application of MAUT and its results, but does not discuss the selection rationale or compare it to other methods. Therefore, the answer to the second part of the question (\"why was it chosen over the alternatives?\") **does not exist in the available database**.",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nalready available in the literature (Simon, Ziemann and Weil, 2015; Burd et al., 2021) but, as shown by Mauler et al. (2021), the current state of development is so fast that accurate predictions about EV battery materials are hard to make. This paper is divided into five sections. Section 1 presents the motivation and an introduction to the battery geometries studied in this work. Section 2 presents the analysis methodology used for battery comparison. Section 3 develops the decision analysis process by defining objectives to be achieved, criteria to be considered, and presenting performance results of each battery shape. Section 4 concludes by evaluating the results obtained and summarizing the performance of each battery shape. Section 5 presents the references used. Throughout this paper the following physical units are used: Watt-hour [Wh], Liter [L], kilogram [kg], kilometer [km], Ampere-hour [Ah], kilowatt [kW] and kilowatt-hour [kWh]. The monetary cost unit is the dollar [$]. 1.1 Technology description As pointed out by Warner (2014; 2015), the most common battery type for any application overall is cylindrical, although prismatic and pouch are estimated to ramp up their participation in the market. Considering EVs over the last decade - there seemed to be a prevalence of pouch battery cells. The Nissan Leaf EV, the Ford Focus EV, and the Chevrolet Volt used pouch cells, while the Mitsubishi i-MIEV used prismatic cells, for example. The main characteristics of current and upcoming battery cell shapes are described in the following subsections. 1.1.1 Cylindrical cell Cylindrical cells are analogous to household batteries and composed of layers of cathodes and anodes rolled into a cylindrical shape, as can be seen in Figures 1 (a) and (b). (a) (b) Figure 1. (a) Structure of a cylindrical cell (Bankole, Gong and Lei, 2013), (b) examples of cylindrical cells produced by",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          2
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nreduce CO2 emissions (Coelho, Meneguelo and Chaves, 2022; Viana and Asencios, 2022), there is a growing interest from automobile manufacturers in alternative technologies to internal combustion engines, such as hybrid power systems (Croce et al., 2020) or the use of bio and alternative fuels (Simões, Romeiro and Kurita, 2021; De Araujo et al., 2022). The highest investment, though, seems to be in electric vehicles (Kester et al., 2020; Skjølsvold and Ryghaug, 2020). Areas benefiting from these investments are, for example, the use of batteries as a structural component (Dionisi, Harnden and Zenkert, 2017; Carlstedt and Asp, 2020) and the development of new materials (Yang et al., 2020; Mahmud et al., 2022). The focus, however, remains on improving the current technology of lithium batteries, which have good performance and great commercial potential (Liu et al., 2017; Hamed et al., 2022). The more traditional cylindrical and prismatic cells share space with some recently developed geometries available in the current market (such as pouch cells and blade batteries) and others still in an experimental phase (such as structural batteries). Despite the growing number of available battery configurations, no standard or legislation currently influences the geometry to be used (Sankaran and Venkatesan, 2021). Determining the ideal battery geometry for a given application is pivotal for project optimization. The reasons for a manufacturer choosing between one type of geometry or the other are closely associated with the advantages and disadvantages related to the system in question, evaluating parameters such as costs and performance. However, their motivations are often locked behind commercial confidentiality. That is advantageous from a business standpoint, but it fragments battery geometry knowledge found in the literature. Studies in the field seek to investigate the performance of each geometry concerning mechanical and thermal aspects, for example Avdeev and Gilaki (2014) and Dionisi, Harnden",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          1
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nthat it was not possible to include blade and structural batteries in some of the evaluations of the decision criteria and the case study. That is due to them being installed differently than other batteries in electric vehicles (which would invalidate a direct comparison) and because certain specifications required for performance quantification are not yet available. Therefore, it is recommended that future work develop ways to include these geometries in the comparison to allow a more assertive analysis. Finally, it is emphasized that, while this study provides valuable insights into the performance of different cell geometries with respect to each other, future work following a similar comparison methodology would be interesting. For instance, a database containing more battery models, for example, could potentially lead to more extensive comparisons. Acknowledgements We would like to thank the program UFRGS/PRINT/CAPES for the visiting professor grant. The contribution was funded by IIASA. References 2022-Kelley-Blue-Book-Electrified-Vehicle-Sales-Report.pdf. [online] Available at: https://www.coxautoinc.com/wp-content/uploads/2022/10/Q3-2022-Kelley-Blue-Book-Electrified- Vehicle-Sales-Report.pdf [Accessed 15 January 2023]. 2022 Tesla Model Y 4680 - Battery Design. [online] Available at: https://www.batterydesign.net/2022- tesla-model-y-4680/ [Accessed 26 October 2022]. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 111 A Closer Look at the ‘Blade Battery’ That Tesla Will Reportedly Use for its $25,000 EV - FutureCar.com - via @FutureCar_Media. [online] Available at: https://www.futurecar.com/4794/A-Closer-Look-at-the- Blade-Battery-That-Tesla-Will-Reportedly-Use-for-its-$25000-EV [Accessed 13 January 2022]. Automotive Battery - Battery Cells & Battery System | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/products/prismatic-lithium-ion-battery-cell.html [Accessed 1 June 2022]. Automotive Battery - Partnership | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/partnership.html [Accessed 1 June 2022]. Avdeev, I. and Gilaki, M., 2014. Structural analysis and experimental characterization of cylindrical lithium-ion battery cells subject to lateral impact. Journal of Power Sources, 271, pp.382–391. https://doi.org/10.1016/j.jpowsour.2014.08.014. Bankole, O.E., Gong, C. and Lei, L., 2013. Battery Recycling Technologies: Recycling Waste Lithium Ion",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          17,
+          18
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\n4 Conclusions This paper presented qualitative and quantitative comparisons of different geometries of commercial batteries using the Multi-Attribute Utility Theory (MAUT) method and a case study considering a commercial vehicle available in the market, the Tesla Model Y Long Range Dual Motor car. The steps applied in this work were: first, a literature review for electric vehicle battery geometries (cylindrical, prismatic, pouch, blade, and structural). Then, battery models for each geometry were investigated - the 2170 cylindrical cell (Panasonic), 120 Ah prismatic cell (Samsung SDI), Ultium pouch cell (GM), blade battery (BYD), and structural battery (University of Porto). Performance criteria were defined and subsequently scored considering two applications: economic and performance vehicles. The score of each geometry was calculated based on these criteria and the performance of the selected cell models. That allowed the creation of a ranking considering each application. Finally, a case study was carried out to evaluate the application of each cell in the Tesla Model Y Long Range Dual Motor commercial vehicle regarding the aspects of range, weight, and the expected cost. Regarding the ranking of the batteries given by the Multi-Attribute Utility Theory (MAUT), it can be seen that for both applications (economic or performance vehicles), the battery geometry with the highest score overall was blade. That is since it presented the highest scores for most criteria, with two handicap criteria – the battery efficiency and the specific energy. The cylindrical cell presented consistent performance overall, with no notable handicaps. The other battery shapes – prismatic, pouch, and structural – showed average performance overall, with at least one score with very low performance. It is also noticeable that, when compared to upcoming battery cells, the leap in performance is immense. That demonstrates the clear improvement potential of current technology batteries. It is important to note",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          17
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 5.61,
+    "cost": {
+      "usd": 0.00047064468,
+      "requests": 6,
+      "prompt_tokens": 4402,
+      "completion_tokens": 324,
+      "reasoning_tokens": 170,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 22,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 4.4e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 4380,
+          "completion_tokens": 324,
+          "reasoning_tokens": 170,
+          "cached_tokens": 0,
+          "usd": 0.00047020468,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 2,
+    "question": "Which battery geometry scored highest overall, and in which criteria was it weak?",
+    "answer": "Based on the provided context, the **blade battery** scored highest overall for both economic and performance vehicle applications.\n\nHowever, it was weak in two criteria:\n- **Battery efficiency** (score of 2 out of 5)\n- **Specific energy** (score of 1 out of 5)\n\nThese are described as \"handicap criteria\" for the blade battery.\n\n**Source:** HummesETAL_Lajer_2023-2.pdf, pages 104 (Table 5) and the conclusions section.",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\n4 Conclusions This paper presented qualitative and quantitative comparisons of different geometries of commercial batteries using the Multi-Attribute Utility Theory (MAUT) method and a case study considering a commercial vehicle available in the market, the Tesla Model Y Long Range Dual Motor car. The steps applied in this work were: first, a literature review for electric vehicle battery geometries (cylindrical, prismatic, pouch, blade, and structural). Then, battery models for each geometry were investigated - the 2170 cylindrical cell (Panasonic), 120 Ah prismatic cell (Samsung SDI), Ultium pouch cell (GM), blade battery (BYD), and structural battery (University of Porto). Performance criteria were defined and subsequently scored considering two applications: economic and performance vehicles. The score of each geometry was calculated based on these criteria and the performance of the selected cell models. That allowed the creation of a ranking considering each application. Finally, a case study was carried out to evaluate the application of each cell in the Tesla Model Y Long Range Dual Motor commercial vehicle regarding the aspects of range, weight, and the expected cost. Regarding the ranking of the batteries given by the Multi-Attribute Utility Theory (MAUT), it can be seen that for both applications (economic or performance vehicles), the battery geometry with the highest score overall was blade. That is since it presented the highest scores for most criteria, with two handicap criteria – the battery efficiency and the specific energy. The cylindrical cell presented consistent performance overall, with no notable handicaps. The other battery shapes – prismatic, pouch, and structural – showed average performance overall, with at least one score with very low performance. It is also noticeable that, when compared to upcoming battery cells, the leap in performance is immense. That demonstrates the clear improvement potential of current technology batteries. It is important to note",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          17
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nof Porto) promises significant evolution in terms of current technologies - the vehicle architecture has considerable room for flexibility and optimization since the energy storage would be distributed throughout the body of the vehicle and not only on the chassis, in the form of battery packs, as with most battery technologies today. Concerning maturity, the most traditional geometries are cylindrical and prismatic, already in the mature phase. Pouch battery cells, although not so recent, are gaining more interest. New battery geometries such as the structural and blade are emerging (the blade is an adaptation of the prismatic cell but different enough to be considered a new battery geometry). That reveals there is still room for research and improvement as these batteries are currently in development. Some conclusions can be made based on the strengths and weaknesses observed for each battery geometry. From Table 5, the blade battery is considered the best option for both applications (economy and performance) because of its high scores across most criteria (apart from specific energy), making it an efficient choice overall for any situation. However, the cylindrical geometry showed consistent performance across all criteria, while the pouch cell has significant advantages in specific attributes but at least one notable disadvantage in others. The pouch cell excels in battery cost and battery efficiency, showing potential for economic applications such as small or entry-level vehicles intended for city use. Even though it performs poorly considering mechanical integrity, its application in these categories makes sense as the use case of these is inner-city driving, for example. The blade battery presents sublime performance among practically all criteria, being adapted to practically any use case. The prismatic geometry seems to be the least compelling option for both applications according to the chosen criteria, presenting an average or weak performance among",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          13
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nas the cell. That would be equivalent to GCTP and VCTP values of 100%, which is a best-case scenario. Since structural batteries do not present modules (as is the case with the Blade Battery), it is reasonable to infer that their GCTP and VCTP tend to be high, which is confirmed by the fact that these cells can easily be assembled in series (Danzi, Camanho and Braga, 2021). Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 104 Table 5. Criteria scored for each battery shape. Battery Shape Cylindrical Prismatic Pouch Blade Structural Battery cost 3 3 4 5 - Vehicle range 3 3 3 5 - Battery efficiency 3 2 4 2 - Thermal management 4 3 2 5 - Cell thermal integrity 4 3 2 5 - Energy density 3 1 3 5 1 Power density 4 1 3 5 - Specific energy 3 1 3 1 1 Specific power 5 1 3 4 - Cell mechanical integrity 4 3 1 5 4 Cell technological maturity 5 5 3 3 1 Economic 3.55 2.55 2.93 4.43 1.50 Performance 3.92 2.22 2.62 4.50 2.07 The total score for each battery geometry was calculated by combining the criteria weights in Table 4 and scores for each criterion in Table 5 according to Eq. (7). 𝑆 = ∑ ௪೔௦೔ ೙ ೔సభ ௪೔ . (7) Where 𝑆: final score of the battery geometry [-]; 𝑤௜: weight of criterion 𝑖 [-]; 𝑠௜: score of criterion 𝑖 [- ]; 𝑛: number of criteria [-]. It is important to note that only the evaluated criteria were used in the calculations. Therefore, in case of a battery not having scores assigned to some criteria, these were disregarded. The battery efficiency criterion was not included in the evaluation of",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          10,
+          11
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nnot considered for this criterion as they are not currently applied in any vehicle. Figure 7. Scores for each battery geometry investigated in Table 5. Regarding battery efficiency, the Ultium pouch cell (GM) presented the best performance, with the 4680 following relatively close. Interestingly, the estimated performance of the 4680 cylindrical cell (Panasonic) in this regard is not substantially better than the 2170. All batteries followed relatively closely in this criterion, with the difference between the highest and lowest efficiency being only 5.09%, which could be considered negligible for practical aspects. It is important to notice that this criterion is based mainly on estimates made by the specialized media as official data for usable and total capacity are hardly found. The structural battery was not considered for this criterion for lack of data. Regarding power density, the blade battery (BYD) presents by far the best performance. The fact that the 120 Ah prismatic battery (Samsung SDI) presents the lowest power density further enhances the argument that the blade technology is a notable evolution of the prismatic form factor. Considering the specific power criterion, the current-generation 2170 cylindrical battery (Panasonic) has the edge, but the blade follows relatively close. One should be mindful that, for performance-focused vehicles, the power density and specific power are crucial attributes to consider, as providing maximum performance over their volume and reducing weight is the principal concern in this case. The 4680 cylindrical cell (Panasonic), Licerion pouch cell (Sion), and structural battery (University of Porto) were not considered for these criteria for lack of data. Regarding thermal management, the structural battery was not considered for lack of data. The highest score was attributed to the blade battery (BYD): its characteristics, as pointed out in Section 1.1.5, make them safer and their thermal management easier than conventional,",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          12
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 4.09,
+    "cost": {
+      "usd": 0.0003865287,
+      "requests": 6,
+      "prompt_tokens": 3679,
+      "completion_tokens": 274,
+      "reasoning_tokens": 162,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 14,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 2.8e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3665,
+          "completion_tokens": 274,
+          "reasoning_tokens": 162,
+          "cached_tokens": 0,
+          "usd": 0.0003862487,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 3,
+    "question": "In euros, how much is the blade battery estimated to cost per kWh compared with a conventional battery?",
+    "answer": "Based on the provided context, the blade battery is estimated to cost around **€55/kWh**, compared to approximately **€85/kWh** for a conventional battery (Source: HummesETAL_Lajer_2023-2.pdf, p. 98).",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nthe case of PFSBs, the energy storage comes directly from the fibers, which comprehend both the electrolyte and cathodes. This method tends to have a high cost associated, complex manufacturing, and not much reliability. LSBs, on the other hand, are classic composites, with each component designed with satisfactory structural and electrochemical properties. They can be manufactured like ordinary composites, therefore offering flexibility in terms of geometries and materials. However, recurring problems such as electrical insulation, changing properties due to manufacturing, and incompatibility between materials diminish the performance of this type of design (Dionisi, Harnden and Zenkert, 2017; Carlstedt and Asp, 2020). Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 98 1.1.5 Blade battery The blade battery, as shown in Figure 5, is a recent technology improved on the design of prismatic batteries (FutureCar, 2022, InsideEVs, 2022), having substantial differences such as the lack of modules (Natarajan, 2021, p.202). Figure 5. Blade battery assembled in CTP (cell-to-pack) format (Natarajan, 2021, p.202). The estimated cost of the blade battery is very advantageous (around €55/kWh, compared to approximately €85/kWh for a conventional battery today). It is safe - when subjected to benchmark tests, this battery showed no signs of fire or smoke, with surface temperatures reaching 30 to 60°C (Lima, 2021b). In addition, tests conducted in an oven at 300°C and 260% overload also showed no response to fire or smoke. The battery is compact and, due to its arrangement, tends to occupy less volume. Unlike conventional prismatic batteries, which need to be arranged in modules before being fitted to the vehicle, blade batteries dispense modules and are directly assembled to the chassis (cell-to-pack format). That guarantees a better heat exchange capability due to the greater distance between the cells and their greater surface",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          4,
+          5
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nthe structural battery, for example. The final scores for each battery geometry analyzed in Table 5 are presented in Figure 7. Regarding battery cost, the blade battery (BYD) promises a revolution over current models, with an estimated cost of $66/kWh. The 4680 cylindrical cell (Panasonic) follows relatively closely, and both current-generation and next-generation pouch cells, the Ultium (GM) and Licerion (Sion) are not that far behind, while the 120 Ah prismatic cell (Samsung SDI) and the current-generation cylindrical cell (2170) present significantly higher costs. It is important to note that the new 4680 cylindrical cell (Panasonic) is estimated to be cheaper than or at least equivalent in terms of cost compared to the blade battery (BYD) at $75/kWh. However, it is relevant to note that this battery is still under development, with the costs being only estimated - based on the technology already available on the market, the blade battery (BYD) is still the better option. The structural battery (University of Porto) was not considered for this criterion for lack of data. Regarding vehicle range, it is noticeable that the BYD Han EV with the blade battery has a significant advantage related to the others, while the Fiat 500 with its 120 Ah prismatic cell (Samsung SDI) has the shortest range. That is a curious fact, as cars presenting the lowest and second highest battery costs have the highest and lowest range, respectively. This achievement underlines how the blade battery (BYD) can Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 105 become a trend for economy-focused models, being an evolution compared to current-generation conventional prismatic cells like the 120 Ah cell from Samsung SDI. The 4680 cylindrical cell (Panasonic), Licerion pouch cell (Sion), and the structural battery (University of Porto) were",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          11,
+          12
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\ncompared. Regarding future technologies, the 4680 cylindrical battery (Panasonic) and the Licerion pouch battery (Sion) provide a greater capacity for the same volume when compared with the current generation batteries. The pouch battery pack remained with a better overall performance concerning volume occupation. That highlights the significant potential the Licerion battery has for future Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 108 electric vehicle applications, outperforming the other compared batteries in both specific energy and energy density parameters. Figure 9. Capacity and total battery volume for the five battery models. 3.2.3 Cost analysis of battery models Another considerable aspect is the cost impact for each battery model, shown in Figure 10. Figure 10. Cost for six of the battery models in this paper. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 109 Based on the costs per kWh shown in Figure 10, there is an estimated cost of $13,940 for the 82 kWh battery used in the Tesla Model Y Long Range Dual Motor car today. The Ultium (GM) and Licerion (Sion) pouch cell batteries have an estimated cost of $8,200 and $8,610, respectively. That leads to a difference of approximately 40% compared to the 2170 cylindrical cell battery (Panasonic). In addition, the 4680 cylindrical cell battery (Panasonic) and the blade battery (BYD) have a significant cost reduction compared to the others, with values of $6,150 and $5,412, respectively. The 120 Ah prismatic cell battery (Samsung SDI) is the second most expensive, with an estimated cost of $10,414 for the 82 kWh capacity. One remark is that the most traditional battery geometries (prismatic and cylindrical) currently in use are the most expensive among all tested. That explains in part the shift",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          14,
+          15,
+          16
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\n3 Energy density 5 3 Power density 1 5 Specific energy 5 3 Specific power 1 5 Mechanical integrity 3 5 Cell technological maturity 5 3 For economy-oriented vehicles, the most important characteristics were considered as the cost, the range, the energy density, the specific energy, and the cell technological maturity. For this type of vehicle, the energy content is more significant than the available power because they prioritize vehicle range over performance. For cars with a focus on performance, there is a change in priorities. Because of the relatively higher load on the cells that performance-focused vehicles tend to develop compared to economy-focused ones, thermal management also becomes an even more important key factor. Cell technological maturity is not as crucial as these vehicles tend to be state-of-the-art. Specific power and power density are prioritized over specific energy and energy density. 3.1.2 Battery decision criteria As described in the Methodology Section, the different battery geometries were scored and evaluated for the criteria presented in Section 3.1.1 according to the Multi-Attribute Utility Theory (MAUT) method. That can be seen in Table 5. It is important to note that since there are two cylindrical batteries (the Panasonic 2170 and 4680) and two pouch batteries (the GM Ultium and the Sion Licerion), the quantitative criteria scored in Table 5 were considered the mean of each battery criterion. For example, for the battery cost criterion, the Panasonic 2170 has an estimated cost of 170 $/kWh, while the Panasonic 4680 has an estimated cost of 75 $/kWh. That led to a mean battery cost of the cylindrical battery of 123 $/kWh, which relates to a score of 3. In the case of the structural battery (University of Porto), because of a lack of data, the energy density and specific energy were considered the same",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          10
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 4.85,
+    "cost": {
+      "usd": 0.0004857533,
+      "requests": 6,
+      "prompt_tokens": 4022,
+      "completion_tokens": 471,
+      "reasoning_tokens": 402,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 19,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3.8e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 4003,
+          "completion_tokens": 471,
+          "reasoning_tokens": 402,
+          "cached_tokens": 0,
+          "usd": 0.0004853733,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 4,
+    "question": "Why can a pouch battery swell up, and why is that dangerous?",
+    "answer": "Based on the provided context, a pouch battery swells up due to **gas generation during operation** [Source: HummesETAL_Lajer_2023-2.pdf, p. 97]. \n\nThis swelling is dangerous for several reasons:\n1. **Pressure build-up:** The internal pressure can crack the battery cover and damage other components nearby [Source: HummesETAL_Lajer_2023-2.pdf, p. 97].\n2. **Puncturing and fire risk:** The swelling makes the pouch susceptible to puncturing. If the pocket is punctured, the escaping gases may ignite, causing accidents [Source: HummesETAL_Lajer_2023-2.pdf, p. 97].\n3. **External pressure sensitivity:** Because the casing is not rigid, pressure generated by contact between cells (e.g., from cell overlap) can also puncture the pocket and lead to accidents [Source: HummesETAL_Lajer_2023-2.pdf, p. 97].",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nbattery operation (Epectec, 2021). Concerning mechanical integrity, because it does not have a rigid casing, the pouch cell does not have high mechanical strength. As demonstrated by Jiang et al. (2021), the effect of cell overlap must be taken into account, as the pressure generated by contact between the cells can lead to both variation in mechanical properties and even events such as shocks that can puncture the pocket and cause accidents. Concerning thermal integrity, as commented in Section 1.1.1, these battery properties, such as charging and discharging power, are less sensitive to temperature gradients than cylindrical cells, for example. However, their temperature control system is usually more complex, as pouch cells can present swelling caused by gas generation during operation (Epectec, 2021), which is shown in Figure 3 (b). That can be dangerous as the pressure build-up on the inside can crack the battery cover and even other components nearby. Puncturing is also an issue in this case as the escaping gasses may ignite. 1.1.4 Structural battery The structural battery aims to develop a component that accumulates two functions - structural and energy storage - allowing weight relief and increased system efficiency. Figure 4 shows a representation of this battery shape. Figure 4. Example of a PFSB (Power Fiber Structural Battery) type structural battery (Nathan, 2018). The most common structural battery components are composite materials such as Carbon Fiber Reinforced Plastics (CFRP) because of the easy adaptation of mechanical properties. There are three CFRP- based structural battery designs: PSB (Packing Structural Battery), PFSB (Power Fiber Structural Battery), and LSB (Laminate Structural Battery) (Yu et al., 2017). In the case of PSBs, energy storage is accomplished by positioning lithium-ion batteries next to the CFRP. However, the mass reduction proposed by this method is not as advantageous as the others. In",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          4
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nand (b), are composed of electrolytes arranged in foils covered usually with aluminum or steel. (a) (b) Figure 2. (a) Schematics of a prismatic cell (Battery University, 2010), (b) a commercial prismatic cell (Samsung SDI, 2022). Regarding the mechanical integrity aspect, as observed by Xing et al. (2021), it is highly direction- dependent (different from cylindrical cells, for example) - which is undesirable from the structural point of view. They tend to present higher energy density but less charge and discharge power when compared to cylindrical batteries. Prismatic cells are usually bigger than cylindrical ones, which means that, in comparison, fewer cells are needed to achieve the same energy content, and fewer electrical connections are necessary, potentially enabling a cheaper battery assembly process. In addition, these batteries continue to show potential for future use as they are considered an excellent format for the lithium-iron-phosphate (LFP) chemistry, a mix of materials currently being heavily researched as it does not employ rare and expensive materials like nickel and cobalt (Laserax, 2022). Examples of companies that use this battery shape in their cars today are Fiat and BMW (Lima, 2021a; Samsung SDI, 2022; Nast, 2020). 1.1.3 Pouch cell One of the differences between pouch cells and the technologies previously presented is that their casing is not rigid - they are composed of flexible electrolyte pockets wrapped in films that are usually composed of plastic with aluminum. For this reason, this configuration allows the construction of lighter batteries than cylindrical and prismatic. Figure 3 (a) shows an example configuration for pouch cells. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 97 (a) (b) Figure 3. (a) Structure of a pouch cell (Yoo et al., 2019), (b) swollen pouch cell (left) due to gas generation during",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          3,
+          4
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nhave a lower capacity with the same weight). That can explain one of the reasons why it is used on smaller cars such as the Fiat 500 and BMW i3. The Ultium pouch battery (GM) already improves the performance slightly compared to the 2170 cylindrical battery (Panasonic), but the real leap comes from both future technologies - the 4680 cylindrical battery (Panasonic) and the Licerion pouch battery (Sion). In conclusion, as seen in Figure 8, it should not make too much of a difference in weight to change the battery shape and structure between current generation models. However, that changes for next- generation cylindrical and pouch batteries: the Licerion pouch battery (Sion) presents a 52.7% greater capacity for the same 530 kg weight or a reduction of 34.5% for the same 82 kWh capacity when compared to the 2170 cylindrical battery (Panasonic), which could lead to a significant increase in vehicle range. 3.2.2 Packing analysis of battery models Next, the total volume each battery would occupy was evaluated. That was carried out based on the battery energy density, calculating the capacity with a 400 L volume. That is the total battery volume for Tesla’s Model Y Long Range car, according to the United States Environmental Protection Agency (EPA) (2022). After that, the battery volume needed to obtain the 82 kWh capacity was determined (for each other battery evaluated). These results are shown in Figure 9. Based on the values presented, it can be observed that the 120 Ah prismatic battery (Samsung SDI) occupies more volume for the same capacity, showing a disadvantage to the 2170 cylindrical battery (Panasonic). In addition, from a volume standpoint of current generation batteries, cylindrical-based batteries seem to perform similarly to pouch batteries, presenting only a slightly lower capacity for the same volume for the models",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          14
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nmodule-assembled batteries. Respectively following it are the cylindrical batteries (which have better thermal management capabilities than the prismatic batteries (Das et al., 2018)), the prismatic, and, with the lowest score, the pouch batteries, due to their mechanical fragility that can lead to additional precautions for the thermal control. Regarding thermal integrity, the best current battery is the blade (BYD) for its safety. The cylindrical cell was ranked as the second-best and the prismatic as the third as, in comparison to the cylindrical, it can present more vulnerability to swelling and a shorter life cycle, for example Laserax (2022). The pouch cell was the lowest ranked. Even though its properties, compared to the cylindrical, do not change as much with temperature, its sensitivity to swelling was considered a more aggravating factor. Regarding specific energy, the Ultium pouch battery (GM) has the highest value among the currently used batteries. The 2170 cylindrical battery (Panasonic) outperforms both prismatic form factor batteries, the blade battery (BYD), and the 120 Ah battery (Samsung SDI). These two presented the lowest specific energies of all batteries evaluated, which indicates that this might be the handicap of the prismatic form factor. The energy issue is more critical for cars focused on the economy rather than performance. No current battery, however, can compete with the developing batteries Licerion (Sion) and 4680 (Panasonic), which promise significant advances in this regard and could be interesting, especially for performance cars. One remark is that the structural battery (University of Porto) has a low value for the specific energy because the weight of the battery is the weight of the structure itself. An observation, in this case, is that as the body of a vehicle using structural batteries is effectively the battery, there is no extra weight due to a Hummes et al.",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          12,
+          13
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 11.54,
+    "cost": {
+      "usd": 0.00067177284,
+      "requests": 6,
+      "prompt_tokens": 3824,
+      "completion_tokens": 1739,
+      "reasoning_tokens": 1590,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 13,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 2.6e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3811,
+          "completion_tokens": 1739,
+          "reasoning_tokens": 1590,
+          "cached_tokens": 0,
+          "usd": 0.0006715128399999999,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 5,
+    "question": "Which car was used as the benchmark in the case study, and why was it chosen?",
+    "answer": "Based on the provided context, the car used as the benchmark in the case study was the **Tesla Model Y Long Range Dual Motor**.\n\nIt was chosen because it was, **in 2022, the best-selling electric vehicle in the world** (Source: HummesETAL_Lajer_2023-2.pdf, Page 95).",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nand Zenkert (2017). Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 95 However, it is noticeable the absence of studies that aim to compare different battery geometries concerning financial and operational impacts (vehicle weight, range, available volume, among others) that each choice may entail. Also, it is rare to find papers that evaluate case studies with vehicles and batteries available in the market, which hinders a practical analysis of results for commercial decision-making in the choice of battery geometry. For this reason, the research conducted in the present study becomes of great interest, comparing commercial batteries among themselves to fill these aforementioned gaps for electric vehicle projects. In addition, the relevance of this paper is strengthened by the fact that the most common and promising battery geometries are studied - cylindrical, prismatic, pouch, blade, and structural. A case study was conducted to evaluate how each battery would perform in the Tesla Model Y Long Range Dual Motor car - which was chosen as the benchmark due to being, in 2022, the best-selling electric vehicle in the world (Q3 2022 Kelley Blue Book - Electrified Vehicle Sales Report, 2022). It is also important to note that due to the high level of innovation of the technologies mentioned, there is a need to cite technical reports and technology reviews outside the scope of academic literature. Finally, as this paper focuses on comparing different battery geometries, it is not in the scope to consider battery performance with respect to current cathode and anode materials, as such studies have already been carried out in the literature (Fotouhi et al., 2016; Li, Khajepour and Song, 2019). Consequently, future trends for battery material development remain to be studied in further work. Studies involving this topic are also",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          1,
+          2
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\n4 Conclusions This paper presented qualitative and quantitative comparisons of different geometries of commercial batteries using the Multi-Attribute Utility Theory (MAUT) method and a case study considering a commercial vehicle available in the market, the Tesla Model Y Long Range Dual Motor car. The steps applied in this work were: first, a literature review for electric vehicle battery geometries (cylindrical, prismatic, pouch, blade, and structural). Then, battery models for each geometry were investigated - the 2170 cylindrical cell (Panasonic), 120 Ah prismatic cell (Samsung SDI), Ultium pouch cell (GM), blade battery (BYD), and structural battery (University of Porto). Performance criteria were defined and subsequently scored considering two applications: economic and performance vehicles. The score of each geometry was calculated based on these criteria and the performance of the selected cell models. That allowed the creation of a ranking considering each application. Finally, a case study was carried out to evaluate the application of each cell in the Tesla Model Y Long Range Dual Motor commercial vehicle regarding the aspects of range, weight, and the expected cost. Regarding the ranking of the batteries given by the Multi-Attribute Utility Theory (MAUT), it can be seen that for both applications (economic or performance vehicles), the battery geometry with the highest score overall was blade. That is since it presented the highest scores for most criteria, with two handicap criteria – the battery efficiency and the specific energy. The cylindrical cell presented consistent performance overall, with no notable handicaps. The other battery shapes – prismatic, pouch, and structural – showed average performance overall, with at least one score with very low performance. It is also noticeable that, when compared to upcoming battery cells, the leap in performance is immense. That demonstrates the clear improvement potential of current technology batteries. It is important to note",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          17
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nthat it was not possible to include blade and structural batteries in some of the evaluations of the decision criteria and the case study. That is due to them being installed differently than other batteries in electric vehicles (which would invalidate a direct comparison) and because certain specifications required for performance quantification are not yet available. Therefore, it is recommended that future work develop ways to include these geometries in the comparison to allow a more assertive analysis. Finally, it is emphasized that, while this study provides valuable insights into the performance of different cell geometries with respect to each other, future work following a similar comparison methodology would be interesting. For instance, a database containing more battery models, for example, could potentially lead to more extensive comparisons. Acknowledgements We would like to thank the program UFRGS/PRINT/CAPES for the visiting professor grant. The contribution was funded by IIASA. References 2022-Kelley-Blue-Book-Electrified-Vehicle-Sales-Report.pdf. [online] Available at: https://www.coxautoinc.com/wp-content/uploads/2022/10/Q3-2022-Kelley-Blue-Book-Electrified- Vehicle-Sales-Report.pdf [Accessed 15 January 2023]. 2022 Tesla Model Y 4680 - Battery Design. [online] Available at: https://www.batterydesign.net/2022- tesla-model-y-4680/ [Accessed 26 October 2022]. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 111 A Closer Look at the ‘Blade Battery’ That Tesla Will Reportedly Use for its $25,000 EV - FutureCar.com - via @FutureCar_Media. [online] Available at: https://www.futurecar.com/4794/A-Closer-Look-at-the- Blade-Battery-That-Tesla-Will-Reportedly-Use-for-its-$25000-EV [Accessed 13 January 2022]. Automotive Battery - Battery Cells & Battery System | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/products/prismatic-lithium-ion-battery-cell.html [Accessed 1 June 2022]. Automotive Battery - Partnership | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/partnership.html [Accessed 1 June 2022]. Avdeev, I. and Gilaki, M., 2014. Structural analysis and experimental characterization of cylindrical lithium-ion battery cells subject to lateral impact. Journal of Power Sources, 271, pp.382–391. https://doi.org/10.1016/j.jpowsour.2014.08.014. Bankole, O.E., Gong, C. and Lei, L., 2013. Battery Recycling Technologies: Recycling Waste Lithium Ion",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          17,
+          18
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\narea, as well as eliminating the need for separate thermal management systems for each module (FutureCar, 2022). Regarding longevity, the battery promises 1.2 million km or 3,000 charge/discharge cycles, with a range of 505 km and recharging from 30 to 80% in 30 minutes at 110 kW (Lima, 2021b; Natarajan, 2021). The battery is assembled so that the arrangement of the blades is structural. 2 Methodology Four main steps were employed in the review of current and future battery geometries, as presented in Figure 6. Figure 6. Steps employed in the review process of different battery shapes. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 99 First, the literature was reviewed to understand qualitative and quantitative aspects (such as the operational characteristics) of cylindrical, prismatic, and pouch cells, along with other non-conventional geometries (blade and structural batteries). Subsequently, from the criteria presented in Figure 6, their application in batteries was evaluated for electric vehicles aimed at different applications (economy or performance) using the Multi-Attribute Utility Theory (MAUT). That was the chosen method as this paper looks to provide a more transparent and intuitive decision-making process for the reader, being more direct and straightforward than others such as ELECTRE III and the Analytic Hierarchy Process (AHP), the latter of which has already been used in the context of material research for electric vehicle batteries (Ben Ammar, Hafsa and Hammami, 2013). Then, based on the characteristics associated with these batteries, a case study was carried out using commercial batteries intended for electric vehicles. For this, data on capacity, weight, and volume of the battery used in Tesla’s Model Y Long Range Dual Motor car were compared with the following battery models: the Ultium (GM) and Licerion (Sion) pouch batteries, the 120 Ah prismatic",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          5,
+          6
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 2.6,
+    "cost": {
+      "usd": 0.0002973336,
+      "requests": 6,
+      "prompt_tokens": 4447,
+      "completion_tokens": 92,
+      "reasoning_tokens": 18,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 17,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3.4e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 4430,
+          "completion_tokens": 92,
+          "reasoning_tokens": 18,
+          "cached_tokens": 0,
+          "usd": 0.0002969936,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 6,
+    "question": "What would the 82 kWh battery in today's Tesla Model Y cost, and which battery would be the cheapest alternative?",
+    "answer": "Based on the provided context, here are the answers to your questions:\n\n**Cost of the 82 kWh Battery in Today's Tesla Model Y**\nBased on the costs per kWh shown in Figure 10, there is an estimated cost of **$13,940** for the 82 kWh battery used in the Tesla Model Y Long Range Dual Motor car today [Source: HummesETAL_Lajer_2023-2.pdf, p. 109].\n\n**Cheapest Battery Alternative**\nThe cheapest battery alternative among those compared is the **blade battery (BYD)**, with an estimated cost of **$5,412** for the 82 kWh capacity [Source: HummesETAL_Lajer_2023-2.pdf, p. 109]. The second cheapest is the 4680 cylindrical cell battery (Panasonic) at $6,150 [Source: HummesETAL_Lajer_2023-2.pdf, p. 109].",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\ncompared. Regarding future technologies, the 4680 cylindrical battery (Panasonic) and the Licerion pouch battery (Sion) provide a greater capacity for the same volume when compared with the current generation batteries. The pouch battery pack remained with a better overall performance concerning volume occupation. That highlights the significant potential the Licerion battery has for future Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 108 electric vehicle applications, outperforming the other compared batteries in both specific energy and energy density parameters. Figure 9. Capacity and total battery volume for the five battery models. 3.2.3 Cost analysis of battery models Another considerable aspect is the cost impact for each battery model, shown in Figure 10. Figure 10. Cost for six of the battery models in this paper. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 109 Based on the costs per kWh shown in Figure 10, there is an estimated cost of $13,940 for the 82 kWh battery used in the Tesla Model Y Long Range Dual Motor car today. The Ultium (GM) and Licerion (Sion) pouch cell batteries have an estimated cost of $8,200 and $8,610, respectively. That leads to a difference of approximately 40% compared to the 2170 cylindrical cell battery (Panasonic). In addition, the 4680 cylindrical cell battery (Panasonic) and the blade battery (BYD) have a significant cost reduction compared to the others, with values of $6,150 and $5,412, respectively. The 120 Ah prismatic cell battery (Samsung SDI) is the second most expensive, with an estimated cost of $10,414 for the 82 kWh capacity. One remark is that the most traditional battery geometries (prismatic and cylindrical) currently in use are the most expensive among all tested. That explains in part the shift",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          14,
+          15,
+          16
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nthat it was not possible to include blade and structural batteries in some of the evaluations of the decision criteria and the case study. That is due to them being installed differently than other batteries in electric vehicles (which would invalidate a direct comparison) and because certain specifications required for performance quantification are not yet available. Therefore, it is recommended that future work develop ways to include these geometries in the comparison to allow a more assertive analysis. Finally, it is emphasized that, while this study provides valuable insights into the performance of different cell geometries with respect to each other, future work following a similar comparison methodology would be interesting. For instance, a database containing more battery models, for example, could potentially lead to more extensive comparisons. Acknowledgements We would like to thank the program UFRGS/PRINT/CAPES for the visiting professor grant. The contribution was funded by IIASA. References 2022-Kelley-Blue-Book-Electrified-Vehicle-Sales-Report.pdf. [online] Available at: https://www.coxautoinc.com/wp-content/uploads/2022/10/Q3-2022-Kelley-Blue-Book-Electrified- Vehicle-Sales-Report.pdf [Accessed 15 January 2023]. 2022 Tesla Model Y 4680 - Battery Design. [online] Available at: https://www.batterydesign.net/2022- tesla-model-y-4680/ [Accessed 26 October 2022]. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 111 A Closer Look at the ‘Blade Battery’ That Tesla Will Reportedly Use for its $25,000 EV - FutureCar.com - via @FutureCar_Media. [online] Available at: https://www.futurecar.com/4794/A-Closer-Look-at-the- Blade-Battery-That-Tesla-Will-Reportedly-Use-for-its-$25000-EV [Accessed 13 January 2022]. Automotive Battery - Battery Cells & Battery System | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/products/prismatic-lithium-ion-battery-cell.html [Accessed 1 June 2022]. Automotive Battery - Partnership | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/partnership.html [Accessed 1 June 2022]. Avdeev, I. and Gilaki, M., 2014. Structural analysis and experimental characterization of cylindrical lithium-ion battery cells subject to lateral impact. Journal of Power Sources, 271, pp.382–391. https://doi.org/10.1016/j.jpowsour.2014.08.014. Bankole, O.E., Gong, C. and Lei, L., 2013. Battery Recycling Technologies: Recycling Waste Lithium Ion",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          17,
+          18
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nmost criteria. However, as stated in Section 1.1.2, this battery shape should still be relevant in the future in EV applications due to the ongoing studies of the LFP chemistry and clear potential for cost reductions in the manufacturing process. At present, it would fit better in entry-level or family cars, as it has a very mature development status (which drives down maintenance costs, for example) and could present modest performance all around. Regarding the structural battery, its poor performance may relate to the difficulty in evaluating this battery shape in the same way as more traditional geometries, which might not reflect its true capabilities. In addition, this battery shape is still under development, not used in any commercial electric vehicle today. 3.2 Analysis 3.2.1 Capacity and weight analysis of battery models The first comparison between the Tesla’s Model Y Long Range Dual Motor original battery, the 2170 cylindrical battery (Panasonic), and the other four modular battery models - Ultium pouch battery (GM), Licerion pouch battery (Sion), 120 Ah prismatic battery (Samsung SDI) and the 4680 cylindrical battery (Panasonic) - involved the capacity that each battery would have with a battery weight of 530 kg, based on the specific energy of each battery. That is the total weight of the Tesla Model Y Long Range Dual Motor Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 107 car battery pack. In addition, it was evaluated how much each battery would weigh with an energy content of 82 kWh, which is the capacity of the Tesla vehicle. Figure 8 shows the results obtained. Figure 8. Capacity and total battery weight for the five battery models. Regarding current technologies, the 120 Ah prismatic battery (Samsung SDI) would weigh more for the same capacity (or",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          13,
+          14
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 3.42,
+    "cost": {
+      "usd": 0.00049039044,
+      "requests": 6,
+      "prompt_tokens": 4035,
+      "completion_tokens": 210,
+      "reasoning_tokens": 5,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 23,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 4.6e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 4012,
+          "completion_tokens": 210,
+          "reasoning_tokens": 5,
+          "cached_tokens": 0,
+          "usd": 0.0004899304399999999,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 7,
+    "question": "How much more range do the Licerion and 4680 batteries give compared with the 2170 battery?",
+    "answer": "Based on the provided context, the Licerion pouch battery (Sion) provides approximately **53%** better range, and the 4680 cylindrical battery (Panasonic) provides approximately **45%** better range, compared to the 2170 cylindrical battery (Panasonic) [Source: HummesETAL_Lajer_2023-2.pdf, p. 110].",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\ntowards the development of other battery geometries. 3.2.4 Vehicle range For each evaluated battery, the estimated range was calculated from the known Tesla Model Y Long Range Dual Motor car energy consumption data for different weather and driving conditions (EV Database, 2022). The following assumptions were made: 1). All batteries have the same total battery weight found in the Tesla Model Y Long Range Dual Motor car; 2). The energy consumption of the vehicle remains the same for a different battery with the same total battery weight; 3). There is the possibility of accommodating a larger volume for the battery in the vehicle if needed. Figure 11 presents the results obtained. (a) (b) Figure 11. Battery autonomy at different driving cycles for total battery weight of 530 kg (a) during cold weather and (b) during mild weather. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 110 In Figure 11, it can be seen that with the current technologies, the prismatic battery (Samsung SDI) ends up providing the lowest range for all driving conditions. That is to be expected, as this battery is used mainly in smaller cars such as the Fiat 500 EV and the BMW i3, whose functionality is not necessarily long-distance traveling. Furthermore, there is a slight addition in the range provided by the Ultium pouch battery (GM) compared to the 2170 cylindrical battery (Panasonic) - approximately 4%. Even so, future technologies raise the bar significantly. The Licerion pouch battery (Sion) has an advantage over the 4680 cylindrical battery (Panasonic) - both providing approximately 53% and 45% better range than the 2170 cylindrical battery (Panasonic), respectively. That is an impressive amount that could make the difference between a vehicle being more city-focused or prone for traveling purposes, for example.",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          16,
+          17
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\ncompared. Regarding future technologies, the 4680 cylindrical battery (Panasonic) and the Licerion pouch battery (Sion) provide a greater capacity for the same volume when compared with the current generation batteries. The pouch battery pack remained with a better overall performance concerning volume occupation. That highlights the significant potential the Licerion battery has for future Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 108 electric vehicle applications, outperforming the other compared batteries in both specific energy and energy density parameters. Figure 9. Capacity and total battery volume for the five battery models. 3.2.3 Cost analysis of battery models Another considerable aspect is the cost impact for each battery model, shown in Figure 10. Figure 10. Cost for six of the battery models in this paper. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 109 Based on the costs per kWh shown in Figure 10, there is an estimated cost of $13,940 for the 82 kWh battery used in the Tesla Model Y Long Range Dual Motor car today. The Ultium (GM) and Licerion (Sion) pouch cell batteries have an estimated cost of $8,200 and $8,610, respectively. That leads to a difference of approximately 40% compared to the 2170 cylindrical cell battery (Panasonic). In addition, the 4680 cylindrical cell battery (Panasonic) and the blade battery (BYD) have a significant cost reduction compared to the others, with values of $6,150 and $5,412, respectively. The 120 Ah prismatic cell battery (Samsung SDI) is the second most expensive, with an estimated cost of $10,414 for the 82 kWh capacity. One remark is that the most traditional battery geometries (prismatic and cylindrical) currently in use are the most expensive among all tested. That explains in part the shift",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          14,
+          15,
+          16
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\npower density [kW/L] 0.95 0.37† 0.74 - - 1.24 As data was not found in the literature for every battery type, the battery energy density and specific power were calculated based on the values of the cells and the Gravimetric and Volumetric Cell-To-Pack ratios. These indicators represent how much of the battery weight and volume are related to the cells - the † Estimated by the authors. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 101 remaining being occupied by other battery hardware such as housings, connectors, etc. That allows the consideration of battery specific details for calculations. Since the Licerion and the 4680 are still not currently used in any vehicle, battery weight and volume data are not available. It was assumed that the pairs of batteries with the same geometries would have the same GCTP and VCTP. These are the pouch batteries (Licerion and Ultium) and the cylindrical batteries (2170 and 4680). That can be thought of as a worst-case scenario since these batteries are likely to improve performance compared to current-generation technology. The battery capacity was assumed as the one on the Tesla Model Y Long Range currently available. For the Samsung SDI battery, as data for the battery volume was not found in the literature (as well as for the energy density directly), the battery volume for the Fiat 500e for the 2019 model year was used, and the battery volume for the 2020 model year was calculated by correcting this battery volume with the ratio of battery masses of both vehicles. Although the 4680 is still not used in any commercial vehicle, some performance estimates regarding the Model Y can already be found on the specialized media (Battery Design, 2022). It is important to note that",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          7,
+          8
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\n| Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 106 battery pack - in contrast, on a conventional electric vehicle, the total weight is the summed weight of its body plus the battery pack. For this reason, one could infer that the structural battery would be lighter. However, due to the difficulty of similarly assessing both structural batteries and traditional battery packs, the criterion was based on available data from the manufacturer (University of Porto). For energy density, the blade battery (BYD), due to its cell-to-pack format, outperforms every other battery, even the next-generation 4680 cylindrical battery (Panasonic) or the Licerion pouch battery (Sion). Nonetheless, these provide significant improvements over the current-generation cylindrical and pouch batteries. As for the specific energy criterion, no current battery can also compete with the next-generation Licerion pouch battery (Sion) and the new 4680 cylindrical battery (Panasonic), with energy density gains that greatly favor bundling - which could be interesting for use in small vehicles such as LEVs (Light Electric Vehicles) or motorbikes (Chien, Hsieh and Chang, 2023). Once more, it is not straightforward to compare structural batteries and other geometries because as the whole body is the battery, its volume is large. Consequently, the energy density tends to be low, similar to specific energy. Therefore, for the structural battery, the energy density was obtained from the available data of the manufacturer (University of Porto). Regarding mechanical integrity, the best battery - as in the case of thermal management and thermal integrity - is the blade (BYD), which has passed crash tests without any issues. Pouch battery cells, having low rigidity (even if assembled in rigid modules), tend to be the weakest and, therefore, the least safe among the tested. It should also be noted that the structural battery (University",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          13
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 4.62,
+    "cost": {
+      "usd": 0.00045668904000000003,
+      "requests": 6,
+      "prompt_tokens": 3995,
+      "completion_tokens": 304,
+      "reasoning_tokens": 221,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 22,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 4.4e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3973,
+          "completion_tokens": 304,
+          "reasoning_tokens": 221,
+          "cached_tokens": 0,
+          "usd": 0.00045624904,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 8,
+    "question": "What are the three carbon-fibre-based structural battery designs?",
+    "answer": "Based solely on the provided context, the three carbon-fibre-based structural battery designs are:\n\n1.  **PSB (Packing Structural Battery)**\n2.  **PFSB (Power Fiber Structural Battery)**\n3.  **LSB (Laminate Structural Battery)**\n\n[Source: HummesETAL_Lajer_2023-2.pdf, Page 1]",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nbattery operation (Epectec, 2021). Concerning mechanical integrity, because it does not have a rigid casing, the pouch cell does not have high mechanical strength. As demonstrated by Jiang et al. (2021), the effect of cell overlap must be taken into account, as the pressure generated by contact between the cells can lead to both variation in mechanical properties and even events such as shocks that can puncture the pocket and cause accidents. Concerning thermal integrity, as commented in Section 1.1.1, these battery properties, such as charging and discharging power, are less sensitive to temperature gradients than cylindrical cells, for example. However, their temperature control system is usually more complex, as pouch cells can present swelling caused by gas generation during operation (Epectec, 2021), which is shown in Figure 3 (b). That can be dangerous as the pressure build-up on the inside can crack the battery cover and even other components nearby. Puncturing is also an issue in this case as the escaping gasses may ignite. 1.1.4 Structural battery The structural battery aims to develop a component that accumulates two functions - structural and energy storage - allowing weight relief and increased system efficiency. Figure 4 shows a representation of this battery shape. Figure 4. Example of a PFSB (Power Fiber Structural Battery) type structural battery (Nathan, 2018). The most common structural battery components are composite materials such as Carbon Fiber Reinforced Plastics (CFRP) because of the easy adaptation of mechanical properties. There are three CFRP- based structural battery designs: PSB (Packing Structural Battery), PFSB (Power Fiber Structural Battery), and LSB (Laminate Structural Battery) (Yu et al., 2017). In the case of PSBs, energy storage is accomplished by positioning lithium-ion batteries next to the CFRP. However, the mass reduction proposed by this method is not as advantageous as the others. In",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          4
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nbattery (Samsung SDI) and the 4680 cylindrical battery (Panasonic). The data for these four batteries was calculated based on the current Tesla Model Y Long Range Dual Motor car battery specifications to provide a better performance comparison. Regarding costs, the blade battery (BYD) was added to the evaluation, as information regarding this criterion is already available in the literature. The structural battery considered was of solid- state coaxial type previously studied in the literature (Danzi, Camanho and Braga, 2021). Since the assembly of the blade and structural batteries differs from the other batteries investigated in this paper, which are assembled in modules, they were not included in the analyses regarding capacity, weight, and volume. Furthermore, it is also important to note that structural batteries, the Licerion pouch cell (Sion), and the 4680 cylindrical cell (Panasonic) are under development and not currently being used in electric vehicles. Finally, this paper concentrates on a global performance evaluation of the commercial batteries presented. As such, their specifications, which are shown in Tables 1 and 2, were obtained from current or future electric vehicle applications. The investigation of specific details related to battery performance, such as cell arrangement, number of layers, module assembly, and overall pack structure, remains to be carried out in future studies. Table 1. Cell specifications of each battery investigated in this paper. Battery 2170 120 Ah cell Ultium 4680 Licerion Blade Structural Battery cell manufacturer Panasonic Samsung SDI GM Panasonic Sion BYD University of Porto Battery cell shape Cylindrical Prismatic Pouch Cylindrical Pouch Blade Structural Cathode material NCA Nickel- Cobalt- Aluminum NCM Nickel- Cobalt- Manganese NCMA Nickel- Cobalt- Manganese- Aluminum NCA Nickel- Cobalt- Aluminum Nickel- rich*1 LFP Lithium Iron Phosphate Copper foil Anode material Graphitic carbon electrode Graphitic carbon electrode Solid Lithium- metal Silicium- based Ultra- thin Lithium- metal Graphitic",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          6
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nnot considered for this criterion as they are not currently applied in any vehicle. Figure 7. Scores for each battery geometry investigated in Table 5. Regarding battery efficiency, the Ultium pouch cell (GM) presented the best performance, with the 4680 following relatively close. Interestingly, the estimated performance of the 4680 cylindrical cell (Panasonic) in this regard is not substantially better than the 2170. All batteries followed relatively closely in this criterion, with the difference between the highest and lowest efficiency being only 5.09%, which could be considered negligible for practical aspects. It is important to notice that this criterion is based mainly on estimates made by the specialized media as official data for usable and total capacity are hardly found. The structural battery was not considered for this criterion for lack of data. Regarding power density, the blade battery (BYD) presents by far the best performance. The fact that the 120 Ah prismatic battery (Samsung SDI) presents the lowest power density further enhances the argument that the blade technology is a notable evolution of the prismatic form factor. Considering the specific power criterion, the current-generation 2170 cylindrical battery (Panasonic) has the edge, but the blade follows relatively close. One should be mindful that, for performance-focused vehicles, the power density and specific power are crucial attributes to consider, as providing maximum performance over their volume and reducing weight is the principal concern in this case. The 4680 cylindrical cell (Panasonic), Licerion pouch cell (Sion), and structural battery (University of Porto) were not considered for these criteria for lack of data. Regarding thermal management, the structural battery was not considered for lack of data. The highest score was attributed to the blade battery (BYD): its characteristics, as pointed out in Section 1.1.5, make them safer and their thermal management easier than conventional,",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          12
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 3.31,
+    "cost": {
+      "usd": 0.0002853858,
+      "requests": 6,
+      "prompt_tokens": 3367,
+      "completion_tokens": 96,
+      "reasoning_tokens": 14,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 11,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 2.2e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3356,
+          "completion_tokens": 96,
+          "reasoning_tokens": 14,
+          "cached_tokens": 0,
+          "usd": 0.00028516580000000004,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 9,
+    "question": "How much weight do battery cost and power density get for economy cars compared with performance cars?",
+    "answer": "Based solely on the provided context, the document does not assign specific numerical weights or percentages to the criteria for economy versus performance cars. However, it clearly describes the **relative importance** of battery cost and power density for each vehicle type.\n\n**For Economy-Oriented Vehicles:**\n- The most important characteristics are **cost**, range, energy density, specific energy, and cell technological maturity.\n- The document states that for these vehicles, \"the energy content is more significant than the available power because they prioritize vehicle range over performance.\"\n- **Conclusion:** **Battery cost** is a top priority, while **power density** is less significant than energy-related metrics.\n\n**For Performance-Focused Vehicles:**\n- Priorities shift. Thermal management becomes more important, and cell technological maturity is less crucial.\n- \"Specific power and power density are prioritized over specific energy and energy density.\"\n- **Conclusion:** **Power density** is a high priority, while **battery cost** is not mentioned as a primary factor in the same way it is for economy cars.\n\n**Summary:**\n- **Battery cost:** Gets **high weight** for economy cars and **lower relative weight** for performance cars.\n- **Power density:** Gets **low weight** for economy cars and **high weight** for performance cars.\n\n*Source: HummesETAL_Lajer_2023-2.pdf, page 5 (Section 3.1.1)*",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\n3 Energy density 5 3 Power density 1 5 Specific energy 5 3 Specific power 1 5 Mechanical integrity 3 5 Cell technological maturity 5 3 For economy-oriented vehicles, the most important characteristics were considered as the cost, the range, the energy density, the specific energy, and the cell technological maturity. For this type of vehicle, the energy content is more significant than the available power because they prioritize vehicle range over performance. For cars with a focus on performance, there is a change in priorities. Because of the relatively higher load on the cells that performance-focused vehicles tend to develop compared to economy-focused ones, thermal management also becomes an even more important key factor. Cell technological maturity is not as crucial as these vehicles tend to be state-of-the-art. Specific power and power density are prioritized over specific energy and energy density. 3.1.2 Battery decision criteria As described in the Methodology Section, the different battery geometries were scored and evaluated for the criteria presented in Section 3.1.1 according to the Multi-Attribute Utility Theory (MAUT) method. That can be seen in Table 5. It is important to note that since there are two cylindrical batteries (the Panasonic 2170 and 4680) and two pouch batteries (the GM Ultium and the Sion Licerion), the quantitative criteria scored in Table 5 were considered the mean of each battery criterion. For example, for the battery cost criterion, the Panasonic 2170 has an estimated cost of 170 $/kWh, while the Panasonic 4680 has an estimated cost of 75 $/kWh. That led to a mean battery cost of the cylindrical battery of 123 $/kWh, which relates to a score of 3. In the case of the structural battery (University of Porto), because of a lack of data, the energy density and specific energy were considered the same",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          10
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\ncarbon electrode Aluminum rod Cell energy density [Wh/L] 732 445 614 902 780 448 56.2 Cell specific energy [Wh/kg] 261 196 272 380 400 166 38.0 The energy density for the 2170 and 4680 cylindrical cells (Panasonic) and the Ultium pouch cell (GM) was calculated based on specifications from Williams (2022) for the first two and Morris (2021) for the latter, according to Eq. (1): * This battery is compatible with most cathode materials and allows cells to be engineered for needs of specific applications (Sion Power, 2022). Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 100 𝑢ௗ = ௏೙೚೘೔೙ೌ೗⋅஼೙೚೘೔೙ೌ೗ ௩ . (1) Where 𝑢ௗ: cell energy density [Wh/L]; 𝑉௡௢௠௜௡௔௟: nominal cell voltage [V]; 𝐶௡௢௠௜௡௔௟: nominal cell capacity [Ah]; 𝑣: cell volume [L]. Table 2. Battery specifications of each model investigated in this paper. Battery 2170 120 Ah cell Ultium 4680 Licerion Blade Vehicle model Model Y Long Range 500e GMC Hummer - - Han Vehicle manufacturer Tesla Fiat GM - - BYD Battery energy density [Wh/L] 205 179† 210 252† 267† 279 Battery specific energy [Wh/kg] 155 143 161 225† 236† 150 Battery cost [$/kWh] 170 127 100 75 105 66 Battery capacity (gross) [kWh] 82 42 213 82 - 85.4 Battery capacity (usable) [kWh] 75 37.3 200 75.9 - 76.9 Battery efficiency [%] 91.5 88.8 93.9 92.6 - 90.0 Vehicle power [kW] 378 87 745 - - 380 Vehicle range [km] 449 320 529 - - 710 Battery weight [kg] 530 294.3 1326 364† 347†2 592 Battery volume [L] 400 235† 1012 325† 307† 306 Gravimetric cell-to-pack ratio (GCTP) [%] 59.2 72.8 59.0 59.2† 59.0† 86.9 Volumetric cell- to-pack (VCTP) ratio [%] 28.0 40.2† 34.3 28.0† 34.3† 62.3 Battery specific power [kW/kg] 0.71 0.30 0.56 - - 0.64 Battery",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          6,
+          7
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\npower density [kW/L] 0.95 0.37† 0.74 - - 1.24 As data was not found in the literature for every battery type, the battery energy density and specific power were calculated based on the values of the cells and the Gravimetric and Volumetric Cell-To-Pack ratios. These indicators represent how much of the battery weight and volume are related to the cells - the † Estimated by the authors. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 101 remaining being occupied by other battery hardware such as housings, connectors, etc. That allows the consideration of battery specific details for calculations. Since the Licerion and the 4680 are still not currently used in any vehicle, battery weight and volume data are not available. It was assumed that the pairs of batteries with the same geometries would have the same GCTP and VCTP. These are the pouch batteries (Licerion and Ultium) and the cylindrical batteries (2170 and 4680). That can be thought of as a worst-case scenario since these batteries are likely to improve performance compared to current-generation technology. The battery capacity was assumed as the one on the Tesla Model Y Long Range currently available. For the Samsung SDI battery, as data for the battery volume was not found in the literature (as well as for the energy density directly), the battery volume for the Fiat 500e for the 2019 model year was used, and the battery volume for the 2020 model year was calculated by correcting this battery volume with the ratio of battery masses of both vehicles. Although the 4680 is still not used in any commercial vehicle, some performance estimates regarding the Model Y can already be found on the specialized media (Battery Design, 2022). It is important to note that",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          7,
+          8
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nmodule-assembled batteries. Respectively following it are the cylindrical batteries (which have better thermal management capabilities than the prismatic batteries (Das et al., 2018)), the prismatic, and, with the lowest score, the pouch batteries, due to their mechanical fragility that can lead to additional precautions for the thermal control. Regarding thermal integrity, the best current battery is the blade (BYD) for its safety. The cylindrical cell was ranked as the second-best and the prismatic as the third as, in comparison to the cylindrical, it can present more vulnerability to swelling and a shorter life cycle, for example Laserax (2022). The pouch cell was the lowest ranked. Even though its properties, compared to the cylindrical, do not change as much with temperature, its sensitivity to swelling was considered a more aggravating factor. Regarding specific energy, the Ultium pouch battery (GM) has the highest value among the currently used batteries. The 2170 cylindrical battery (Panasonic) outperforms both prismatic form factor batteries, the blade battery (BYD), and the 120 Ah battery (Samsung SDI). These two presented the lowest specific energies of all batteries evaluated, which indicates that this might be the handicap of the prismatic form factor. The energy issue is more critical for cars focused on the economy rather than performance. No current battery, however, can compete with the developing batteries Licerion (Sion) and 4680 (Panasonic), which promise significant advances in this regard and could be interesting, especially for performance cars. One remark is that the structural battery (University of Porto) has a low value for the specific energy because the weight of the battery is the weight of the structure itself. An observation, in this case, is that as the body of a vehicle using structural batteries is effectively the battery, there is no extra weight due to a Hummes et al.",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          12,
+          13
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 3.97,
+    "cost": {
+      "usd": 0.00044169282,
+      "requests": 6,
+      "prompt_tokens": 4310,
+      "completion_tokens": 309,
+      "reasoning_tokens": 14,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 17,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3.4e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 4293,
+          "completion_tokens": 309,
+          "reasoning_tokens": 14,
+          "cached_tokens": 0,
+          "usd": 0.00044135282,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 10,
+    "question": "How large are the bioreactors and microcarriers used to grow cultured meat?",
+    "answer": "Based on the provided context, the answer does not exist in the available database. The excerpts from \"Advice For Risk Associated with Cultured Meat.pdf\" discuss cell sourcing, immortalization, cryopreservation, and hazard identification, but they do not contain any specific information regarding the size of bioreactors or microcarriers used in cultured meat production.",
+    "chunks": [
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nsimple and robust serum-free media for the proliferation of muscle cells. Food Research International, 172. Available online: https://doi.org/10.1016/j.foodres.2023.113194 Smith-Uchotski R & Wanjiru P, 2022. Hazard identification: Identification of hazards in meat products manufactured from cultured animal cells (version 1.4). Food Standards Agency (FSA) & Food Standards Schotland, 32 pp. Available online: https://www.food.gov.uk/sites/default/files/media/document/Cultured%20meat%20hazar d%20identification%20final_0.pdf Soice E & Johnston J, 2021. Immortalizing cells for human consumption. International Journal of Molecular Sciences, 22 (21). Available online: https://doi.org/10.3390/ijms222111660 Specht EA, Welch DR, Rees Clayton EM & Lagally CD, 2018. Opportunities for applying biomedical production and manufacturing methods to the development of the clean meat industry. 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 32 van 33 Biochemical Engineering Journal, 132, 161-168. Available online: https://doi.org/10.1016/j.bej.2018.01.015 Spisák S, Solymosi N, Ittzés P, Bodor A, Kondor D, Vattay G, Barták BK, Sipos F, Galamb O, Tulassay Z, Szállási Z, Rasmussen S, Sicheritz-Ponten T, Brunak S, Molnár B & Csabai I, 2013. Complete Genes May Pass from Food to Human Blood. PLoS ONE, 8 (7). Available online: https://doi.org/10.1371/journal.pone.0069805 Stephens N, Di Silvio L, Dunsford I, Ellis M, Glencross A & Sexton A, 2018. Bringing cultured meat to market: Technical, socio-political, and regulatory challenges in cellular agriculture. Trends in Food Science and Technology, 78, 155-166. Available online: https://doi.org/10.1016/j.tifs.2018.04.010 Stout AJ, Mirliani AB, Rittenberg ML, Shub M, White EC, Yuen JSK & Kaplan DL, 2022. Simple and effective serum-free medium for sustained expansion of bovine satellite cells for cell cultured meat. Communications Biology, 5 (1). Available online: https://doi.org/10.1038/s42003-022-03423-8 Sun C, Yue J, He N, Liu Y, Zhang X & Zhang Y, 2016. Fundamental Principles of Stem",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          31,
+          32
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nand Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 30 van 33 Behaviors. Front Cell Dev Biol, 9, 640388. Available online: https://doi.org/10.3389/fcell.2021.640388 Liang G & Zhang Y, 2013. Embryonic stem cell and induced pluripotent stem cell: an epigenetic perspective. Cell Research, 23 (1), 49-69. Available online: https://doi.org/10.1038/cr.2012.175 Liao IC, Liu JB, Bursac N & Leong KW, 2008. Effect of Electromechanical Stimulation on the Maturation of Myotubes on Aligned Electrospun Fibers. Cellular and Molecular Bioengineering, 1 (2-3), 133-145. Available online: https://doi.org/10.1007/s12195-008- 0021-y López-Cervantes J & Paseiro-Losada P, 2003. Determination of bisphenol A in, and its migration from, PVC stretch film used for food packaging. Food Addit Contam, 20 (6), 596-606. Available online: https://doi.org/10.1080/0265203031000109495 Louis F, Furuhashi M, Yoshinuma H, Takeuchi S & Matsusaki M, 2023. Mimicking Wagyu beef fat in cultured meat: Progress in edible bovine adipose tissue production with controllable fatty acid composition. Materials Today Bio, 21. Available online: https://doi.org/10.1016/j.mtbio.2023.100720 Manikkam M, Tracey R, Guerrero-Bosagna C & Skinner MK, 2013. Plastics derived endocrine disruptors (BPA, DEHP and DBP) induce epigenetic transgenerational inheritance of obesity, reproductive disease and sperm epimutations. PLoS ONE, 8 (1), e55387. Available online: https://doi.org/10.1371/journal.pone.0055387 Mattick CS, Landis AE, Allenby BR & Genovese NJ, 2015. Anticipatory Life Cycle Analysis of In Vitro Biomass Cultivation for Cultured Meat Production in the United States. Environmental Science and Technology, 49 (19), 11941-11949. Available online: https://doi.org/10.1021/acs.est.5b01614 Melzener L, Verzijden KE, Buijs AJ, Post MJ & Flack JE, 2021. Cultured beef: from small biopsy to substantial quantity. Journal of the Science of Food and Agriculture, 101 (1), 7-14. Available online: https://doi.org/10.1002/jsfa.10663 Messmer T, Klevernic I, Furquim C, Ovchinnikova E, Dogan A, Cruz H, Post MJ & Flack JE, 2022. A serum-free media formulation for cultured meat production supports bovine satellite",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          29,
+          30
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nal., 2023). The precise methods for cell harvesting and processing into the final product are largely not publicly disclosed. The total culture duration until formation of the end product generally takes several weeks, depending on the type of product being produced. For large-scale and continuous production of cultured meat, there are broadly two options. In one option, cells must be collected from animals on a regular basis (Stephens et al., 2018; Melzener et al., 2021). Cells that are directly isolated from animal tissue and placed into culture are referred to as primary cells. Primary cells can only undergo a limited number of divisions in vitro before they age and enter a quiescent state, which necessitates repeated collection of new cells from animals (Hayflick & Moorhead, 1961; Di Micco et al., 2021). In the other option, cells are either selected after spontaneous immortalization, or are immortalized through chemical or genetic induction, after which they can theoretically continue dividing indefinitely (Stephens et al., 2018; Soice & Johnston, 2021). This approach leads to the establishment of stable cell lines that retain their genetic and physiological characteristics, thereby enabling consistent and uniform meat production (Specht et al., 2018). To this end, cells can be preserved at various stages of the culture process by cryopreservation. In this way, a cell bank can be created, from which individual aliquots of identical cells can be thawed to initiate cultures, ultimately yielding comparable cultured meat products (Sun et al., 2016). 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 12 van 33 3 Hazard identification For this hazard identification, the possible chemical and (micro)biological hazards",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          11,
+          12
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nRischer H, Szilvay GR & Oksman-Caldentey K-M, 2020. Cellular agriculture — industrial biotechnology for food and materials. Current Opinion in Biotechnology, 61, 128-134. Available online: https://doi.org/10.1016/j.copbio.2019.12.003 Ruijtenberg S & van den Heuvel S, 2016. Coordinating cell proliferation and differentiation: Antagonism between cell cycle regulators and cell type-specific gene expression. Cell Cycle, 15 (2), 196-212. Available online: https://doi.org/10.1080/15384101.2015.1120925 Sakata R & Honikel K, 2001. Investigation the physical and chemical properties of the red pigment of meat products. Fleischwirtschaft International, 5, 182-190. Salam MA, Al-Amin MY, Salam MT, Pawar JS, Akhter N, Rabaan AA & Alqumber MAA, 2023. Antimicrobial Resistance: A Growing Serious Threat for Global Public Health. Healthcare (Basel), 11 (13). Available online: https://doi.org/10.3390/healthcare11131946 Santos ACA, Camarena DEM, Roncoli Reigado G, Chambergo FS, Nunes VA, Trindade MA & Stuchi Maria-Engler S, 2023. Tissue Engineering Challenges for Cultivated Meat to Meet the Real Demand of a Global Market. International Journal of Molecular Sciences, 24 (7). Available online: https://doi.org/10.3390/ijms24076033 Shay JW & Wright WE, 2000. Hayflick, his limit, and cellular ageing. Nature Reviews Molecular Cell Biology, 1 (1), 72-76. Available online: https://doi.org/10.1038/35036093 Simsa R, Yuen J, Stout A, Rubio N, Fogelstrand P & Kaplan DL, 2019. Extracellular Heme Proteins Influence Bovine Myosatellite Cell Proliferation and the Color of Cell-Based Meat. Foods, 8 (10), 521. Available online: https://doi.org/10.3390/foods8100521 Singh A, Kumar V, Singh SK, Gupta J, Kumar M, Sarma DK & Verma V, 2023. Recent advances in bioengineered scaffold for in vitro meat production. Cell and Tissue Research, 391 (2), 235-247. Available online: https://doi.org/10.1007/s00441-022-03718-6 Singh S, Yap WS, Ge XY, Min VLX & Choudhury D, 2022. Cultured meat production fuelled by fermentation. Trends in Food Science & Technology, 120, 48-58. Available online: https://doi.org/10.1016/j.tifs.2021.12.028 Skrivergaard S, Young JF, Sahebekhtiari N, Semper C, Venkatesan M, Savchenko A, Stogios PJ, Therkildsen M & Rasmussen MK, 2023. A",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          31
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 4.12,
+    "cost": {
+      "usd": 0.00042784408000000004,
+      "requests": 6,
+      "prompt_tokens": 5602,
+      "completion_tokens": 288,
+      "reasoning_tokens": 218,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 16,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3.2e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 5586,
+          "completion_tokens": 288,
+          "reasoning_tokens": 218,
+          "cached_tokens": 0,
+          "usd": 0.00042752408,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 11,
+    "question": "Which foreign food safety authorities were contacted, and did they report any health problems after tastings?",
+    "answer": "Based solely on the provided context, the document does not mention any foreign food safety authorities being contacted or reporting health problems after tastings.\n\nThe context discusses the procedures for tastings in Singapore and the Netherlands, and compares the regulatory frameworks of the European Union, Singapore, the United States, and the Netherlands. However, it does not state that any of these authorities were contacted by another entity, nor does it report any health problems resulting from tastings. The only mention of adverse health effects is a requirement in Singapore that \"any adverse health effects must be reported for up to two weeks following the tasting event,\" but no actual reports of such effects are provided in the text.\n\nThe answer does not exist in the available database.",
+    "chunks": [
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nadditives, growth factors, veterinary drugs, and scaffold materials must be provided. For all components not known to be suitable for human consumption, and for any unintentionally formed metabolites, a risk assessment must be carried out. In addition, biopsy material must be free of animal diseases, and culture media and cell lines must remain uncontaminated with infectious agents (such as viruses, bacteria, fungi, and prions) throughout the production process. Any genetic modification and genetic instability of the cells must also be reported, along with an assessment of whether these could result in the production of substances that may pose food safety risks. The SFA guidelines also outline procedural requirements for organising tastings of novel foods. Novel foods that have not yet undergone a full safety assessment may not be offered for consumption at promotional events for the product or manufacturer, but they may be used for product development purposes. For this, an exemption must be requested from the SFA. Such an exemption application must include a description of the product, its source, and the production process. In addition, a risk assessment for acute hazards must be conducted, addressing microbiological agents, contaminants, toxins, and allergens that could potentially be present in the product to be tasted. It is the responsibility of the producer to demonstrate that short-term intake of the novel food does not result in adverse health effects and that the tasting can be conducted safely. Participation in tastings is limited to a maximum of 30 preselected volunteers, and tastings are not open to the general public. Any adverse health effects must be reported for up to two weeks following the tasting event. 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          22
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nthe basis for market authorisation in the EU, followed by approval by the European Commission and the EU Member States. The European legislation for novel foods has been incorporated into Dutch law and is enforced in the Netherlands by the NVWA. The NVWA’s supervision is based on the proven food safety system as established in European and Dutch legislation. In the Netherlands, however, a procedure has currently been set up to enable cultured meat tastings, which falls outside the framework of the established food safety system. Food safety during tastings is assessed by an expert committee set up specifically for this purpose. This committee is not affiliated with a recognised food safety authority, and little is known about its composition. Table 2 Comparison of novel food procedures across different countries. Procedure European Union (EU) Singapore United States of America (USA) Dutch tastings Legislation on novel foods Yes Yes No N/A Guidelines for safety dossier novel foods Yes Yes No N/A Guidelines specific for cultured meat No Yes No Yes, CoP procedure Guidelines specific for tastings No Yes No Yes, CoP- procedure Safety dossier assessed by EFSA SFA FDA and USDA- FSIS Committee established specifically for this purpose N/A = Not applicable. The column ‘Dutch tastings’ specifically concerns the procedure established to enable Dutch tastings of cultured meat, outside the existing European legislation applicable in the Netherlands that relates to novel foods. 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 25 van 33 Guidelines have been established for EFSA’s risk assessment of novel foods for market authorization, specifying the information that producers must provide about the food.",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          24,
+          25
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 3.48,
+    "cost": {
+      "usd": 0.00033156268,
+      "requests": 6,
+      "prompt_tokens": 2962,
+      "completion_tokens": 159,
+      "reasoning_tokens": 9,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 18,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3.6e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 2944,
+          "completion_tokens": 159,
+          "reasoning_tokens": 9,
+          "cached_tokens": 0,
+          "usd": 0.00033120268,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 12,
+    "question": "What percentage of cell lines are estimated to be contaminated with mycoplasma, and why is it hard to notice?",
+    "answer": "Based on the provided context from *Advice For Risk Associated with Cultured Meat.pdf*, literature estimates suggest that **5–35%** of cell lines are contaminated with one or more mycoplasma species.\n\nThe reason it is hard to notice is that **mycoplasma contamination does not cause turbidity in the culture medium**, which makes visual detection difficult.",
+    "chunks": [
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nin the cultured meat product that are allergenic or toxic. 3.2 Hazards associated with biomass production through cell growth and differentiation This section describes the microbiological and chemical hazards associated with the second step of cultured meat production, in which isolated cells are expanded on a large scale, followed by differentiation into muscle and/or fat tissue. Hazards are identified that are related to the culture medium, scaffolds, and the bioreactor used during this cultivation phase. 3.2.1 Microbiological hazards Microbiological hazards that can occur during the proliferation and differentiation phase of the culture include microbial contamination of medium components and scaffolds, as well as contamination of the bioreactor and/or other culture equipment. The cultivation of animal cells is extremely vulnerable to bacterial contamination, as bacteria grow at much higher rates than animal cells (Olenic & Thorrez, 2023). This vulnerability makes it essential that in vitro culture is carried out under completely sterile conditions. Ensuring sterility throughout the cultivation phase, however, is not straightforward. Depending on the type of microorganism and the timing of contamination, such an event can either disrupt and terminate the culture, or result in a finished cultured meat product that is contaminated. In many cases, bacterial contamination will visibly disrupt the culture before a final product can be formed. In research laboratories, contamination of cell cultures with mycoplasma species is common. Literature estimates suggest that 5–35% of cell lines are contaminated with one or more mycoplasma species (Nikfarjam & Farzaneh, 2012). Mycoplasma are small Gram -negative bacteria lacking a cell wall and are resistant to many antibiotics. Mycoplasma contamination does not cause turbidity in culture medium, making visual detection difficult. Mycoplasma can affect the growth rate of cultures, alter cell metabolism, or induce chromosomal abnormalities (Drexler & Uphoff, 2002). It remains unclear whether mycoplasma pose a direct hazard",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          16
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nC & Voss S (eds.). The Good Food Institute (GFI), Washington, DC, USA, 65 pp. Available online: https://gfieurope.org/wp-content/uploads/2022/04/2021-Cultivated-Meat-State-of- the-Industry-Report.pdf Connor S, 2013. Special Report:‘In Vitro’Beef—It’s the Meat of the Future. The Independent, 28. Available online: https://www.independent.co.uk/news/science/special-report-in-vitro- beef-it-s-the-meat-of-the-future-8735104.html Di Micco R, Krizhanovsky V, Baker D & d’Adda di Fagagna F, 2021. Cellular senescence in ageing: from mechanisms to therapeutic opportunities. Nature Reviews Molecular Cell Biology, 22 (2), 75-95. Available online: https://doi.org/10.1038/s41580-020-00314-w Ding DC, Shyu WC & Lin SZ, 2011. Mesenchymal stem cells. Cell Transplant, 20 (1), 5-14. Available online: https://doi.org/10.3727/096368910x Ding S, Swennen GNM, Messmer T, Gagliardi M, Molin DGM, Li C, Zhou G & Post MJ, 2018. Maintaining bovine satellite cells stemness through p38 pathway. Scientific Reports, 8 (1), 10808. Available online: https://doi.org/10.1038/s41598-018-28746-7 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 28 van 33 Dohmen RGJ, Hubalek S, Melke J, Messmer T, Cantoni F, Mei A, Hueber R, Mitic R, Remmers D, Moutsatsou P, Post MJ, Jackisch L & Flack JE, 2022. Muscle-derived fibro-adipogenic progenitor cells for production of cultured bovine adipose tissue. npj Science of Food, 6 (1), 6. Available online: https://doi.org/10.1038/s41538-021-00122-2 Drexler HG & Uphoff CC, 2002. Mycoplasma contamination of cell cultures: Incidence, sources, effects, detection, elimination, prevention. Cytotechnology, 39 (2), 75-90. Available online: https://doi.org/10.1023/a:1022913015916 Dufau J, Shen JX, Couchet M, De Castro Barbosa T, Mejhert N, Massier L, Griseti E, Mouisel E, Amri EZ, Lauschke VM, Rydén M & Langin D, 2021. In vitro and ex vivo models of adipocytes. American Journal of Physiology Cell Physiology, 320 (5), C822-c841. Available online: https://doi.org/10.1152/ajpcell.00519.2020 EFSA, 2013. Scientific Opinion on the public health hazards to be",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          27,
+          28
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 4.61,
+    "cost": {
+      "usd": 0.00053301594,
+      "requests": 6,
+      "prompt_tokens": 3964,
+      "completion_tokens": 612,
+      "reasoning_tokens": 599,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 23,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 4.6e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3941,
+          "completion_tokens": 612,
+          "reasoning_tokens": 599,
+          "cached_tokens": 0,
+          "usd": 0.00053255594,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 13,
+    "question": "Which parts of an animal should be avoided when taking cells, to prevent prion transmission?",
+    "answer": "Based on the provided context, to prevent prion transmission when sourcing starting cells for cultured meat production, the following animal tissues should be avoided:\n\n- **Brain**\n- **Spinal cord**\n- **Lymph nodes**\n- **Parts of the intestines**\n\nThese tissues are highlighted because prions are particularly present in them. The context explicitly states that avoiding these tissues, along with monitoring source animals for clinical symptoms of prion-induced neurodegenerative diseases, is essential to prevent prion transmission through cultured meat.\n\n**Source:** Advice For Risk Associated with Cultured Meat.pdf, Page 13.",
+    "chunks": [
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nand foodborne (Buehring et al., 2019). However, it is still unknown whether BLV can indeed act as a human pathogen. Likewise, it is unclear whether the virus could survive and replicate during the in vitro culture phase of cultured meat production. Foodborne parasites such as Toxoplasma gondii and Cryptosporidium parvum represent potential hazards that may enter cultured meat through a contaminated source animal (Habowski & Sant’Ana, 2024; Powell et al., 2025). An infectious prion is a misfolded protein capable of transmitting its abnormal structure to other copies of the same protein. Prions are particularly present in brain, spinal cord, lymph nodes, and 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 13 van 33 parts of the intestines (Gough & Maddison, 2010). Avoiding these tissues when sourcing starting cells for cultured meat production, and monitoring source animals for clinical symptoms of prion- induced neurodegenerative diseases, is essential to prevent prion transmission through cultured meat. To control the risk of transmitting pathogens from the source animal to the cultivated meat consumer, it is important that the harvested tissue is thoroughly inspected (Ong et al., 2021; FAO & WHO, 2023; Gu et al., 2023). Documented information about the health status of the source animal may also provide indications of potentially present pathogenic microorganisms. Visual inspection of the animal and the harvested tissues can reduce the likelihood of transmission of diseases such as brucellosis and tuberculosis (EFSA, 2013). However, not all human pathogens cause clinical signs in animals. As a result, an asymptomatic animal and tissue that appears healthy may still carry microorganisms that can cause disease in humans. Since",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          12,
+          13
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nthe applicable Creative Commons License Pagina 14 van 33 microorganisms. This may occur due to underdosing and/or repeated exposure. A possible consequence is that microorganisms with resistances may end up in cultured meat consumed by humans. If these microorganisms cause disease in the consumer, or if the resistance is transferred to pathogenic microorganisms already present in the consumer’s body, this may lead to reduced effectiveness of treatments against bacterial infections. Pathogens originating from the source animal itself, or pathogens introduced during the tissue collection process, can pose a risk to the cultured meat consumer. For this to happen, microorganisms must be able to survive the culture phase and remain in the final product in concentrations high enough to be harmful to the consumer. In addition, they must withstand food processing and preparation steps, such as heating. Depending on the type of microorganism, microbial contamination can render the initiation of a cell culture unfeasible. This is described in more detail in section 3.2.1 on microbial contamination during the culture phase. 3.1.2 Chemical hazards Chemical hazards associated with the procurement of starter cells include the presence of environmental contaminants, residues of veterinary drugs and feed additives, and natural toxins in the biopsy tissue. Other hazards include residues of cleaning and disinfecting agents used to sterilize the instruments for tissue collection, antimicrobial agents applied during tissue harvesting, and residues of cryoprotectants (FAO & WHO, 2023). An animal intended for meat production may be exposed to contaminants and residues originating, for example, from the environment or from animal feed. Environmental contaminants are chemical substances that mainly enter the environment as a result of industrial activities and/or combustion processes. The cells or tissues taken from livestock to serve as starting material for cell culture may be contaminated in the same way as conventional meat with",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          13,
+          14
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nfor the consumer that may arise with the production of cultured meat have been mapped out. The hazards identified by EFSA and FAO & WHO have been included (FAO & WHO, 2023; EFSA et al., 2024). Specific attention was given to materials, ingredients, and processes that are unique to cultured meat production, such as the use of scaffolds, (genetic) modification of cellular properties, and supplementation via the culture medium. Table 1 provides an overview of the identified hazards. The hazards are classified into chemical, microbiological, and other hazards. Microbiological contamination during the cultured meat production process can occur at different stages and via various routes. Pathogens are microbiological agents such as bacteria, viruses, fungi, parasites, and prions (infectious proteins) that can cause disease in humans through infection. Chemical hazards are (residues of) chemical substances that may have toxic effects on a consumer of cultured meat. Bioactive molecules such as hormones, and growth and differentiation factors, are included in this assessment. Below, the identified chemical, (micro)biological, and other hazards associated with cultured meat are described in more detail for each production step. 3.1 Hazards associated with obtaining the starting cells This section describes the microbiological, chemical, and genetic hazards (listed under “Other hazards” in Table 1) related to the first step in the production process of cultured meat: obtaining the starting cells. These include hazards associated with the source animal, hazards that arise or occur during the collection of the tissue that serves as starting material for a culture, and hazards resulting from further cell selection, as well as the formation of cell lines and cell banks. 3.1.1 Microbiological hazards Microbiological hazards associated with obtaining the starting cells include pathogens present in the source animal and microbial contamination during tissue collection. The cells used for cultured meat production are taken from",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          12
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nadditives, growth factors, veterinary drugs, and scaffold materials must be provided. For all components not known to be suitable for human consumption, and for any unintentionally formed metabolites, a risk assessment must be carried out. In addition, biopsy material must be free of animal diseases, and culture media and cell lines must remain uncontaminated with infectious agents (such as viruses, bacteria, fungi, and prions) throughout the production process. Any genetic modification and genetic instability of the cells must also be reported, along with an assessment of whether these could result in the production of substances that may pose food safety risks. The SFA guidelines also outline procedural requirements for organising tastings of novel foods. Novel foods that have not yet undergone a full safety assessment may not be offered for consumption at promotional events for the product or manufacturer, but they may be used for product development purposes. For this, an exemption must be requested from the SFA. Such an exemption application must include a description of the product, its source, and the production process. In addition, a risk assessment for acute hazards must be conducted, addressing microbiological agents, contaminants, toxins, and allergens that could potentially be present in the product to be tasted. It is the responsibility of the producer to demonstrate that short-term intake of the novel food does not result in adverse health effects and that the tasting can be conducted safely. Participation in tastings is limited to a maximum of 30 preselected volunteers, and tastings are not open to the general public. Any adverse health effects must be reported for up to two weeks following the tasting event. 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          22
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 3.52,
+    "cost": {
+      "usd": 0.0003805153,
+      "requests": 6,
+      "prompt_tokens": 4008,
+      "completion_tokens": 336,
+      "reasoning_tokens": 214,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 17,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3.4e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3991,
+          "completion_tokens": 336,
+          "reasoning_tokens": 214,
+          "cached_tokens": 0,
+          "usd": 0.00038017530000000006,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 14,
+    "question": "How does the EU define a novel food?",
+    "answer": "Based on the provided context, the EU defines a novel food through the **Novel Food Regulation (EU) 2015/2283**. The context specifically identifies cultured meat as a novel food under this regulation [Source: Advice For Risk Associated with Cultured Meat.pdf, Page 1]. The context explains that this classification means the product requires a safety assessment by the European Food Safety Authority (EFSA) and approval by the European Commission and Member States before it can be placed on the market [Source: Advice For Risk Associated with Cultured Meat.pdf, Page 2]. The exact definitional text of a \"novel food\" from the regulation is not quoted in the provided excerpts.",
+    "chunks": [
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\napplication for authorization to the European Commission (EC). The applicant must provide a scientific dossier with product information to the EC. At the request of the EC, the European Food Safety Authority (EFSA) conducts a risk assessment based on the submitted dossier. The final decision on authorizing a cultured meat product for the European market is made by the EC and the EU Member States, following EFSA’s advice on food safety. Once approved, the novel food is added to the Union list of authorized novel foods. European regulations apply directly in all Member States, including the Netherlands. In the Netherlands, the European legislation on novel foods has been implemented through the Decree on novel foods and genetically modified foods (Warenwetbesluit nieuwe voedingsmiddelen en genetisch gemodificeerde levensmiddelen)8. This decree covers two main aspects: 1. Prohibition: it is forbidden to place a novel food on the market in the Netherlands if it is not on the Union list or if it does not meet the conditions and specifications stated in that list. 2 World's first lab-grown burger is eaten in London - BBC News 3 Singapore Gives Regulatory Approval for Eat Just’s Cell-Based Chicken 4 U.S. approves sale of cell-cultured chicken to two startups 5 Israel approves sale of Aleph Farms’ cultivated beef | Food Safety News 6 Regulation (EU) 2015/2283 of the European Parliament and of the Council of 25 November 2015 on novel foods 7 Regulation (EC) No 1829/2003 of the European Parliament and of the Council of 22 September 2003 on genetically modified food and feed 8 wetten.nl - Regeling - Warenwetbesluit nieuwe voedingsmiddelen en genetisch gemodificeerde levensmiddelen - BWBR0040236 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          8
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nJuly 2024 and February 2025. No measurement data are available on the presence of pathogenic micro- organisms and chemical substances in cultured meat products offered by Dutch producers at tastings. Due to the limited availability of information, there is a high degree of uncertainty regarding the food safety risks of cultured meat tastings. 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 5 van 33 Fout! Verwijzingsbron niet gevonden. Date 17 July 2025 Our reference NVWA 2025-010031017 Conclusion Cultured meat is a novel food in Europe and falls under the legislation laid down in the Novel Food Regulation (EU) 2015/22831. In order to place a novel food on the market in Europe, a system has been established to safeguard food safety. This system includes a risk assessment by EFSA to determine whether consumption of the novel food poses risks to human health. A positive assessment by EFSA forms the basis for market authorisation in the EU, followed by a decision by the European Commission and the Member States on whether the product can be placed on the market. European legislation on novel foods has been incorporated into Dutch law and is enforced in the Netherlands by the NVWA. The supervision of the NVWA is based on the established food safety system as it is set up in European and Dutch laws and regulations. In the Netherlands, a procedure is currently in place to enable cultured meat tastings, which falls outside the framework of the established food safety system. Food safety during tastings is assessed by a committee established specifically for this purpose. This committee is not affiliated",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          4,
+          5
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\n> Return adress PO Box 43006 3540 AA Utrecht To the Minister of Health, Welfare and Sport and the Inspector-General of the Dutch Food and Consumer Product Safety Authority Advice from the Director of the Office for Risk Assessment & Research On the public health risks associated with offering cultured meat at tastings Pagina 1 van 33 Office for Risk Assessment & Research Catharijnesingel 59 3511 GG Utrecht PO Box 43006 3540 AA Utrecht www.nvwa.nl Contact risicobeoordeling@nvwa.nl Our reference NVWA 2025-010031017 Date 17 July 2025 Background Placing meat on the market made from in vitro cultured animal cells (cultured meat) is currently not formally authorised in Europe. Cultured meat is considered a novel food within the European Union (EU), whose market authorisation is only allowed after a safety assessment by the European Food Safety Authority (EFSA), followed by approval by the European Commission (EC) and the EU Member States. In March 2022, a motion by members of parliament Tjeerd de Groot and Valstar (Parliamentary Paper 27 428, No 383) was adopted by the Dutch House of Representatives requesting the government to enter into consultations with Dutch producers of cultured meat in order to allow sensory evaluations, hereafter called ‘tastings’, under ‘controlled and safe conditions’. Subsequently, in collaboration with the Ministry of Health, Welfare and Sport (VWS) and the Ministry of Agriculture, Fisheries, Food Security and Nature (LVVN), cultured meat producers and the Dutch association of biotechnology companies (HollandBio) have developed a Code of Practice (CoP) that prescribes the procedures to be followed when conducting cultured meat tastings. In April and July 2024, two Dutch producers of cultured meat organised tastings for the first time in the Netherlands to have their cultured meat products tasted by a number of pre-selected participants. Tastings also took place in February 2025. The Dutch Food",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          1
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\ncultured meat tastings, exposure is short-term (acute) rather than chronic. The intake amount is calculated as the product of the measured or estimated concentration of the substance in cultured meat and the portion size. Risk characterization can only be performed when the intake amount can be compared with the health- based guidance value for the substance or substance group. For cultured meat tastings, this would involve a health-based guidance value for short-term exposure, i.e., an acute reference dose (ARfD). However, no literature is available reporting concentration data for chemical substances in cultured meat. Due to the absence of these concentrations, no exposure assessment or risk characterization can be performed. 6 Risk assessment of novel foods and tastings in the EU and abroad Before a novel food can be authorized for the European market, EFSA carries out a risk assessment regarding the food safety of the product. Under the Dutch CoP procedure, cultured meat producers wanting to organize tastings are required to submit an application, which is assessed by a dedicated expert committee established for this purpose. Below, the food safety aspects assessed by EFSA and the Dutch expert committee are described, as well as the type of information food producers are expected to provide to enable these risk assessments. Subsequently, the procedures for market authorization of cultured meat and/or other novel foods, and for organizing tastings in Singapore and the United States, are outlined. 6.1 European Union EFSA has developed a document containing scientific and technical guidance for submitting a dossier for the authorization of a novel food (EFSA NDA Panel et al., 2021). This document is not specifically tailored to cultured meat. It provides an overview of the data EFSA requires to assess whether a novel food poses no risks to human health. The required information includes a detailed",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          21
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 16.76,
+    "cost": {
+      "usd": 0.00089865418,
+      "requests": 6,
+      "prompt_tokens": 4076,
+      "completion_tokens": 3255,
+      "reasoning_tokens": 3166,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 8,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 1.6e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 4068,
+          "completion_tokens": 3255,
+          "reasoning_tokens": 3166,
+          "cached_tokens": 0,
+          "usd": 0.0008984941799999999,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 15,
+    "question": "Which documents mention greenhouse gas or CO2 emissions, and what does each say?",
+    "answer": "Based solely on the provided context, the document **HummesETAL_Lajer_2023-2.pdf** mentions CO2 emissions.\n\n**What it says:**\nThe document states that in order to **reduce CO2 emissions**, there is a growing interest from automobile manufacturers in alternative technologies to internal combustion engines. These alternatives include hybrid power systems, the use of bio and alternative fuels, and most notably, electric vehicles (Source: HummesETAL_Lajer_2023-2.pdf, Page 1).",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nreduce CO2 emissions (Coelho, Meneguelo and Chaves, 2022; Viana and Asencios, 2022), there is a growing interest from automobile manufacturers in alternative technologies to internal combustion engines, such as hybrid power systems (Croce et al., 2020) or the use of bio and alternative fuels (Simões, Romeiro and Kurita, 2021; De Araujo et al., 2022). The highest investment, though, seems to be in electric vehicles (Kester et al., 2020; Skjølsvold and Ryghaug, 2020). Areas benefiting from these investments are, for example, the use of batteries as a structural component (Dionisi, Harnden and Zenkert, 2017; Carlstedt and Asp, 2020) and the development of new materials (Yang et al., 2020; Mahmud et al., 2022). The focus, however, remains on improving the current technology of lithium batteries, which have good performance and great commercial potential (Liu et al., 2017; Hamed et al., 2022). The more traditional cylindrical and prismatic cells share space with some recently developed geometries available in the current market (such as pouch cells and blade batteries) and others still in an experimental phase (such as structural batteries). Despite the growing number of available battery configurations, no standard or legislation currently influences the geometry to be used (Sankaran and Venkatesan, 2021). Determining the ideal battery geometry for a given application is pivotal for project optimization. The reasons for a manufacturer choosing between one type of geometry or the other are closely associated with the advantages and disadvantages related to the system in question, evaluating parameters such as costs and performance. However, their motivations are often locked behind commercial confidentiality. That is advantageous from a business standpoint, but it fragments battery geometry knowledge found in the literature. Studies in the field seek to investigate the performance of each geometry concerning mechanical and thermal aspects, for example Avdeev and Gilaki (2014) and Dionisi, Harnden",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          1
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nAvailable at: https://electricvehicleweb.com/byd-blade-shaped-battery-breakthrough-battery-safety/ [Accessed 19 January 2022]. Nathan, S., 2018. Carbon fibre can act as a structural battery component in vehicle bodies. The Engineer. Available at: https://www.theengineer.co.uk/carbon-fibre-structural-battery/ [Accessed 26 January 2022]. Park, S.H., Park, J., Ryou, M.-H. and Lee, Y.M., 2020. Sensitivity of power of lithium-ion batteries to temperature: A case study using cylindrical- and pouch-type cells. Journal of Power Sources, 465, p.228238. https://doi.org/10.1016/j.jpowsour.2020.228238. Prismatic Cell and Pouch Batteries - Lithium Ion Battery Applications. [online] Available at: https://www.epectec.com/batteries/prismatic-pouch-packs.html [Accessed 7 October 2021]. Request for issuance of a new COC to include a running change – Addition of Performance AWD (21\" Wheels) Variant to the Model Y AWD Platform. [online] Available at: https://dis.epa.gov/otaqpub/display_file.jsp?docid=50641&flag=1 [Accessed 13 November 2022]. Sahraei, E., Hill, R. and Wierzbicki, T., 2012. Calibration and finite element simulation of pouch lithium- ion batteries for mechanical integrity. Journal of Power Sources, 201, pp.307–321. https://doi.org/10.1016/j.jpowsour.2011.10.094. Sankaran, G. and Venkatesan, S., 2021. Standardization of electric vehicle battery pack geometry form factors for passenger car segments in India. Journal of Power Sources, 502, p.230008. https://doi.org/10.1016/j.jpowsour.2021.230008. Saw, L.H., Ye, Y. and Tay, A.A.O., 2013. Electrochemical–thermal analysis of 18650 Lithium Iron Phosphate cell. Energy Conversion and Management, 75, pp.162–174. https://doi.org/10.1016/j.enconman.2013.05.040. Simões, A.F., Kutianski José Romeiro, L. and Massao Kurita, R., 2021. Interrelationships between policies to encourage biofuels, energy efficiency and climate change mitigation: A synergistic analysis focusing on the Brazilian RenovaBio Program. Latin American Journal of Energy Research, 8(1), pp.46–58. https://doi.org/10.21712/lajer.2021.v8.n1.p46-58. Simon, B., Ziemann, S. and Weil, M., 2015. Potential metal requirement of active materials in lithium-ion battery cells of electric vehicles and its impact on reserves: Focus on Europe. Resources, Conservation and Recycling, 104, pp.300–310. https://doi.org/10.1016/j.resconrec.2015.07.011. Skjølsvold, T.M. and Ryghaug, M., 2020. Temporal echoes and cross-geography policy effects: Multiple levels of transition governance and the electric vehicle breakthrough. Environmental Innovation and Societal Transitions, 35,",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          20
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nWhere 𝑐: battery cost for a capacity of 75 kWh [$]; 𝑐௞ௐ௛: battery cost per kWh [$/kWh]; 𝑅: vehicle range [km]; 𝐸: battery capacity for a total battery weight of 530 kg [Wh]; 𝑒௖: energy consumption [Wh/km]. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 102 3 Discussion 3.1 Decision analysis 3.1.1 Vehicle goals The batteries were compared on eleven fronts (battery cost, vehicle range, battery efficiency, cell thermal management, cell thermal integrity, energy density, power density, specific energy, specific power, cell mechanical integrity, and cell technological maturity) which were given scores related to each battery shape. These were assigned according to qualitative and quantitative criteria and are shown in Table 3. Table 3. Vehicle goals normalized with the data of the battery shapes. Criterion 1 (Very weak) 2 (Weak) 3 (Intermediate) 4 (Good) 5 (Very good) Battery cost [$/kWh] > 149 129 – 149 108 – 128 87 – 107 < 87 Vehicle range [km] < 300 300 – 450 451 – 550 551 – 700 > 700 Battery efficiency [%] < 88.0 88.0 – 90.3 90.4 – 92.6 92.7 – 95.0 > 95.0 Thermal management Complex Medium- complex Medium Simple-medium Simple Cell thermal integrity Very high risk High risk Medium risk Low risk Very low risk Energy density [Wh/L] < 199 199 – 219 220 – 240 241 – 261 > 261 Power density [kW/L] < 0.54 0.54 – 0.73 0.74 – 0.93 0.94 – 1.13 > 1.13 Specific energy [Wh/kg] < 161 161 – 180 181 – 200 201 – 220 > 220 Specific power [kW/kg] < 0.38 0.38 – 0.47 0.48 – 0.57 0.58 – 0.67 > 0.67 Cell mechanical integrity Very weak mechanical load bearing capability Weak mechanical load bearing capability Average mechanical load bearing capability",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          8,
+          9
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 3.57,
+    "cost": {
+      "usd": 0.00041471104,
+      "requests": 6,
+      "prompt_tokens": 4849,
+      "completion_tokens": 124,
+      "reasoning_tokens": 14,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 15,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 4834,
+          "completion_tokens": 124,
+          "reasoning_tokens": 14,
+          "cached_tokens": 0,
+          "usd": 0.00041441104,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 16,
+    "question": "What gaps in available data or information do the authors of each document report?",
+    "answer": "Based on the provided context from the document *Advice For Risk Associated with Cultured Meat.pdf*, the authors (BuRO) explicitly report several significant gaps in available data and information, primarily in **Section 7 (Analysis of uncertainty)**. The document treats the provided excerpts as a single report, so the gaps are consolidated here:\n\n1. **Lack of Measurement Data on Actual Hazards**\n   The authors state that potential hazards associated with cultured meat consumption are \"purely theoretical, as there are few to no measurement data available on the actual presence of pathogenic microorganisms and chemical substances in cultured meat.\" [Source: Advice For Risk Associated with Cultured Meat.pdf] (Section 7)\n\n2. **Lack of Data on Specific Product Composition**\n   The report notes that \"data are lacking on the specific composition of cultured meat products offered by Dutch producers during tastings.\" [Source: Advice For Risk Associated with Cultured Meat.pdf] (Section 7)\n\n3. **Lack of Access to Industry Dossiers**\n   The authors highlight that \"the dossiers submitted when applying for permission to organize tastings are not publicly accessible and were therefore not reviewed by BuRO.\" This prevented them from verifying the safety data provided by producers. [Source: Advice For Risk Associated with Cultured Meat.pdf] (Section 7)\n\n4. **Lack of Information on Portion Sizes**\n   The document explicitly states that \"information on the portion sizes consumed during tastings is also missing,\" which is critical for assessing acute or chronic exposure risks. [Source: Advice For Risk Associated with Cultured Meat.pdf] (Section 7)\n\n5. **Lack of Data on Residual Scaffold and By-Product Concentrations (Implied)**\n   While discussing scaffolds, the authors note that residues of materials, crosslinkers, and transformation by-products \"may pose a risk to consumers\" and that \"residual concentrations of such by-products in the final [product]\" are a concern. The lack of measurement data on these residues contributes to the overall uncertainty described in Section 7. [Source: Advice For Risk Associated with Cultured Meat.pdf] (Section 2)\n\nThe authors conclude that due to this \"limited availability of information, there is a high degree of uncertainty regarding the food safety risks of organizing cultured meat tastings.\" [Source: Advice For Risk Associated with Cultured Meat.pdf] (Section 7)",
+    "chunks": [
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nSee the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 33 van 33 10 Appendix Appendix 1. Literature review method Literature was searched in two databases on 15 January 2024: Scopus and Web of Science. The search was conducted using the English terms ‘hazard’, ‘risk’ and ‘safety’, in combination with one of the following English terms for cultured meat: Cultured meat, Cultivated meat, Artificial meat, Cell-based meat, Cell-cultured meat, Cell-cultivated meat, Cellular meat, Animal-free meat, In vitro meat, Lab-grown meat, Synthetic meat, Fake meat, Clean meat. Articles published before 2015 were excluded. The search results were sorted by relevance, after which the top 250 were assessed for usability based on the title, keywords and/or abstract. See Table 3 for an overview of the results of this search strategy. Table 3 Search strategy and results. Query 1 Query 2 Database Number of results Cultured meat OR Cultivated meat OR Artificial meat OR Cell-based meat OR Cell-cultured meat OR Cell-cultivated meat OR Cellular meat OR Animal-free meat OR In vitro meat OR Lab-grown meat OR Synthetic meat OR Fake meat OR Clean meat AND Hazard Scopus 319 Web of Science 3917 AND Risk Scopus 2100 Web of Science 3981 AND Safety Scopus 2142 Web of Science 3989 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          32,
+          33
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nIn such cases, it is essential to ensure that no toxic metabolites accumulate that could persist in the final cultured meat product. Scaffolds can be made from synthetic materials, including various polyesters such as polyamide and polyethylene, which have previously been designated as safe for use in food preparation (Campuzano & Pelling, 2019; Chen et al., 2022; Santos et al., 2023). Other materials such as polyethylene glycol (PEG), polyglycolic acid (PGA), or polylactic acid (PLA) may also be used. These are biodegradable thermoplastic polymers. If scaffold materials are used that are not suitable for human consumption, the scaffold must be removed or degraded by the end of the culture process. Residues of microcarriers or scaffolds that are not fully degraded or removed and remain in the final cultured meat product may pose risks to consumers. Scaffolds may undergo various physical or chemical processes (Oryan et al., 2018; Bomkamp et al., 2022). Transformation processes may occur, such as polymerization or surface modification. Scaffolds may also undergo degradation during cultured meat production. An important aspect of scaffolds is the integration of so-called crosslinkers. Crosslinkers are used to assemble and stabilize the scaffold and to prevent disintegration. They may also be used to add substances as side groups to the scaffold. Various types of crosslinkers can be applied, including chemical crosslinkers or those activated by UV irradiation (photo-initiators). Above certain concentrations, chemical crosslinkers or photo-initiators can be toxic. If residues of these substances remain in the final cultured meat product, they may pose a risk to consumers. Transformation and degradation processes of scaffolds may also generate by-products that could give rise to new food safety risks (Ong et al., 2021; Smith-Uchotski & Wanjiru, 2022; FAO & WHO, 2023; Gu et al., 2023). For these reasons, residual concentrations of such by-products in the final",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          19
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nevaluations conducted for market authorization of novel foods in the EU, Singapore, and the US, are conducted by food safety authorities. In contrast, the assessment of applications for Dutch tastings is performed by a committee established specifically for this purpose, which is not affiliated with a recognized food safety authority. 7 Analysis of uncertainty BuRO has focused on identifying the chemical and (micro)biological agents that may be present in a cultured meat product and that could potentially have harmful health effects for humans. For this purpose, BuRO conducted a review of the scientific literature. In the scientific literature, descriptions are primarily available of the cultured meat production process. Based on these descriptions, potential hazards associated with the consumption of cultured meat have been inferred. These hazards are purely theoretical, as there are few to no measurement data available on the actual presence of pathogenic microorganisms and chemical substances in cultured meat. In addition, data are lacking on the specific composition of cultured meat products offered by Dutch producers during tastings. The dossiers submitted when applying for permission to organize tastings are not publicly accessible and were therefore not reviewed by BuRO. Information on the portion sizes consumed during tastings is also missing. Due to the limited availability of information, there is a high degree of uncertainty regarding the food safety risks of organizing cultured meat tastings. 8 Conclusion Cultured meat is considered a novel food in Europe and falls under the legislation laid down in the Novel Food Regulation (EU) 2015/2283. In order to place a novel food on the market in Europe, a system has been established to safeguard food safety. This system includes conducting a risk assessment by EFSA to determine whether consumption of the novel food poses risks to human health. A positive opinion from EFSA forms",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          24
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 9.85,
+    "cost": {
+      "usd": 0.0014300504599999999,
+      "requests": 6,
+      "prompt_tokens": 3713,
+      "completion_tokens": 2652,
+      "reasoning_tokens": 2569,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 14,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 2.8e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3699,
+          "completion_tokens": 2652,
+          "reasoning_tokens": 2569,
+          "cached_tokens": 0,
+          "usd": 0.00142977046,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 17,
+    "question": "How long does it take to charge the blade battery from 0 to 100 percent?",
+    "answer": "The answer does not exist in the available database. The provided context discusses the blade battery's performance in terms of power density, specific power, and thermal management, but it does not include any information about charging time from 0 to 100 percent.",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nnot considered for this criterion as they are not currently applied in any vehicle. Figure 7. Scores for each battery geometry investigated in Table 5. Regarding battery efficiency, the Ultium pouch cell (GM) presented the best performance, with the 4680 following relatively close. Interestingly, the estimated performance of the 4680 cylindrical cell (Panasonic) in this regard is not substantially better than the 2170. All batteries followed relatively closely in this criterion, with the difference between the highest and lowest efficiency being only 5.09%, which could be considered negligible for practical aspects. It is important to notice that this criterion is based mainly on estimates made by the specialized media as official data for usable and total capacity are hardly found. The structural battery was not considered for this criterion for lack of data. Regarding power density, the blade battery (BYD) presents by far the best performance. The fact that the 120 Ah prismatic battery (Samsung SDI) presents the lowest power density further enhances the argument that the blade technology is a notable evolution of the prismatic form factor. Considering the specific power criterion, the current-generation 2170 cylindrical battery (Panasonic) has the edge, but the blade follows relatively close. One should be mindful that, for performance-focused vehicles, the power density and specific power are crucial attributes to consider, as providing maximum performance over their volume and reducing weight is the principal concern in this case. The 4680 cylindrical cell (Panasonic), Licerion pouch cell (Sion), and structural battery (University of Porto) were not considered for these criteria for lack of data. Regarding thermal management, the structural battery was not considered for lack of data. The highest score was attributed to the blade battery (BYD): its characteristics, as pointed out in Section 1.1.5, make them safer and their thermal management easier than conventional,",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          12
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nthat it was not possible to include blade and structural batteries in some of the evaluations of the decision criteria and the case study. That is due to them being installed differently than other batteries in electric vehicles (which would invalidate a direct comparison) and because certain specifications required for performance quantification are not yet available. Therefore, it is recommended that future work develop ways to include these geometries in the comparison to allow a more assertive analysis. Finally, it is emphasized that, while this study provides valuable insights into the performance of different cell geometries with respect to each other, future work following a similar comparison methodology would be interesting. For instance, a database containing more battery models, for example, could potentially lead to more extensive comparisons. Acknowledgements We would like to thank the program UFRGS/PRINT/CAPES for the visiting professor grant. The contribution was funded by IIASA. References 2022-Kelley-Blue-Book-Electrified-Vehicle-Sales-Report.pdf. [online] Available at: https://www.coxautoinc.com/wp-content/uploads/2022/10/Q3-2022-Kelley-Blue-Book-Electrified- Vehicle-Sales-Report.pdf [Accessed 15 January 2023]. 2022 Tesla Model Y 4680 - Battery Design. [online] Available at: https://www.batterydesign.net/2022- tesla-model-y-4680/ [Accessed 26 October 2022]. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 111 A Closer Look at the ‘Blade Battery’ That Tesla Will Reportedly Use for its $25,000 EV - FutureCar.com - via @FutureCar_Media. [online] Available at: https://www.futurecar.com/4794/A-Closer-Look-at-the- Blade-Battery-That-Tesla-Will-Reportedly-Use-for-its-$25000-EV [Accessed 13 January 2022]. Automotive Battery - Battery Cells & Battery System | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/products/prismatic-lithium-ion-battery-cell.html [Accessed 1 June 2022]. Automotive Battery - Partnership | Samsung SDI. [online] Available at: https://www.samsungsdi.com/automotive-battery/partnership.html [Accessed 1 June 2022]. Avdeev, I. and Gilaki, M., 2014. Structural analysis and experimental characterization of cylindrical lithium-ion battery cells subject to lateral impact. Journal of Power Sources, 271, pp.382–391. https://doi.org/10.1016/j.jpowsour.2014.08.014. Bankole, O.E., Gong, C. and Lei, L., 2013. Battery Recycling Technologies: Recycling Waste Lithium Ion",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          17,
+          18
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 2.76,
+    "cost": {
+      "usd": 0.0003017417,
+      "requests": 6,
+      "prompt_tokens": 3533,
+      "completion_tokens": 65,
+      "reasoning_tokens": 8,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 17,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 3.4e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3516,
+          "completion_tokens": 65,
+          "reasoning_tokens": 8,
+          "cached_tokens": 0,
+          "usd": 0.0003014017,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 18,
+    "question": "What is the price of a Tesla Model Y?",
+    "answer": "The provided context does not contain the retail price of a Tesla Model Y vehicle. It only provides the estimated cost of the battery pack used in the Tesla Model Y Long Range Dual Motor, which is **$13,940 for the 82 kWh battery** [Source: HummesETAL_Lajer_2023-2.pdf, p. 109].",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\ncompared. Regarding future technologies, the 4680 cylindrical battery (Panasonic) and the Licerion pouch battery (Sion) provide a greater capacity for the same volume when compared with the current generation batteries. The pouch battery pack remained with a better overall performance concerning volume occupation. That highlights the significant potential the Licerion battery has for future Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 108 electric vehicle applications, outperforming the other compared batteries in both specific energy and energy density parameters. Figure 9. Capacity and total battery volume for the five battery models. 3.2.3 Cost analysis of battery models Another considerable aspect is the cost impact for each battery model, shown in Figure 10. Figure 10. Cost for six of the battery models in this paper. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 109 Based on the costs per kWh shown in Figure 10, there is an estimated cost of $13,940 for the 82 kWh battery used in the Tesla Model Y Long Range Dual Motor car today. The Ultium (GM) and Licerion (Sion) pouch cell batteries have an estimated cost of $8,200 and $8,610, respectively. That leads to a difference of approximately 40% compared to the 2170 cylindrical cell battery (Panasonic). In addition, the 4680 cylindrical cell battery (Panasonic) and the blade battery (BYD) have a significant cost reduction compared to the others, with values of $6,150 and $5,412, respectively. The 120 Ah prismatic cell battery (Samsung SDI) is the second most expensive, with an estimated cost of $10,414 for the 82 kWh capacity. One remark is that the most traditional battery geometries (prismatic and cylindrical) currently in use are the most expensive among all tested. That explains in part the shift",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          14,
+          15,
+          16
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\npower density [kW/L] 0.95 0.37† 0.74 - - 1.24 As data was not found in the literature for every battery type, the battery energy density and specific power were calculated based on the values of the cells and the Gravimetric and Volumetric Cell-To-Pack ratios. These indicators represent how much of the battery weight and volume are related to the cells - the † Estimated by the authors. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 101 remaining being occupied by other battery hardware such as housings, connectors, etc. That allows the consideration of battery specific details for calculations. Since the Licerion and the 4680 are still not currently used in any vehicle, battery weight and volume data are not available. It was assumed that the pairs of batteries with the same geometries would have the same GCTP and VCTP. These are the pouch batteries (Licerion and Ultium) and the cylindrical batteries (2170 and 4680). That can be thought of as a worst-case scenario since these batteries are likely to improve performance compared to current-generation technology. The battery capacity was assumed as the one on the Tesla Model Y Long Range currently available. For the Samsung SDI battery, as data for the battery volume was not found in the literature (as well as for the energy density directly), the battery volume for the Fiat 500e for the 2019 model year was used, and the battery volume for the 2020 model year was calculated by correcting this battery volume with the ratio of battery masses of both vehicles. Although the 4680 is still not used in any commercial vehicle, some performance estimates regarding the Model Y can already be found on the specialized media (Battery Design, 2022). It is important to note that",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          7,
+          8
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 8.56,
+    "cost": {
+      "usd": 0.0005319878600000001,
+      "requests": 6,
+      "prompt_tokens": 3217,
+      "completion_tokens": 1216,
+      "reasoning_tokens": 1212,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 9,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 1.8e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3208,
+          "completion_tokens": 1216,
+          "reasoning_tokens": 1212,
+          "cached_tokens": 0,
+          "usd": 0.0005318078600000001,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 19,
+    "question": "How much does cultured meat cost per kilogram?",
+    "answer": "Based solely on the provided context, the answer does not exist in the available database. The documents discuss the definition, production, and safety regulations of cultured meat, but they do not provide any specific pricing or cost per kilogram.",
+    "chunks": [
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\nand Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 30 van 33 Behaviors. Front Cell Dev Biol, 9, 640388. Available online: https://doi.org/10.3389/fcell.2021.640388 Liang G & Zhang Y, 2013. Embryonic stem cell and induced pluripotent stem cell: an epigenetic perspective. Cell Research, 23 (1), 49-69. Available online: https://doi.org/10.1038/cr.2012.175 Liao IC, Liu JB, Bursac N & Leong KW, 2008. Effect of Electromechanical Stimulation on the Maturation of Myotubes on Aligned Electrospun Fibers. Cellular and Molecular Bioengineering, 1 (2-3), 133-145. Available online: https://doi.org/10.1007/s12195-008- 0021-y López-Cervantes J & Paseiro-Losada P, 2003. Determination of bisphenol A in, and its migration from, PVC stretch film used for food packaging. Food Addit Contam, 20 (6), 596-606. Available online: https://doi.org/10.1080/0265203031000109495 Louis F, Furuhashi M, Yoshinuma H, Takeuchi S & Matsusaki M, 2023. Mimicking Wagyu beef fat in cultured meat: Progress in edible bovine adipose tissue production with controllable fatty acid composition. Materials Today Bio, 21. Available online: https://doi.org/10.1016/j.mtbio.2023.100720 Manikkam M, Tracey R, Guerrero-Bosagna C & Skinner MK, 2013. Plastics derived endocrine disruptors (BPA, DEHP and DBP) induce epigenetic transgenerational inheritance of obesity, reproductive disease and sperm epimutations. PLoS ONE, 8 (1), e55387. Available online: https://doi.org/10.1371/journal.pone.0055387 Mattick CS, Landis AE, Allenby BR & Genovese NJ, 2015. Anticipatory Life Cycle Analysis of In Vitro Biomass Cultivation for Cultured Meat Production in the United States. Environmental Science and Technology, 49 (19), 11941-11949. Available online: https://doi.org/10.1021/acs.est.5b01614 Melzener L, Verzijden KE, Buijs AJ, Post MJ & Flack JE, 2021. Cultured beef: from small biopsy to substantial quantity. Journal of the Science of Food and Agriculture, 101 (1), 7-14. Available online: https://doi.org/10.1002/jsfa.10663 Messmer T, Klevernic I, Furquim C, Ovchinnikova E, Dogan A, Cruz H, Post MJ & Flack JE, 2022. A serum-free media formulation for cultured meat production supports bovine satellite",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          29,
+          30
+        ]
+      },
+      {
+        "text": "[Source: Advice For Risk Associated with Cultured Meat.pdf]:\norganize tastings, the accompanying safety dossier, and the authority that evaluates it, which meets the following criteria: - embedded in the established and proven food safety systems as set out in European and Dutch legislation and regulations; - accessible to the supervisory authority; - transparent and reproducible. To the Inspector-General of the NVWA 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 7 van 33 Fout! Verwijzingsbron niet gevonden. Date 17 July 2025 Our reference NVWA 2025-010031017 • Advocate the safeguarding of food safety during tastings of novel foods, including cultured meat, which is accessible to the NVWA. Yours sincerely, Prof. dr. Dick T.H.M. Sijm Director of the Risk Assessment & Research 29401399, 2025, 4, Downloaded from https://efsa.onlinelibrary.wiley.com/doi/10.2903/fr.efsa.2025.FR-0071 by Egyptian National Sti. Network (Enstinet), Wiley Online Library on [26/10/2026]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License Pagina 8 van 33 Substantiation Advice on the public health risks associated with offering cultured meat at tastings 1 Introduction The production of cultured meat is a form of cellular agriculture, a collective term for technologies used to produce products such as milk and meat directly from animal and/or microbial cells (Rischer et al., 2020). The term ‘cultured meat’ refers to meat products grown from animal cells under laboratory conditions (also referred to as in vitro)(Bryant, 2020). In contrast, conventional or traditional meat is harvested from slaughtered animals. It is estimated that cells from a single source animal can be used to produce much more meat than the amount obtained from a single carcass",
+        "sim": null,
+        "via": null,
+        "doc": "meat",
+        "pages": [
+          6,
+          7,
+          8
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 2.78,
+    "cost": {
+      "usd": 0.0003326316,
+      "requests": 6,
+      "prompt_tokens": 3964,
+      "completion_tokens": 60,
+      "reasoning_tokens": 9,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 9,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 1.8e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 3955,
+          "completion_tokens": 60,
+          "reasoning_tokens": 9,
+          "cached_tokens": 0,
+          "usd": 0.00033245160000000003,
+          "source": "reported"
+        }
+      }
+    }
+  },
+  {
+    "id": 20,
+    "question": "Which country produces the most lithium for electric vehicle batteries?",
+    "answer": "Based solely on the provided context, the answer does not exist in the available database. The documents discuss various battery technologies, geometries, and manufacturers, but they do not contain any information about which country produces the most lithium for electric vehicle batteries.",
+    "chunks": [
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nBatteries with the Impact on the Environment In-View. Journal of Environment and Ecology, 4(1), p.14. https://doi.org/10.5296/jee.v4i1.3257. Barbosa Coelho, N., Meneguelo, A.P. and De Lorena Diniz Chaves, G., 2022. Captura e armazenamento de carbono associados à recuperação avançada de óleo: uma revisão. Latin American Journal of Energy Research, 9(2), pp.18–35. https://doi.org/10.21712/lajer.2022.v9.n2.p18-35. Bartu Castilho Viana, G. and Jesús Olortiga Asencios, Y., 2022. Aplicação do modelo DPSIR (Drivers – Pressures – State – Impact – Response) com foco nas respostas tecnológicas para a redução dos gases de efeito estufa. Latin American Journal of Energy Research, 9(1), pp.49–68. https://doi.org/10.21712/lajer.2022.v9.n1.p49-68. Ben Ammar, F., Hafsa, I.H. and Hammami, F., 2013. Analytic Hierarchy process selection for batteries storage technologies. In: 2013 International Conference on Electrical Engineering and Software Applications. [online] 2013 International Conference On Electrical Engineering and Software Applications (ICEESA). Hammamet, Tunisia: IEEE. pp.1–6. https://doi.org/10.1109/ICEESA.2013.6578374. Borrás, J., 2021. New 4680 Tesla Batteries vs. Solid State Batteries. [online] CleanTechnica. Available at: https://cleantechnica.com/2021/11/01/new-4680-tesla-batteries-vs-solid-state-batteries/ [Accessed 8 December 2021]. BU-301a: Types of Battery Cells. [online] Battery University. Available at: https://batteryuniversity.com/article/bu-301a-types-of-battery-cells [Accessed 7 October 2021]. Burd, J.T.J., Moore, E.A., Ezzat, H., Kirchain, R. and Roth, R., 2021. Improvements in electric vehicle battery technology influence vehicle lightweighting and material substitution decisions. Applied Energy, 283, p.116269. https://doi.org/10.1016/j.apenergy.2020.116269. BYD Blade Battery Now Entering The European Market. [online] InsideEVs. Available at: https://insideevs.com/news/495023/byd-blade-battery-entering-european-market/ [Accessed 12 January 2022]. Cai, W., 2016. LITHIUM-ION BATTERY MANUFACTURING FOR ELECTRIC VEHICLES: A CONTEMPORARY OVERVIEW. In: Advances in Battery Manufacturing, Service, and Management Systems. [online] John Wiley & Sons, Ltd. pp.1–28. https://doi.org/10.1002/9781119060741.ch1. Carlstedt, D. and Asp, L.E., 2020. Performance analysis framework for structural battery composites in electric vehicles. Composites Part B: Engineering, 186, p.107822. https://doi.org/10.1016/j.compositesb.2020.107822. Chien, Y.-H., Hsieh, I.-Y.L. and Chang, T.-H., 2023. Beyond personal vehicles: How electrifying scooters will help achieve climate mitigation goals in Taiwan. Energy Strategy Reviews, 45, p.101056. https://doi.org/10.1016/j.esr.2023.101056.",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          18
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nhttps://doi.org/10.1016/j.energy.2021.119804. Kester, J., Sovacool, B.K., Zarazua de Rubens, G. and Noel, L., 2020. Novel or normal? Electric vehicles and the dialectic transition of Nordic automobility. Energy Research & Social Science, 69, p.101642. https://doi.org/10.1016/j.erss.2020.101642. Laserax, 2022. Prismatic Cells vs. Cylindrical Cells: What is the Difference? [online] Laserax. Available at: <https://www.laserax.com/blog/prismatic-vs-cylindrical-cells> [Accessed 16 June 2022]. Li, Z., Khajepour, A. and Song, J., 2019. A comprehensive review of the key technologies for pure electric vehicles. Energy, 182, pp.824–839. https://doi.org/10.1016/j.energy.2019.06.077. Lima, P., 2021a. Samsung SDI is already producing high-nickel content battery cells - ᩜᩝᩞ᩟᩠PushEVs. [online] Available at: https://pushevs.com/2021/06/09/samsung-sdi-is-already-producing-high-nickel-content- battery-cells/ [Accessed 1 June 2022]. Lima, P., 2021b. This is why BYD Blade battery is ahead of competition - ᩜᩝᩞ᩟᩠PushEVs. [online] Available at: https://pushevs.com/2021/08/10/this-is-why-byd-blade-battery-is-ahead-of-competition/ [Accessed 13 January 2022]. Liu, H., Wei, Z., He, W. and Zhao, J., 2017. Thermal issues about Li-ion batteries and recent progress in battery thermal management systems: A review. Energy Conversion and Management, 150, pp.304–330. https://doi.org/10.1016/j.enconman.2017.08.016. Mahmud, S., Rahman, M., Kamruzzaman, M., Ali, M.O., Emon, M.S.A., Khatun, H. and Ali, M.R., 2022. Recent advances in lithium-ion battery materials for improved electrochemical performance: A review. Results in Engineering, 15, p.100472. https://doi.org/10.1016/j.rineng.2022.100472. Mauler, L., Duffner, F., Zeier, W.G. and Leker, J., 2021. Battery cost forecasting: a review of methods and results with an outlook to 2050. Energy & Environmental Science, 14(9), pp.4712–4739. https://doi.org/10.1039/D1EE01530C. Morris, C., 2021. GM reveals more technical details of its Ultium battery packs. [online] Charged EVs. Available at: https://chargedevs.com/newswire/gm-reveals-more-technical-details-of-its-ultium-battery- packs/ [Accessed 26 October 2022]. Nast, C., 2020. Fiat New 500 review: smart pricing makes it a rival for all urban EVs. Wired UK. [online] Available at: https://www.wired.co.uk/article/fiat-500e-review [Accessed 1 June 2022]. Hummes et al. | Latin American Journal of Energy Research (2023) v. 10, n. 2, pp. 94-114 113 Natarajan, B., 2021. Everything you should know about the BYD Blade Battery.",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          19,
+          20
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\nreduce CO2 emissions (Coelho, Meneguelo and Chaves, 2022; Viana and Asencios, 2022), there is a growing interest from automobile manufacturers in alternative technologies to internal combustion engines, such as hybrid power systems (Croce et al., 2020) or the use of bio and alternative fuels (Simões, Romeiro and Kurita, 2021; De Araujo et al., 2022). The highest investment, though, seems to be in electric vehicles (Kester et al., 2020; Skjølsvold and Ryghaug, 2020). Areas benefiting from these investments are, for example, the use of batteries as a structural component (Dionisi, Harnden and Zenkert, 2017; Carlstedt and Asp, 2020) and the development of new materials (Yang et al., 2020; Mahmud et al., 2022). The focus, however, remains on improving the current technology of lithium batteries, which have good performance and great commercial potential (Liu et al., 2017; Hamed et al., 2022). The more traditional cylindrical and prismatic cells share space with some recently developed geometries available in the current market (such as pouch cells and blade batteries) and others still in an experimental phase (such as structural batteries). Despite the growing number of available battery configurations, no standard or legislation currently influences the geometry to be used (Sankaran and Venkatesan, 2021). Determining the ideal battery geometry for a given application is pivotal for project optimization. The reasons for a manufacturer choosing between one type of geometry or the other are closely associated with the advantages and disadvantages related to the system in question, evaluating parameters such as costs and performance. However, their motivations are often locked behind commercial confidentiality. That is advantageous from a business standpoint, but it fragments battery geometry knowledge found in the literature. Studies in the field seek to investigate the performance of each geometry concerning mechanical and thermal aspects, for example Avdeev and Gilaki (2014) and Dionisi, Harnden",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          1
+        ]
+      },
+      {
+        "text": "[Source: HummesETAL_Lajer_2023-2.pdf]:\n94 Latin American Journal of Energy Research – Lajer (2023) v. 10, n. 2, pp. 94–114 https://doi.org/10.21712/lajer.2023.v10.n2.p94-114 A comparative study of different battery geometries used in electric vehicles Diego Nieto Hummes1, Julian David Hunt1,2,*, Bruno Barcellos Hervé1, Paulo Smith Schneider1, Pedro Marin Montanari1 1 Federal University of Rio Grande do Sul, Brazil 2 International Institute for Applied Systems Analysis (IIASA), Austria * Corresponding author, E-mail: hunt@iiasa.ac.at Received: 1 October 2023 | Accepted: 4 December 2023 | Published online: 28 December 2023 Abstract: This paper contributes with a review of current and future electric vehicle battery geometries, as there are few comparisons regarding performance criteria in the literature. With these considerations, this paper seeks to fill this gap by comparing commercial batteries with different geometries. First, the specifications of each battery (found on manufacturers’ websites or in specialized media) are presented. Then, the battery evaluation criteria are defined considering two distinct applications: economy and performance cars, using the Multi-Attribute Utility Theory (MAUT) method. From that analysis, the blade battery presented the best overall performance with a good rating for both applications. The cylindrical geometry followed with a rating suited better for performance vehicles, and the pouch geometry followed showing promise for use in economy-driven vehicles mostly. Lastly, a case study is carried out by evaluating the application of each of the batteries in a commercial vehicle. It was found that when compared to new technologies, the potential for improvement on any of the studied criteria is enormous. In particular, the Licerion pouch battery (Sion) showed the best performance regarding range and capacity-to-weight ratio, while the 4680 cylindrical battery (Panasonic) and blade battery (BYD) were superior in capacity-to- volume and capacity-to-cost ratios, respectively. Keywords: Multi-Attribute Utility Theory, Battery geometry, Electric vehicle, Case study, Performance criteria 1 Introduction Due to the need to",
+        "sim": null,
+        "via": null,
+        "doc": "battery",
+        "pages": [
+          1
+        ]
+      }
+    ],
+    "status": null,
+    "log": [],
+    "error": null,
+    "seconds": 5.43,
+    "cost": {
+      "usd": 0.00033470394,
+      "requests": 6,
+      "prompt_tokens": 5628,
+      "completion_tokens": 223,
+      "reasoning_tokens": 172,
+      "steps": {
+        "embedding": {
+          "calls": 1,
+          "prompt_tokens": 10,
+          "completion_tokens": 0,
+          "reasoning_tokens": 0,
+          "cached_tokens": 0,
+          "usd": 2e-07,
+          "source": "reported"
+        },
+        "chat": {
+          "calls": 5,
+          "prompt_tokens": 5618,
+          "completion_tokens": 223,
+          "reasoning_tokens": 172,
+          "cached_tokens": 0,
+          "usd": 0.00033450394000000003,
+          "source": "reported"
+        }
+      }
+    }
+  }
+]

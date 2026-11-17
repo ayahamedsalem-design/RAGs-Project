@@ -1,0 +1,353 @@
+[
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": true,
+    "invented": null,
+    "false_refusal": "partial",
+    "note": "Part 2 missing because chunks lack reason; citation page number wrong.",
+    "id": 1
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 2
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 3
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 4
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "missing",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Car name stated without citation.",
+    "id": 5
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 6
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 7
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Citation page number incorrect; should be page 4.",
+    "id": 8
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "partial"
+      }
+    ],
+    "correct": 1,
+    "faithful": false,
+    "unsupported": "the document does not assign specific numerical weights or percentages to the criteria for economy versus performance cars.",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "partial",
+    "note": "Answer gives relative importance but omits exact weights; citation page wrong.",
+    "id": 9
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      },
+      {
+        "part": 2,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 0,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "System correctly refused; chunks lack the answer.",
+    "id": 10
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "Chunks lack info on contacted authorities and health reports.",
+    "id": 11
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "missing",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "No specific citation to chunk or page number.",
+    "id": 12
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 13
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 0,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Definition not provided; citation to non-existent page 2.",
+    "id": 14
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Missing the cultured meat advice document and its content.",
+    "id": 15
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Missing battery paper gaps; only covers cultured meat advice.",
+    "id": 16
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "Correct refusal; question unanswerable.",
+    "id": 17
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 18
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 19
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 20
+  }
+]

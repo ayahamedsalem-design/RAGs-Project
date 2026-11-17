@@ -1,0 +1,348 @@
+[
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 1
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 2
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": null,
+    "note": "",
+    "id": 3
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 4
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 5
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 6
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 7
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 8
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "Chunks lack Table 4 weights; refusal is correct.",
+    "id": 9
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 10
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "partial"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Missing USDA-FSIS in part1; citation for SFA not in Source1.",
+    "id": 11
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 12
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 13
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 0,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": true,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Chunks lack definition; system correctly refused.",
+    "id": 14
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "No chunks were provided, so the answer correctly states documents do not cover the question.",
+    "id": 15
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 16
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 17
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 18
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 19
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 20
+  }
+]

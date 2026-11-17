@@ -1,0 +1,353 @@
+[
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 1
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Citation to p. 108 for handicap criteria is inaccurate; correct page is 110.",
+    "id": 2
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 3
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 4
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 5
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 6
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 7
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Citation uses incorrect source; should reference Chunk 1.",
+    "id": 8
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "partial"
+      }
+    ],
+    "correct": 1,
+    "faithful": false,
+    "unsupported": "battery cost is listed as having a weight of 5 (the highest possible)",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Battery cost weight for performance is wrong and unsupported",
+    "id": 9
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": "none",
+    "note": "Chunks missing pages with sizes; system correctly refuses.",
+    "id": 10
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      },
+      {
+        "part": 2,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 0,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "missing",
+    "refused": true,
+    "invented": null,
+    "false_refusal": "full",
+    "note": "System refused because chunks lack info from pages 2 and 6.",
+    "id": 11
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Citation points to wrong page (4 instead of 16) and wrong file name.",
+    "id": 12
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Citation file name is incorrect; should be 'meat PDF'.",
+    "id": 13
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 0,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Answer does not state the definition; only describes regulatory process.",
+    "id": 14
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 1,
+    "faithful": false,
+    "unsupported": "The document is titled 'Aplicação do modelo DPSIR ... para a redução dos gases de efeito estufa'",
+    "citations": "wrong",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Answer misses cultured meat advice and invents documents not in chunks.",
+    "id": 15
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Missing battery paper gaps entirely; only cultured meat gaps reported.",
+    "id": 16
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 17
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 18
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 19
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 20
+  }
+]

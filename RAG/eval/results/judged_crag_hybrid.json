@@ -1,0 +1,362 @@
+[
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 1
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 2
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 3
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 4
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 5
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 6
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 7
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 8
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "partial"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "partial",
+    "note": "Answer lacks specific weights from Table 4; only qualitative comparison given.",
+    "id": 9
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "partial",
+    "note": "Bioreactor size not in provided chunks; system correctly states it's missing.",
+    "id": 10
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "partial"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "missing",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Missing USDA-FSIS and video conferences from part 1.",
+    "id": 11
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 12
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 2,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "",
+    "id": 13
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "missing"
+      }
+    ],
+    "correct": 0,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": true,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "System correctly states definition not in chunks.",
+    "id": 14
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "partial"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Battery part incomplete: missing mention of driving interest in EVs.",
+    "id": 15
+  },
+  {
+    "parts": [
+      {
+        "part": 1,
+        "verdict": "partial"
+      },
+      {
+        "part": 2,
+        "verdict": "correct"
+      }
+    ],
+    "correct": 1,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": false,
+    "invented": null,
+    "false_refusal": "none",
+    "note": "Part 1 misses blade/structural batteries and installation differences, but covers missing specs.",
+    "id": 16
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 17
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "ok",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 18
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 19
+  },
+  {
+    "parts": [],
+    "correct": null,
+    "faithful": true,
+    "unsupported": "",
+    "citations": "n/a",
+    "refused": true,
+    "invented": false,
+    "false_refusal": null,
+    "note": "",
+    "id": 20
+  }
+]
