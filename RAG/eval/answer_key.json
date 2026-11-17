@@ -1,0 +1,396 @@
+{
+  "documents": {
+    "battery": "HummesETAL_Lajer_2023-2.pdf",
+    "meat": "Advice For Risk Associated with Cultured Meat.pdf"
+  },
+  "note": "Written from the two PDFs (page numbers = PDF pages, 1-based). Each answer is split into parts; a part is covered when a retrieved chunk comes from one of its pages. Questions 17-20 are unanswerable: the correct behaviour is to say the documents don't cover it. Details marked 'optional detail' are not required for full marks. Retrieval: a chunk covers a part when its text contains the part's evidence phrase ('a | b' = either, 'a && b' = both), compared word by word, ignoring punctuation and case.",
+  "questions": [
+    {
+      "id": 1,
+      "short": "Method + why MAUT",
+      "type": "Multi-part",
+      "question": "Which decision-making method did the battery study use to compare geometries, and why was it chosen over the alternatives?",
+      "parts": [
+        {
+          "answer": "The Multi-Attribute Utility Theory (MAUT) method.",
+          "doc": "battery",
+          "pages": [
+            1,
+            6,
+            10,
+            17
+          ],
+          "evidence": "multi attribute utility theory"
+        },
+        {
+          "answer": "It gives the reader a more transparent and intuitive decision-making process, more direct and straightforward than alternatives such as ELECTRE III and the Analytic Hierarchy Process (AHP).",
+          "doc": "battery",
+          "pages": [
+            6
+          ],
+          "evidence": "more transparent and intuitive"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "short": "Highest-scoring geometry",
+      "type": "Single fact",
+      "question": "Which battery geometry scored highest overall, and in which criteria was it weak?",
+      "parts": [
+        {
+          "answer": "The blade battery (BYD) scored highest overall, for both economy and performance cars (optional detail: scores 4.43 and 4.50).",
+          "doc": "battery",
+          "pages": [
+            1,
+            11,
+            13,
+            17
+          ],
+          "evidence": "blade battery presented the best overall performance | highest score overall was blade | blade battery is considered the best option"
+        },
+        {
+          "answer": "Its handicaps were battery efficiency and specific energy (specific energy scored 1).",
+          "doc": "battery",
+          "pages": [
+            11,
+            13,
+            17
+          ],
+          "evidence": "two handicap criteria"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "short": "Blade cost in EUR",
+      "type": "Numbers",
+      "question": "In euros, how much is the blade battery estimated to cost per kWh compared with a conventional battery?",
+      "parts": [
+        {
+          "answer": "About EUR 55/kWh for the blade battery versus about EUR 85/kWh for a conventional battery today (not the $66/kWh dollar figure).",
+          "doc": "battery",
+          "pages": [
+            5
+          ],
+          "evidence": "around 55 kwh compared to approximately 85 kwh"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "short": "Pouch swelling",
+      "type": "Paraphrase",
+      "question": "Why can a pouch battery swell up, and why is that dangerous?",
+      "parts": [
+        {
+          "answer": "Pouch cells can swell because of gas generation during operation.",
+          "doc": "battery",
+          "pages": [
+            4
+          ],
+          "evidence": "swelling caused by gas generation"
+        },
+        {
+          "answer": "The pressure build-up can crack the battery cover and nearby components; if the pouch is punctured, the escaping gases may ignite.",
+          "doc": "battery",
+          "pages": [
+            4
+          ],
+          "evidence": "crack the battery cover"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "short": "Benchmark car",
+      "type": "Single fact",
+      "question": "Which car was used as the benchmark in the case study, and why was it chosen?",
+      "parts": [
+        {
+          "answer": "The Tesla Model Y Long Range Dual Motor.",
+          "doc": "battery",
+          "pages": [
+            2,
+            6,
+            13,
+            17
+          ],
+          "evidence": "tesla model y long range dual motor"
+        },
+        {
+          "answer": "It was the best-selling electric vehicle in the world in 2022.",
+          "doc": "battery",
+          "pages": [
+            2
+          ],
+          "evidence": "best selling electric vehicle in the world"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "short": "Model Y battery cost",
+      "type": "Numbers",
+      "question": "What would the 82 kWh battery in today's Tesla Model Y cost, and which battery would be the cheapest alternative?",
+      "parts": [
+        {
+          "answer": "About $13,940 for the current 82 kWh battery (2170 cylindrical cells).",
+          "doc": "battery",
+          "pages": [
+            16
+          ],
+          "evidence": "13 940"
+        },
+        {
+          "answer": "The blade battery (BYD) would be the cheapest, at about $5,412 (optional detail: the 4680 cell follows at $6,150).",
+          "doc": "battery",
+          "pages": [
+            16
+          ],
+          "evidence": "5 412"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "short": "Licerion / 4680 range",
+      "type": "Numbers",
+      "question": "How much more range do the Licerion and 4680 batteries give compared with the 2170 battery?",
+      "parts": [
+        {
+          "answer": "About 53% more range for the Licerion pouch battery (Sion) and about 45% more for the 4680 cylindrical battery (Panasonic), compared with the 2170.",
+          "doc": "battery",
+          "pages": [
+            17
+          ],
+          "evidence": "approximately 53 and 45 better range"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "short": "Structural designs",
+      "type": "Acronyms",
+      "question": "What are the three carbon-fibre-based structural battery designs?",
+      "parts": [
+        {
+          "answer": "PSB (Packing Structural Battery), PFSB (Power Fiber Structural Battery) and LSB (Laminate Structural Battery), all based on carbon fiber reinforced plastics (CFRP).",
+          "doc": "battery",
+          "pages": [
+            4
+          ],
+          "evidence": "psb packing structural battery pfsb power fiber structural battery and lsb laminate structural battery"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "short": "Table 4 weights",
+      "type": "Table",
+      "question": "How much weight do battery cost and power density get for economy cars compared with performance cars?",
+      "parts": [
+        {
+          "answer": "Battery cost: weight 5 for economy cars, 1 for performance cars. Power density: weight 1 for economy cars, 5 for performance cars (Table 4).",
+          "doc": "battery",
+          "pages": [
+            10
+          ],
+          "evidence": "battery cost 5 1 && power density 1 5"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "short": "Bioreactor + microcarrier size",
+      "type": "Multi-part",
+      "question": "How large are the bioreactors and microcarriers used to grow cultured meat?",
+      "parts": [
+        {
+          "answer": "Bioreactors of 1,000-10,000 liters at later stages (after starting in plastic culture flasks).",
+          "doc": "meat",
+          "pages": [
+            10
+          ],
+          "evidence": "1 000 10 000 liters"
+        },
+        {
+          "answer": "Microcarriers are small beads of about 100-400 micrometres in diameter.",
+          "doc": "meat",
+          "pages": [
+            11
+          ],
+          "evidence": "approximately 100 400"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "short": "Authorities contacted",
+      "type": "Multi-part",
+      "question": "Which foreign food safety authorities were contacted, and did they report any health problems after tastings?",
+      "parts": [
+        {
+          "answer": "The Singapore Food Agency (SFA), the US Food and Drug Administration (FDA) and the USDA Food Safety and Inspection Service (FSIS); video conferences were held with SFA and FDA.",
+          "doc": "meat",
+          "pages": [
+            2
+          ],
+          "evidence": "singapore food agency sfa the food and drug administration fda"
+        },
+        {
+          "answer": "No adverse health effects were reported: the FDA and USDA-FSIS have received no reports of adverse health effects after tastings (optional detail: SFA and FDA gave no additional information on the risks of tastings).",
+          "doc": "meat",
+          "pages": [
+            6
+          ],
+          "evidence": "received no reports of adverse health effects"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "short": "Mycoplasma",
+      "type": "Numbers",
+      "question": "What percentage of cell lines are estimated to be contaminated with mycoplasma, and why is it hard to notice?",
+      "parts": [
+        {
+          "answer": "An estimated 5-35% of cell lines are contaminated with one or more mycoplasma species.",
+          "doc": "meat",
+          "pages": [
+            16
+          ],
+          "evidence": "5 35 of cell lines"
+        },
+        {
+          "answer": "Mycoplasma contamination does not make the culture medium turbid, so it is hard to detect visually.",
+          "doc": "meat",
+          "pages": [
+            16
+          ],
+          "evidence": "does not cause turbidity"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "short": "Prion tissues",
+      "type": "Paraphrase",
+      "question": "Which parts of an animal should be avoided when taking cells, to prevent prion transmission?",
+      "parts": [
+        {
+          "answer": "Brain, spinal cord, lymph nodes and parts of the intestines (where prions are particularly present).",
+          "doc": "meat",
+          "pages": [
+            12,
+            13
+          ],
+          "evidence": "brain spinal cord lymph nodes"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "short": "Novel food definition",
+      "type": "Definition",
+      "question": "How does the EU define a novel food?",
+      "parts": [
+        {
+          "answer": "Any food that was not used for human consumption to a significant degree within the Union before 15 May 1997 and that falls under at least one of the specified categories (Regulation (EU) 2015/2283).",
+          "doc": "meat",
+          "pages": [
+            8
+          ],
+          "evidence": "15 may 1997"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "short": "CO2 / greenhouse gas",
+      "type": "Cross-document",
+      "question": "Which documents mention greenhouse gas or CO2 emissions, and what does each say?",
+      "parts": [
+        {
+          "answer": "The battery paper: the need to reduce CO2 emissions drives interest in alternatives to combustion engines, above all electric vehicles.",
+          "doc": "battery",
+          "pages": [
+            1
+          ],
+          "evidence": "need to reduce co2 emissions"
+        },
+        {
+          "answer": "The cultured meat advice: estimates suggest large-scale cultured meat production may need less land and water and cause lower greenhouse gas emissions than conventional meat.",
+          "doc": "meat",
+          "pages": [
+            8
+          ],
+          "evidence": "lower greenhouse gas emissions"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "short": "Data gaps",
+      "type": "Cross-document",
+      "question": "What gaps in available data or information do the authors of each document report?",
+      "parts": [
+        {
+          "answer": "Battery paper: blade and structural batteries could not be included in some evaluations because they are installed differently and some specifications are not yet available (optional detail: the structural battery lacked data for several criteria; efficiency figures are mostly media estimates).",
+          "doc": "battery",
+          "pages": [
+            10,
+            11,
+            12,
+            17
+          ],
+          "evidence": "specifications required for performance quantification are not yet available | lack of data"
+        },
+        {
+          "answer": "Cultured meat advice: no measurement data on the actual presence of microbiological agents or chemical substances in the cultured meat offered, and the tasting dossiers are confidential and not accessible (optional detail: portion sizes are unknown).",
+          "doc": "meat",
+          "pages": [
+            3,
+            4,
+            5,
+            20,
+            21
+          ],
+          "evidence": "no measurement data are available | no data are available on the actual presence | confidential"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "short": "0-100% charging",
+      "type": "Unanswerable",
+      "question": "How long does it take to charge the blade battery from 0 to 100 percent?",
+      "parts": [],
+      "unanswerable_note": "Only 30-80% in 30 minutes at 110 kW is given (battery page 5); 0-100% is not stated."
+    },
+    {
+      "id": 18,
+      "short": "Tesla Model Y price",
+      "type": "Unanswerable",
+      "question": "What is the price of a Tesla Model Y?",
+      "parts": [],
+      "unanswerable_note": "Only battery costs are given; the car's price is not stated (a reference title mentions a '$25,000 EV', which is a trap)."
+    },
+    {
+      "id": 19,
+      "short": "Cultured meat cost/kg",
+      "type": "Unanswerable",
+      "question": "How much does cultured meat cost per kilogram?",
+      "parts": [],
+      "unanswerable_note": "Not stated in either document."
+    },
+    {
+      "id": 20,
+      "short": "Top lithium producer",
+      "type": "Unanswerable",
+      "question": "Which country produces the most lithium for electric vehicle batteries?",
+      "parts": [],
+      "unanswerable_note": "Not stated in either document."
+    }
+  ]
+}
