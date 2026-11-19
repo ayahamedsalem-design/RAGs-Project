@@ -1,143 +1,95 @@
-# Machine Learning Project
-# 🧠 Enterprise Global RAG System
+# Hybrid RAG
 
-Welcome to the **Enterprise Global RAG System**, a state-of-the-art Multi-Architecture Retrieval-Augmented Generation (RAG) platform. This project allows you to seamlessly ingest, process, and query massive amounts of PDF documents across multiple cutting-edge RAG architectures simultaneously from a single unified Interface.
+Ask questions about PDF documents with two Retrieval-Augmented Generation (RAG) pipelines, in a Streamlit app that also shows what every answer cost.
 
----
+- **Hybrid RAG**: semantic (vector) search and keyword (BM25) search, merged with Reciprocal Rank Fusion, so neither exact terms nor meaning are missed.
+- **Corrective Hybrid RAG**: the same hybrid search, plus an LLM grader that checks every retrieved chunk against the question and drops the irrelevant ones before answering.
 
-## 🚀 Core Features
+Both pipelines split multi-part questions into sub-questions, keep a rolling window of the conversation (last 5 turns), and cite the source file and page of every fact.
 
-* **Global Knowledge Base (Upload Once, Query Everywhere)**: All uploaded PDFs are chunked and indexed into centralized ChromaDB collections (`global_basic_collection`, `global_parent_collection`, `global_child_collection`, `global_hybrid_collection`). You can query the entire knowledge base at once without specifying individual file names.
-* **Advanced Multi-Query Decomposition**: Automatically breaks down complex, multi-part user questions into individual sub-queries. It retrieves distinct context for each part and synthesizes a comprehensive final answer.
-* **Rolling Window Memory**: Maintains the context of the conversation using a customizable rolling window (default: last 5 turns) to prevent LLM context-window overflow, while securely saving the complete chat history to a JSON archive.
-* **Cross-File Summarization**: Generate instant executive summaries of your entire conversation history across all uploaded documents using an LLM.
-* **Precise Source Citations**: The LLM automatically cites the exact source file and page number (or location) for every fact it provides, directly in its response.
-* **Smart De-duplication**: Prevents re-indexing the same PDF file multiple times, saving API costs and storage space.
-* **Local Privacy & Cloud LLMs**: Built to seamlessly integrate with local Ollama models (e.g., `llama3.2:1b`, `nomic-embed-text`) alongside OpenRouter APIs (e.g., Nvidia Nemotron).
+## Project structure
 
----
-
-## 🏗️ 7 Supported RAG Architectures
-
-You can easily switch between different RAG strategies from the UI sidebar to compare performance and accuracy:
-
-1. 🔹 **Basic RAG**: Standard dense vector retrieval using standard chunking.
-2. 🔹 **Parent-Child (Hierarchical) RAG**: Splits text into large blocks (parents) and small overlapping chunks (children). Searches the children for accuracy, but returns the full parent block to the LLM for maximum context.
-3. 🔹 **Hybrid RAG**: Combines Semantic (Dense vector) search with Keyword (Sparse - BM25) search using Reciprocal Rank Fusion (RRF) to ensure no keyword or conceptual meaning is missed.
-4. 🔹 **Corrective Parent-Child RAG (CRAG)**: Enhances the Hierarchical RAG by adding an LLM-based grading step. It evaluates every retrieved parent block against the specific sub-query and filters out irrelevant chunks before generation.
-5. 🔹 **Corrective Hybrid RAG**: The ultimate pipeline. Evaluates and filters the chunks retrieved from the complex Hybrid RRF pipeline to guarantee 100% relevance.
-6. 🔹 **Ext Naive RAG**: External/Legacy pipeline for single-document basic retrieval.
-7. 🔹 **Ext Corrective RAG**: External/Legacy pipeline utilizing independent retrieval, grading, and web-search fallback logic.
-
----
-
-## 🛠️ Technology Stack
-
-* **Language**: Python 3.13
-* **UI Framework**: Streamlit
-* **Vector Database**: ChromaDB (Persistent) & SQLite-vec
-* **Keyword Search**: BM25 (`rank-bm25`)
-* **LLM Orchestration**: Local Ollama & OpenRouter (OpenAI SDK)
-* **Document Processing**: `pypdf`, `langchain-text-splitters`
-* **Dependency Management**: `uv` (Fast Python package installer)
-* **Containerization**: Docker & Docker Compose (Multi-stage builds, non-root security)
-
----
-
-## ⚙️ Prerequisites & Setup
-
-1. **Ollama**: Ensure Ollama is installed on your host machine and running your preferred local models (e.g., `llama3.2:1b`).
-2. **Docker Desktop** (Required for containerized deployment).
-3. **OpenRouter API Key**: Required for Cloud LLMs and Embeddings.
-
-### Environment Variables (`.env`)
-Create a `.env` file in the root directory of the project:
-```env
-OPENROUTER_API_KEY="your_openrouter_api_key_here"
-EMBEDDING_MODEL="nvidia/nemotron-3-embed-1b:free"
-CHAT_MODEL="nvidia/nemotron-3.5-super-vl:free"
+```
+app.py                     Streamlit chat: pick a pipeline, upload PDFs, ask questions
+pages/
+  Usage.py                 cost dashboard (spend, requests, tokens, cost per question)
+hybrid_rag/                the two pipelines and everything they share
+  hybrid.py                Hybrid RAG: indexing (initialize_hybrid_index) and answering
+  corrective_hybrid.py     Corrective Hybrid RAG: hybrid search + per-chunk grading
+  pdf_processing.py        PDF reading, chunking, question splitting, OpenRouter client, prompt
+  chat_history.py          conversation history (chat_history.json)
+  summarizer.py            "Summarize History" in the sidebar
+  retry.py                 retries for temporary API errors
+  cost.py                  tokens and US dollars per question (logs/cost_log.csv)
+  logging_setup.py         logging (config/logging_config.json)
+evaluation/                evaluation of both pipelines on 20 test questions
+  answer_key.json          questions, expected answers, pages and evidence phrases
+  run_eval.py              index the PDFs and ask every question
+  judge.py                 LLM judge: scores each answer against the answer key
+  report.py                Word report with all metrics and tables
+  locate.py                finds the PDF pages a retrieved chunk comes from
+  results/                 saved answers, judge verdicts, hand corrections (overrides.json)
+documents/                 the two PDFs the questions are about
+config/
+  logging_config.json
+chroma_db_global/          vector store (built locally, not in git)
+logs/                      app.log, errors.log, cost_log.csv (not in git)
 ```
 
-## 🐳 Running with Docker (Recommended)
-The project includes a highly optimized multi-stage Dockerfile (using uv for lightning-fast dependency installation) and a docker-compose.yml for isolated, secure deployment.
-1. Ensure Docker Desktop is running on your machine.
-2. Open your terminal in the project root directory.
-3. Build and start the container in detached mode:
-```bash
-docker compose up -d --build
-```
-1. Access the application in your browser at:  
-**👉 http://localhost:8501**
+## Setup
 
-**Note:** The docker-compose.yml mounts the ./chroma_db_global directory to your host to persist your vector database across container restarts. It also configures OLLAMA_HOST=http://host.docker.internal:11434 to allow the Docker container to seamlessly communicate with your host machine's Ollama instance.
+Requirements: Python 3.13 and [uv](https://docs.astral.sh/uv/).
 
-**To stop the application:**
-```bash
-docker compose down
-```
-**💻 Running Locally (Terminal / Streamlit)**  
-If you prefer to run the project directly on your machine without Docker, follow these steps:
-
-1. **Install** uv (The fast Python package manager):
-```bash
-pip install uv
-```
-1. **Create and activate a virtual environment:**
-```bash
+```powershell
 uv venv
-   
-   # On Windows:
-   .venv\Scripts\activate
-   
-   # On macOS/Linux:
-   source .venv/bin/activate
-   ```
-1. **Install dependencies:**
-```bash
 uv pip install -r requirements.txt
 ```
-or
-```bash
-RUN uv pip install streamlit chromadb ollama openaipypdf rank_bm25 python-dotenv langchain-text-splitters
+
+Create a `.env` file in the project folder:
+
+```
+OPENROUTER_API_KEY=<your OpenRouter key>
+CHAT_MODEL=deepseek/deepseek-v4-flash
+EMBEDDING_MODEL=openai/text-embedding-3-small
 ```
 
-1. **Run the Streamlit application:**
-```bash
-streamlit run app.py
+All three are required: the pipelines read the model names from `.env` and have no defaults.
+
+## Running the app
+
+```powershell
+.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-1. The application will automatically open in your default browser at http://localhost:8501.
+Open http://localhost:8501.
 
-## 📂 Project Structure
-```Plaintext
-├── app.py                            # Main Streamlit UI and Routing logic
-├── requirements.txt                  # Python dependencies
-├── Dockerfile                        # Multi-stage Docker build configuration
-├── docker-compose.yml                # Docker Compose deployment setup
-├── .env                              # API keys and Model configurations
-│
-├── RAGs/                             # Global RAG Architecture Modules
-│   ├── basic_RAG.py                  # Global Basic RAG implementation
-│   ├── parent_child_RAG.py           # Global Hierarchical implementation
-│   ├── hybrid_RAG.py                 # Global Dense + Sparse (BM25) implementation
-│   ├── corrective_parent_child_RAG.py# CRAG applied to Hierarchical chunks
-│   ├── corrective_hybrid_RAG.py      # CRAG applied to Hybrid chunks
-│   ├── extract_and_chunk_pdf.py      # Standard & Hierarchical chunking engine
-│   ├── chat_history.py               # Rolling window memory & JSON persistence
-│   ├── history_summarizer.py         # LLM-powered cross-file history summarization
-│   ├── RAG_service.py                # Retry mechanism for API robustness
-│   └── logger_config.py              # Advanced logging configuration
-│
-└── RAG/                              # External/Legacy Pipeline Modules
-    ├── app_bridge.py                 # Bridge connecting Ext pipelines to UI
-    ├── ask.py                        # Ext Naive execution
-    ├── ask_crag.py                   # Ext Corrective execution
-    ├── rag_common.py                 # Ext shared utilities
-    └── memory.py                     # Ext memory management (SQLite)
+1. **Index documents**: upload a PDF in the sidebar and click *Index File into Global DB*. Both pipelines search the same collection, so a file is indexed once. Files already indexed are skipped.
+2. **Ask**: choose *Hybrid RAG* or *Corrective Hybrid RAG* and type a question. Under the answer you see the retrieved chunks and what the answer cost (requests, tokens, US dollars).
+3. **Usage**: the *Usage* page in the sidebar shows spend, requests and tokens over time, cost per question per pipeline, and OpenRouter's own figures for the API key.
+
+With Docker: `docker compose up --build`, then open the same address. The vector store (`chroma_db_global/`) is kept between restarts.
+
+## Cost tracking
+
+Every reply from OpenRouter includes the tokens used and the US dollars charged. The client created by `initialize_api()` (`hybrid_rag/pdf_processing.py`) hands that to `hybrid_rag/cost.py`, which adds up all requests of one question and writes one row to `logs/cost_log.csv`. If a reply has no cost, it is calculated from OpenRouter's price list (cached in `logs/model_prices.json`).
+
+## Evaluation
+
+Both pipelines are evaluated on 20 questions about the two PDFs in `documents/` (16 answerable, 4 unanswerable), with the metrics of the earlier evaluations: hit rate, full-answer coverage, MRR, answer accuracy, faithfulness, citation accuracy, refusal accuracy, false refusals, requests and cost per question.
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"
+.venv\Scripts\python.exe -m evaluation.run_eval index    # index the two PDFs
+.venv\Scripts\python.exe -m evaluation.run_eval run      # ask all 20 questions to both pipelines
+.venv\Scripts\python.exe -m evaluation.judge             # LLM judge scores every answer
+.venv\Scripts\python.exe -m evaluation.report            # Word report in your Downloads folder
 ```
 
-Built for absolute accuracy, robust retrieval, and enterprise-grade performance.
+- Each question is asked on its own with an empty chat history (the history is restored afterwards).
+- A retrieved chunk counts as relevant only if it contains the answer's evidence phrase from the PDF (`answer_key.json`).
+- Judge verdicts are checked by hand; corrections go in `evaluation/results/overrides.json` with a reason.
+- The evaluation's costs go to `evaluation/results/cost_eval.csv`, not the app's log.
 
-``` code snippet
-This README is now fully self-contained in a proper `.md` file block format, highlighting all your architectures, the specific embedding model, and providing clear instructions for both Docker and local setups.
-```
+## Technology
+
+Python 3.13 · Streamlit · ChromaDB · rank-bm25 · LangChain text splitters · OpenRouter (OpenAI SDK) · DeepSeek V4 Flash · OpenAI text-embedding-3-small

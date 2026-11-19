@@ -1,14 +1,10 @@
 streamlit
 chromadb
-ollama
 openai
 pypdf
 rank-bm25
 python-dotenv
 langchain-text-splitters
-# used by RAG/ (Ext Naive RAG + Corrective RAG)
-numpy
 requests
+# evaluation report (evaluation/report.py)
 python-docx
-python-pptx
-beautifulsoup4
