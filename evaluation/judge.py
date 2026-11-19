@@ -1,7 +1,7 @@
 # Score every saved answer against the answer key with an LLM judge.
 #
-#   python -m RAG.eval.judge                  judge all pipelines that have answers
-#   python -m RAG.eval.judge --only crag      one pipeline (re-judges it)
+#   python -m evaluation.judge                  judge all pipelines that have answers
+#   python -m evaluation.judge --only hybrid    one pipeline (re-judges it)
 #
 # The judge sees: the question, the expected answer split into parts (or "unanswerable"),
 # the chunks the pipeline gave its LLM (numbered, with the PDF pages they come from), and the
@@ -14,11 +14,12 @@
 import os, json, argparse, logging
 from concurrent.futures import ThreadPoolExecutor
 
-os.environ.setdefault("RAG_REASONING", "on")       # the judge may think; the pipelines don't
+os.environ.setdefault("CHAT_MODEL", "deepseek/deepseek-v4-flash")
+JUDGE_MODEL = os.environ["CHAT_MODEL"]             # same model as the pipelines, with reasoning on
 
-from RAG import cost
-from RAG.rag_common import post, LLM_MODEL
-from RAG.eval.common import RESULTS, PIPELINES, answer_key, answers_file, judged_file, load, save
+from hybrid_rag import cost
+from hybrid_rag.pdf_processing import initialize_api   # OpenRouter client with the cost hook
+from evaluation.common import RESULTS, PIPELINES, answer_key, answers_file, judged_file, load, save
 
 logger = logging.getLogger("rag.eval.judge")
 cost.COST_LOG = RESULTS / "cost_eval.csv"
@@ -78,15 +79,24 @@ def expected(q, docs):
                      for i, p in enumerate(q["parts"], 1))
 
 
+_client = None
+
+
+def client():
+    global _client
+    if _client is None:
+        _client = initialize_api()
+    return _client
+
+
 def judge_one(system, q, r, docs):
     user = (f"QUESTION: {q['question']}\n\nEXPECTED ANSWER:\n{expected(q, docs)}\n\n"
             f"CHUNKS:\n{format_chunks(r['chunks'])}\n\nANSWER:\n{r['answer'] or '(no answer: the pipeline failed)'}")
     with cost.track("judge", f"{system} Q{q['id']}"):
-        data = post("chat/completions", {
-            "model": LLM_MODEL, "temperature": 0, "reasoning": {"enabled": True},
-            "messages": [{"role": "system", "content": JUDGE_PROMPT}, {"role": "user", "content": user}]},
-            step="judge")
-    reply = data["choices"][0]["message"]["content"]
+        r = client().chat.completions.create(
+            model=JUDGE_MODEL, temperature=0, extra_body={"reasoning": {"enabled": True}},
+            messages=[{"role": "system", "content": JUDGE_PROMPT}, {"role": "user", "content": user}])
+    reply = r.choices[0].message.content
     verdict = parse(reply)
     if verdict is None:
         logger.warning("%s Q%d: judge reply unreadable: %r", system, q["id"], reply[:300])
@@ -107,7 +117,7 @@ def parse(reply):
 
 
 def main():
-    from RAGs.logger_config import setup_logging
+    from hybrid_rag.logging_setup import setup_logging
     setup_logging()
     logging.getLogger().setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(description="Judge the evaluation answers")

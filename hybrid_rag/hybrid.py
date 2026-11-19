@@ -8,9 +8,9 @@ import chromadb
 from rank_bm25 import BM25Okapi
 
 try:    
-    from RAGs.logger_config import setup_logging
-    from RAGs.chat_history import persist_chat_history, load_file_history
-    from RAGs.extract_and_chunk_pdf import (    
+    from hybrid_rag.logging_setup import setup_logging
+    from hybrid_rag.chat_history import persist_chat_history, load_file_history
+    from hybrid_rag.pdf_processing import (    
         initialize_api,
         resolve_file_name, 
         decompose_multi_questions, 
@@ -18,9 +18,9 @@ try:
         SYS_PROMPT
     )
 except ModuleNotFoundError:
-    from logger_config import setup_logging
+    from logging_setup import setup_logging
     from chat_history import persist_chat_history, load_file_history
-    from extract_and_chunk_pdf import (    
+    from pdf_processing import (    
         initialize_api,
         resolve_file_name, 
         decompose_multi_questions,

@@ -1,26 +1,21 @@
-# Shared settings for the evaluation of all seven RAG pipelines (see run_eval.py).
+# Shared settings for the evaluation of the two RAG pipelines (see run_eval.py).
 
 import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent                                 # the project folder
 RESULTS = HERE / "results"                         # answers, judgements, cost log of the runs
 ANSWER_KEY = HERE / "answer_key.json"
-PAPERS_DIR = Path.home() / "Desktop" / "papers"    # the two test PDFs
+PAPERS_DIR = ROOT / "documents"                    # the two test PDFs
 
 DOCS = {"battery": "HummesETAL_Lajer_2023-2.pdf",
         "meat": "Advice For Risk Associated with Cultured Meat.pdf"}
 
-# (name in the results and cost log, name in the app, who built it)
+# (name in the results and cost log, name in the app, module)
 PIPELINES = [
-    ("naive", "Ext Naive RAG", "RAG/"),
-    ("crag", "Ext Corrective RAG", "RAG/"),
-    ("basic", "Basic RAG (llama3.2:1b, as in the app)", "RAGs/"),
-    ("basic_deepseek", "Basic RAG (DeepSeek)", "RAGs/"),
-    ("parent_child", "Parent-Child (Hierarchical) RAG", "RAGs/"),
-    ("hybrid", "Hybrid RAG", "RAGs/"),
-    ("crag_parent_child", "Corrective Parent-Child RAG", "RAGs/"),
-    ("crag_hybrid", "Corrective Hybrid RAG", "RAGs/"),
+    ("hybrid", "Hybrid RAG", "hybrid_rag/hybrid.py"),
+    ("crag_hybrid", "Corrective Hybrid RAG", "hybrid_rag/corrective_hybrid.py"),
 ]
 LABEL = {name: label for name, label, _ in PIPELINES}
 

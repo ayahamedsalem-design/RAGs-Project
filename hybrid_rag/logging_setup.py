@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Paths definition
-CONFIG_FILE = Path("logging_config.json")
+CONFIG_FILE = Path(__file__).resolve().parent.parent / "config" / "logging_config.json"
 LOG_DIR = Path("logs")
 
 # Default dictionary configuration

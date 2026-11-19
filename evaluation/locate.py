@@ -1,8 +1,7 @@
 # Find which PDF pages a retrieved chunk comes from, by looking its text up in the document.
 #
-# The pipelines store page numbers differently (my chunks: "page 12"; Aya's Hybrid chunks:
-# "Page: 12"; her Parent-Child chunks: no page at all), so for a fair retrieval score every
-# chunk is located the same way: by its own words. The PDF is read page by page into one long
+# Every chunk is located the same way, by its own words, whatever label the pipeline put in
+# front of it ("[Source: file | Page: 12]"). The PDF is read page by page into one long
 # list of words, each word labelled with its page. A chunk is found by searching a run of 8 of
 # its words; its pages are the pages its words span.
 
@@ -57,7 +56,7 @@ class Document:
 @lru_cache(maxsize=None)
 def documents(docs_dir):
     """{short name: Document} for the evaluation PDFs."""
-    from RAG.eval.common import DOCS
+    from evaluation.common import DOCS
     return {short: Document(short, Path(docs_dir) / name) for short, name in DOCS.items()}
 
 

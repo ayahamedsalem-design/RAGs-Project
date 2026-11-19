@@ -1,8 +1,8 @@
 # Turn the saved answers and judgements into the evaluation report (one Word document,
-# a full set of tables for each of the seven pipelines, in the layout of the earlier
+# a full set of tables for each pipeline, in the layout of the earlier
 # Corrective RAG evaluation).
 #
-#   python -m RAG.eval.report [--template PATH] [--out PATH]
+#   python -m evaluation.report [--template PATH] [--out PATH]
 #
 # Retrieval metrics come from the PDF pages of the chunks each pipeline gave its LLM
 # (results/answers_*.json, located with locate.py). Answer metrics come from the LLM judge
@@ -18,8 +18,8 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, Cm, RGBColor
 
-from RAG.eval.locate import words, strip_header
-from RAG.eval.common import (RESULTS, PIPELINES, LABEL, DOCS, answer_key, answers_file,
+from evaluation.locate import words, strip_header
+from evaluation.common import (RESULTS, PIPELINES, LABEL, DOCS, answer_key, answers_file,
                              judged_file, load)
 
 OVERRIDES = RESULTS / "overrides.json"
@@ -32,43 +32,9 @@ TYPE_GROUPS = [("Single fact / definition", {"Single fact", "Definition"}),
 
 # What each pipeline does, for its setup table (all read from the code)
 SETUP = {
-    "naive": [
-        ("Retrieval", "4 chunks by cosine similarity (ChromaDB, collection ext_chunks_openrouter)"),
-        ("Chunks given to the LLM", "The 4 retrieved chunks, as [Source 1-4] with file and page"),
-        ("Answer LLM", "CHAT_MODEL at temperature 0.2, reasoning off"),
-        ("Follow-up handling", "Each question asked in a fresh session (no history)")],
-    "crag": [
-        ("Retrieval", "10 candidate chunks by cosine similarity (ChromaDB, ext_chunks_openrouter)"),
-        ("Reference-list filter", "Chunks with 12+ citation markers per 100 words removed before grading"),
-        ("Grading", "One LLM call marks each candidate relevant or not and checks each part of the question is answered"),
-        ("Correction", "If a part is unanswered or a document is missing: up to 4 new queries plus a per-document search, then a second grading round"),
-        ("Chunks given to the LLM", "Up to 6 relevant chunks; none relevant = \"not covered\" without calling the answer LLM"),
-        ("Answer LLM", "CHAT_MODEL; grader at temperature 0, answers at 0.2; reasoning off")],
-    "basic": [
-        ("Retrieval", "The question is split into sub-questions (at ? ; and new lines); 3 chunks per sub-question by vector similarity (global_basic_collection)"),
-        ("Chunks given to the LLM", "The unique retrieved chunks, without file or page labels"),
-        ("Answer LLM", "Local Ollama llama3.2:1b (hard-coded), temperature 0, 4,096-token context; not CHAT_MODEL"),
-        ("Follow-up handling", "Last 5 turns of chat_history.json (emptied before every question here)")],
-    "basic_deepseek": [
-        ("Retrieval", "Same as Basic RAG: sub-questions, 3 chunks each by vector similarity (global_basic_collection)"),
-        ("Chunks given to the LLM", "The unique retrieved chunks, without file or page labels"),
-        ("Answer LLM", "CHAT_MODEL (deepseek-v4-flash) via OpenRouter, temperature 0, top_p 0.1, same messages. "
-                       "For this run only, the evaluation redirected Basic RAG's ollama.chat call to OpenRouter; "
-                       "the code and the app still use llama3.2:1b"),
-        ("Follow-up handling", "Last 5 turns of chat_history.json (emptied before every question here)")],
-    "parent_child": [
-        ("Chunking", "Parents of 300 words, children of 70 words with 15-word overlap; parents have no page numbers"),
-        ("Retrieval", "Children searched by vector similarity per sub-question; up to 6 unique parents returned"),
-        ("Chunks given to the LLM", "The parent blocks, without file or page labels"),
-        ("Answer LLM", "CHAT_MODEL (provider default reasoning)")],
     "hybrid": [
         ("Retrieval", "Per sub-question: vector search + BM25 keyword search, merged with Reciprocal Rank Fusion; top 6 chunks"),
         ("Chunks given to the LLM", "6 chunks labelled [Source: file | Page: n]"),
-        ("Answer LLM", "CHAT_MODEL (provider default reasoning)")],
-    "crag_parent_child": [
-        ("Retrieval", "Children searched per sub-question; up to 4 parents per sub-question"),
-        ("Grading", "One LLM call per parent block: relevant yes/no"),
-        ("Chunks given to the LLM", "The parents that pass grading, labelled with the file only (no page)"),
         ("Answer LLM", "CHAT_MODEL (provider default reasoning)")],
     "crag_hybrid": [
         ("Retrieval", "Per sub-question: hybrid search (vector + BM25, Reciprocal Rank Fusion), top 4 chunks"),
@@ -333,8 +299,7 @@ def model_section(doc, number, system, rows, m, key, all_metrics):
         ("Citation accuracy", f"{pct(m['citation'])} ({len(m['cit_ok'])}/{N})", it["citation"]),
         ("Refusal accuracy", f"{pct(m['refusal'])} ({len(m['refused_ok'])}/{M})", it["refusal"]),
         ("False refusal rate", f"{pct(len(m['fr_full']) / n)} full, {pct(len(m['fr_part']) / n)} partial", it["false_refusal"]),
-        ("Requests / question", f"{m['requests']:.1f}", "Measured from OpenRouter's usage data" +
-         ("; the answer itself runs on local Ollama and is not counted" if system == "basic" else "")),
+        ("Requests / question", f"{m['requests']:.1f}", "Measured from OpenRouter's usage data"),
         ("Cost / question", f"${m['usd']:.6f}", f"Total ${m['usd_total']:.5f}; median {m['seconds']:.1f} s per question (slowest: Q{m['slowest']['q']['id']}, {m['slowest']['seconds']:.0f} s)"
          + (f"; {m['reasoning']:,} reasoning tokens in total" if m["reasoning"] else "")),
     ], [3.4, 3.4, 9.8])
@@ -355,19 +320,6 @@ def model_section(doc, number, system, rows, m, key, all_metrics):
             trows.append((name, ids, f"{cov}/{len(rs)}", f"{p}/{2 * len(rs)} ({pct(p / (2 * len(rs)))})"))
     table(doc, ["Question type", "Questions", "Full-answer coverage", "Answer accuracy"], trows, [4, 4.6, 3.6, 4.4])
 
-    if system == "crag":
-        t += 1
-        caption(doc, f"Table {number}.{t}: Corrective status of each answer")
-        meaning = {"CORRECT": "The first search, after grading, was judged enough",
-                   "CORRECTED": "A second search ran and filled the gap",
-                   "PARTIAL": "Some relevant chunks found, part of the answer still missing",
-                   "NOT FOUND": "No relevant chunk; answered \"not covered\" without calling the answer LLM"}
-        srows = []
-        for s in ("CORRECT", "CORRECTED", "PARTIAL", "NOT FOUND"):
-            rs = [r for r in rows if r["a"]["status"] == s]
-            srows.append((s, ", ".join(f"Q{r['q']['id']}" for r in rs) or "—", len(rs), meaning[s]))
-        table(doc, ["Status", "Questions", "Count", "Meaning"], srows, [2.6, 5.4, 1.4, 7.2])
-
     if any(r["top_sim"] is not None for r in rows):
         t += 1
         caption(doc, f"Table {number}.{t}: Similarity of the best chunk given to the LLM")
@@ -385,7 +337,7 @@ def model_section(doc, number, system, rows, m, key, all_metrics):
 
     t += 1
     caption(doc, f"Table {number}.{t}: Per-question scores")
-    headers = ["#", "Question (short)", "Type"] + (["Status"] if system == "crag" else []) + \
+    headers = ["#", "Question (short)", "Type"] + \
               ["Rank", "Full answer", "Correct (0–2)", "Faithful", "Citations", "Refused", "Cost $", "Notes"]
     prow = []
     for r in rows:
@@ -393,7 +345,7 @@ def model_section(doc, number, system, rows, m, key, all_metrics):
         note = j.get("override") or j.get("note") or ""
         if r["a"].get("error"):
             note = f"Pipeline error: {r['a']['error'][:80]}"
-        prow.append([q["id"], q["short"], q["type"]] + ([r["a"]["status"] or "—"] if system == "crag" else []) + [
+        prow.append([q["id"], q["short"], q["type"]] + [
             r["rank"] or ("—" if not r["answerable"] else "none"),
             ("Yes" if r["full"] else "No") if r["answerable"] else "—",
             r["correct"] if r["answerable"] else "—",
@@ -401,60 +353,36 @@ def model_section(doc, number, system, rows, m, key, all_metrics):
             {"ok": "Yes", "n/a": "—", "wrong": "Wrong", "missing": "Missing"}.get(r["citations"], "?"),
             "Yes" if r["refused"] else "—",
             f"{r['usd']:.5f}", note])
-    widths = [0.7, 3.0, 1.9] + ([1.9] if system == "crag" else []) + [1.0, 1.2, 1.3, 1.3, 1.5, 1.3, 1.5, 4.0]
+    widths = [0.7, 3.0, 1.9] + [1.0, 1.2, 1.3, 1.3, 1.5, 1.3, 1.5, 4.0]
     table(doc, headers, prow, widths, size=7.5)
 
 
 def findings(doc, M, R, systems):
     """Short written conclusions under the comparison table; every number comes from the results."""
-    need = {"naive", "crag", "basic", "basic_deepseek", "parent_child", "hybrid", "crag_parent_child", "crag_hybrid"}
-    if not need <= set(systems):
+    if not {"hybrid", "crag_hybrid"} <= set(systems):
         return
+    h, c = M["hybrid"], M["crag_hybrid"]
     caption(doc, "Key findings")
-    best = max(systems, key=lambda s: (M[s]["accuracy"], M[s]["coverage"]))
-    pts = {q["q"]["id"]: sum(R[s][i]["correct"] or 0 for s in systems if s != "basic")
-           for i, q in enumerate(R["naive"]) if q["answerable"]}
-    hardest = sorted(pts, key=pts.get)[:4]
-    others = len(systems) - 1
+    pts = {r["q"]["id"]: sum(R[s][i]["correct"] or 0 for s in systems)
+           for i, r in enumerate(R["hybrid"]) if r["answerable"]}
+    hardest = sorted(pts, key=pts.get)[:3]
     lines = [
-        (f"{LABEL[best]} scored best overall: ",
-         f"{pct(M[best]['accuracy'])} answer accuracy, {pct(M[best]['coverage'])} full-answer coverage, "
-         f"{pct(M[best]['faithfulness'])} faithfulness and {pct(M[best]['citation'])} citation accuracy, at "
-         f"${M[best]['usd']:.6f} per question. Combining keyword search (BM25) with vector search found exact "
-         "terms that vector search alone missed: it was the only pipeline fully correct on Q9 (the Table 4 "
-         "weights) and on the cross-document Q15."),
-        ("Grading helps a narrow search: ",
-         f"Ext Corrective RAG raised answer accuracy from {pct(M['naive']['accuracy'])} (Ext Naive) to "
-         f"{pct(M['crag']['accuracy'])} and full-answer coverage from {pct(M['naive']['coverage'])} to "
-         f"{pct(M['crag']['coverage'])}, for {M['crag']['usd'] / M['naive']['usd']:.1f} times the cost "
-         f"(${M['naive']['usd']:.6f} to ${M['crag']['usd']:.6f} per question)."),
-        ("…but can hurt a wide one: ",
-         f"Corrective Hybrid RAG scored lower than plain Hybrid RAG ({pct(M['crag_hybrid']['accuracy'])} vs "
-         f"{pct(M['hybrid']['accuracy'])}): its per-chunk grader removed relevant chunks, so full-answer coverage "
-         f"fell from {pct(M['hybrid']['coverage'])} to {pct(M['crag_hybrid']['coverage'])}, with "
-         f"{M['crag_hybrid']['requests']:.0f} requests per question instead of {M['hybrid']['requests']:.0f}."),
-        ("Parent-Child chunks lose page information: ",
-         f"the parent blocks carry no page numbers, so citation accuracy was {pct(M['parent_child']['citation'])} "
-         f"(Parent-Child) and {pct(M['crag_parent_child']['citation'])} (Corrective Parent-Child). Corrective "
-         f"Parent-Child had the lowest hit rate ({pct(M['crag_parent_child']['hit_rate'])}) and the highest cost "
-         f"(${M['crag_parent_child']['usd']:.6f} per question)."),
-        ("Basic RAG's weak results come from its model, not its retrieval: ",
-         f"with the same retrieval (hit rate {pct(M['basic']['hit_rate'])} in both runs), switching the answer model "
-         f"from llama3.2:1b to deepseek-v4-flash raised accuracy from {pct(M['basic']['accuracy'])} to "
-         f"{pct(M['basic_deepseek']['accuracy'])}, faithfulness from {pct(M['basic']['faithfulness'])} to "
-         f"{pct(M['basic_deepseek']['faithfulness'])} and refusal accuracy from {pct(M['basic']['refusal'])} to "
-         f"{pct(M['basic_deepseek']['refusal'])}. The 1B model invented answers to unanswerable questions "
-         "(e.g. Chile as the top lithium producer)."),
+        ("Hybrid RAG: ",
+         f"{pct(h['accuracy'])} answer accuracy, {pct(h['coverage'])} full-answer coverage, "
+         f"{pct(h['faithfulness'])} faithfulness and {pct(h['citation'])} citation accuracy, at "
+         f"${h['usd']:.6f} per question. Combining keyword search (BM25) with vector search finds exact terms "
+         "such as table values that vector search alone tends to miss."),
+        ("Corrective Hybrid RAG: ",
+         f"{pct(c['accuracy'])} answer accuracy and {pct(c['coverage'])} full-answer coverage. Its per-chunk "
+         f"grader removed some relevant chunks (coverage {pct(h['coverage'])} without grading), and it makes "
+         f"{c['requests']:.0f} requests per question instead of {h['requests']:.0f}."),
         ("Unanswerable questions: ",
-         f"every pipeline running on DeepSeek refused all {M['naive']['m']} of them, including the traps."),
+         f"refused correctly in {pct(h['refusal'])} (Hybrid) and {pct(c['refusal'])} (Corrective Hybrid) of cases."),
         ("Hardest questions: ",
-         ", ".join(f"Q{q} ({pts[q]}/{2 * others} points over the {others} DeepSeek runs)" for q in hardest) +
-         ". Q14's definition and Q9's table rows sit in a chunk next to the one usually retrieved; Q15 and Q16 "
-         "need both documents."),
+         ", ".join(f"Q{q} ({pts[q]}/{2 * len(systems)} points)" for q in hardest) + "."),
         ("Reasoning tokens: ",
-         f"the RAGs/ pipelines do not switch DeepSeek's reasoning off and spent "
-         f"{sum(M[s]['reasoning'] for s in systems if s not in ('naive', 'crag', 'basic')):,} reasoning tokens in "
-         "total; the Ext pipelines, which switch it off, spent 0."),
+         f"neither pipeline switches DeepSeek's reasoning off; they spent {h['reasoning']:,} (Hybrid) and "
+         f"{c['reasoning']:,} (Corrective Hybrid) reasoning tokens over the 20 questions."),
     ]
     for lead, text in lines:
         p = doc.add_paragraph(style=next((st for st in doc.styles if st.name in ("List Bullet", "list bullet")), None))
@@ -471,31 +399,28 @@ def build(template, out):
     all_rows = {s: score(s, key) for s in systems}
     all_m = {s: metrics(all_rows[s]) for s in systems}
 
-    doc.add_paragraph("RAG Evaluation: All Seven Pipelines", style="Title")
+    doc.add_paragraph("RAG Evaluation: Hybrid and Corrective Hybrid RAG", style="Title")
     doc.add_paragraph(
-        "Evaluation of the seven RAG pipelines in the project (two Ext pipelines in RAG/ and five in RAGs/) "
-        "(plus Basic RAG a second time on DeepSeek) on the same 20 test questions, two PDF documents and answer key used for the earlier plain and "
-        "Corrective RAG evaluations, with the same metrics so the results can be compared directly.")
+        "Evaluation of the project's two RAG pipelines on the same 20 test questions, two PDF documents and "
+        "answer key used for the earlier plain and Corrective RAG evaluations, with the same metrics so the "
+        "results can be compared directly.")
 
     heading(doc, "1. Common setup", 1)
     caption(doc, "Table 1: Evaluation setup shared by all pipelines")
     table(doc, ["Item", "Value"], [
         ("Documents", "Hummes et al. (2023), battery geometries for EVs: 21 pages, 91 chunks. "
                       "NVWA/BuRO (2025), cultured meat risk advice: 33 pages, 201 chunks."),
-        ("Chunking", "1,000 characters with 200 overlap (LangChain RecursiveCharacterTextSplitter) for the "
-                     "Ext, Basic and Hybrid pipelines; Parent-Child: 300-word parents (105) and 70-word children"),
-        ("Vector store", "ChromaDB, one shared folder (chroma_db_global), one collection per pipeline family"),
+        ("Chunking", "1,000 characters with 200 overlap (LangChain RecursiveCharacterTextSplitter), page by page"),
+        ("Vector store", "ChromaDB (chroma_db_global), collection global_hybrid_collection, shared by both pipelines"),
         ("Embedding model", "openai/text-embedding-3-small (1,536 dimensions), via OpenRouter"),
-        ("Chat model", "deepseek/deepseek-v4-flash via OpenRouter, except Basic RAG, which answers with a local "
-                       "Ollama llama3.2:1b (hard-coded in its code). Basic RAG was therefore run twice: as in the "
-                       "app (llama3.2:1b) and with its answer call redirected to deepseek-v4-flash for a fair comparison"),
+        ("Chat model", "deepseek/deepseek-v4-flash via OpenRouter (CHAT_MODEL)"),
         ("Test questions", "20: 16 answerable (9 battery, 5 cultured meat, 2 cross-document) and 4 unanswerable, "
                            "two of them traps with closely related content"),
         ("Run", "Each question asked once, on its own, with an empty chat history; nothing in the pipelines changed"),
         ("Grading", "Retrieval: a chunk given to the LLM counts as relevant when its text contains the evidence phrase "
                     "of that part of the answer (taken from the PDF); being on the right page is not enough. Answers: an LLM judge (deepseek-v4-flash with reasoning) against the answer "
                     "key; every verdict was then checked by hand and corrected where needed (marked in the notes)."),
-        ("Cost", "Measured: the US dollars OpenRouter reported for each request (RAG/cost.py)"),
+        ("Cost", "Measured: the US dollars OpenRouter reported for each request (hybrid_rag/cost.py)"),
     ], [3.6, 13])
 
     heading(doc, "2. Comparison of all pipelines", 1)
@@ -511,8 +436,7 @@ def build(template, out):
     rows.append(["Requests / question"] + [f"{all_m[s]['requests']:.1f}" for s in systems])
     rows.append(["Cost / question ($)"] + [f"{all_m[s]['usd']:.6f}" for s in systems])
     rows.append(["Median time / question (s)"] + [f"{all_m[s]['seconds']:.1f}" for s in systems])
-    short = {"naive": "Ext Naive", "crag": "Ext CRAG", "basic": "Basic (llama 1B)", "basic_deepseek": "Basic (DeepSeek)", "parent_child": "Parent-Child",
-             "hybrid": "Hybrid", "crag_parent_child": "CRAG Parent-Child", "crag_hybrid": "CRAG Hybrid"}
+    short = {"hybrid": "Hybrid RAG", "crag_hybrid": "Corrective Hybrid RAG"}
     table(doc, ["Metric"] + [short[s] for s in systems], rows, [3.4] + [13.2 / len(systems)] * len(systems), size=8)
 
     findings(doc, all_m, all_rows, systems)
@@ -534,10 +458,8 @@ def build(template, out):
     doc.add_paragraph(
         "20 questions is a small test set, and each question was asked once. Retrieval is judged by evidence phrases: "
         "a chunk that states the answer in different words would not count. The answer judge is an LLM; every "
-        "verdict was checked by hand, but borderline partial-credit calls remain a judgement. Basic RAG answers with a "
-        "1-billion-parameter local model, so its answer quality says more about that model than about the retrieval. "
-        "The RAGs/ pipelines do not switch reasoning off, so DeepSeek may spend reasoning tokens there (counted in "
-        "their cost). Basic and Parent-Child RAG give the LLM no page labels, so they cannot cite pages.")
+        "verdict was checked by hand, but borderline partial-credit calls remain a judgement. Neither pipeline "
+        "switches reasoning off, so DeepSeek may spend reasoning tokens (counted in their cost).")
 
     heading(doc, "Appendix: Answer key", 1)
     akrows = []

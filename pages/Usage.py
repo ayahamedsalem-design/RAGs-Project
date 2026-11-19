@@ -4,9 +4,9 @@
 # change to app.py. Run the app as usual (streamlit run app.py) and pick "Usage".
 #
 # Where the numbers come from:
-#   RAG/cost_log.csv   one row per question (or indexed document), written by RAG/cost.py.
-#                      Every pipeline in the app is tracked: the Ext ones by RAG/app_bridge.py,
-#                      the RAGs/ ones by app.py (run_tracked) + the hook in initialize_api().
+#   logs/cost_log.csv  one row per question (or indexed document), written by
+#                      hybrid_rag/cost.py: app.py tracks each question (run_tracked) and the
+#                      hook in initialize_api() records every request.
 #                      The dollar amounts are what OpenRouter reported it charged.
 #   OpenRouter API     the key's limit/spend and the account's credits (the "Account" row),
 #                      to check the tracked total against what was actually billed.
@@ -20,25 +20,22 @@ import requests
 import streamlit as st
 from dotenv import load_dotenv
 
-from RAG.cost import COST_LOG
+from hybrid_rag.cost import COST_LOG
 
 load_dotenv()
 st.set_page_config(page_title="Usage", page_icon="💰", layout="wide")
 
 # ---------- Pipelines and their colours ----------
 # Each pipeline keeps the same colour everywhere on the page, whatever the filters show
-# (colour follows the pipeline, not its rank). The 8 colours are a validated colour-blind-safe
-# palette, with steps for light and dark mode. Indexing and summaries share the last slot.
+# (colour follows the pipeline, not its rank). The colours are the first slots of a validated
+# colour-blind-safe palette, with steps for light and dark mode.
 PIPELINES = [  # (name in cost_log.csv, label on the page)
-    ("naive", "Ext Naive RAG"),
-    ("crag", "Ext Corrective RAG"),
-    ("basic", "Basic RAG"),
-    ("parent_child", "Parent-Child RAG"),
     ("hybrid", "Hybrid RAG"),
-    ("crag_parent_child", "Corrective Parent-Child RAG"),
     ("crag_hybrid", "Corrective Hybrid RAG"),
 ]
-OTHER = "Indexing & summaries"            # ingest, ingest_global, history_summary
+# Everything else: indexing (ingest_global), history summaries, and rows from the pipelines
+# that were removed (Ext Naive/Corrective, Basic, Parent-Child, ...), so old spending still shows
+OTHER = "Indexing, summaries & older pipelines"
 LABELS = [label for _, label in PIPELINES] + [OTHER]
 QUESTION_SYSTEMS = {name for name, _ in PIPELINES}
 COLOURS = {
@@ -251,7 +248,7 @@ with tab1:
 
 steps = step_rows(df)
 with tab2:
-    st.caption("Where the money goes inside each pipeline. The RAGs/ pipelines only "
+    st.caption("Where the money goes inside each pipeline. The pipelines only "
                "distinguish chat and embedding requests.")
     s = (steps.groupby(["pipeline", "step"], sort=False)
          .agg(calls=("calls", "sum"), tokens_in=("prompt_tokens", "sum"),

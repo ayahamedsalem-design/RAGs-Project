@@ -3,20 +3,20 @@ import re
 import logging
 
 try:
-    from RAGs.logger_config import setup_logging
-    from RAGs.chat_history import persist_chat_history, load_file_history
-    from RAGs.extract_and_chunk_pdf import initialize_api, decompose_multi_questions, SYS_PROMPT
-    from RAGs.hybrid_RAG import (
+    from hybrid_rag.logging_setup import setup_logging
+    from hybrid_rag.chat_history import persist_chat_history, load_file_history
+    from hybrid_rag.pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
+    from hybrid_rag.hybrid import (
         refresh_global_bm25,
         GLOBAL_BM25_CACHE,
         bm25_tokenizer,
         global_hybrid_col
     )
 except ModuleNotFoundError:
-    from logger_config import setup_logging
+    from logging_setup import setup_logging
     from chat_history import persist_chat_history, load_file_history
-    from extract_and_chunk_pdf import initialize_api, decompose_multi_questions, SYS_PROMPT
-    from hybrid_RAG import (
+    from pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
+    from hybrid import (
         refresh_global_bm25,
         GLOBAL_BM25_CACHE,
         bm25_tokenizer,

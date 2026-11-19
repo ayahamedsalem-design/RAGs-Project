@@ -1,6 +1,5 @@
 import os
 import re
-import uuid
 import logging
 import tempfile
 from openai import OpenAI
@@ -9,16 +8,15 @@ from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 try:
-    from RAGs.logger_config import setup_logging
+    from hybrid_rag.logging_setup import setup_logging
 except ModuleNotFoundError:
-    from logger_config import setup_logging
+    from logging_setup import setup_logging
 
-# Cost tracking (RAG/cost.py) is shared with the Ext pipelines, so every RAG in the app is
-# measured the same way. If this file runs on its own (from inside RAGs/), RAG/ can't be
-# imported: cost tracking is then simply off and nothing else changes.
+# Cost tracking (hybrid_rag/cost.py). If this file is run on its own from inside hybrid_rag/,
+# the package can't be imported: cost tracking is then simply off and nothing else changes.
 try:
     import httpx
-    from RAG import cost
+    from hybrid_rag import cost
 except ImportError:
     cost = None
 
@@ -46,8 +44,8 @@ def initialize_api():
     api_key = os.getenv("OPENROUTER_API_KEY")
     if cost is None:
         return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=30)
-    # COST TRACKING: every RAGs/ module gets its client from this function, so this is the only
-    # change needed for all of them. The http_client below is the same HTTP client the OpenAI
+    # COST TRACKING: both pipelines (and the summarizer) get their client from this function,
+    # so this is the only place that needs it. The http_client below is the same HTTP client the OpenAI
     # library would use anyway, plus one "event hook": after each reply arrives from OpenRouter,
     # _record_cost() reads the token counts and the price from it. The requests, prompts and
     # answers are not changed in any way.
@@ -60,8 +58,8 @@ def _record_cost(response):
 
     OpenRouter adds a "usage" block to each reply: tokens in / out / reasoning / cached, and
     "cost" = the US dollars it actually charged for that request. This hands that block to
-    RAG/cost.py, which adds it to the question being tracked (app.py starts the tracking for
-    each question with cost.track(...)) and, at the end, writes one row to RAG/cost_log.csv.
+    hybrid_rag/cost.py, which adds it to the question being tracked (app.py starts the tracking
+    for each question with cost.track(...)) and, at the end, writes one row to logs/cost_log.csv.
 
     It only reads the reply. If anything goes wrong here, it is ignored, so cost tracking can
     never break or change an answer."""
@@ -71,7 +69,7 @@ def _record_cost(response):
         response.read()                             # load the body (the OpenAI library reuses it)
         data = response.json()
         # Requests are labelled by type only: "embedding" (search vectors) or "chat" (answers,
-        # grading, query rewriting, ...). The Ext pipelines label their steps in more detail.
+        # grading, summaries).
         step = "embedding" if "/embeddings" in str(response.url) else "chat"
         cost.record(step, data.get("model"), data.get("usage"),
                     response.elapsed.total_seconds())
@@ -108,12 +106,6 @@ def get_valid_pdf_path(pdf_source):
     raise ValueError("File type not supported or invalid")
 
 
-def get_full_text(pdf_path):
-    """Extracts and concatenates text from all pages of the PDF."""
-    valid_pdf_path = get_valid_pdf_path(pdf_path)
-    reader = PdfReader(valid_pdf_path)
-    return "".join([page.extract_text() or "" for page in reader.pages])
-
 def decompose_multi_questions(user_query: str) -> list:
     """Decomposes compound queries into individual sub-questions."""
     parts = re.split(r"[\n?؟;]+", user_query)
@@ -124,13 +116,13 @@ def decompose_multi_questions(user_query: str) -> list:
     return sub_queries
 
 # ==========================================
-# 2. Chunking Function 1: Standard (For Basic & Hybrid)
+# 2. Chunking: standard recursive chunks (used by Hybrid and Corrective Hybrid)
 # ==========================================
 
 def extract_and_chunk_standard(pdf_path, chunk_size=1000, chunk_overlap=200):
     """
     Standard recursive chunking with page number and source filename metadata.
-    Used by: Basic RAG, Hybrid RAG
+    Used by: Hybrid RAG, Corrective Hybrid RAG
     """
     valid_pdf_path = get_valid_pdf_path(pdf_path)
     file_name = resolve_file_name(pdf_path)
@@ -162,41 +154,3 @@ def extract_and_chunk_standard(pdf_path, chunk_size=1000, chunk_overlap=200):
 
     logger.info(f"[Standard Chunking] Created successfully {len(chunks)} chunks for {file_name}.")
     return chunks, metadatas
-
-
-# ==========================================
-# 3. Chunking Function 2: Hierarchical (For Parent-Child & Parent Corrective RAG)
-# ==========================================
-
-def extract_and_chunk_hierarchical(pdf_path, parent_chunk_words=300, child_chunk_words=70, child_overlap=15):
-    """
-    Hierarchical chunking splitting text into large parent blocks and smaller overlapping child chunks.
-    Used by: Parent-Child RAG, Corrective Parent-Child RAG
-    """
-    file_name = resolve_file_name(pdf_path)
-    full_text = get_full_text(pdf_path)
-    words = full_text.split()
-
-    parent_ids = []
-    parent_texts = []
-    child_ids = []
-    child_chunks = []
-    child_metadatas = []
-
-    for p_idx in range(0, len(words), parent_chunk_words):
-        parent_id = f"parent_{uuid.uuid4().hex[:8]}"
-        parent_text = " ".join(words[p_idx : p_idx + parent_chunk_words])
-        parent_texts.append(parent_text)
-        parent_ids.append(parent_id)
-
-        parent_words = parent_text.split()
-        step = child_chunk_words - child_overlap
-        for c_idx in range(0, len(parent_words), step):
-            child_text = " ".join(parent_words[c_idx : c_idx + child_chunk_words])
-            if len(child_text.strip()) > 20:
-                child_chunks.append(child_text)
-                child_ids.append(f"child_{uuid.uuid4().hex[:8]}")
-                child_metadatas.append({"parent_id": parent_id, "source": file_name})
-
-    print(f"[Hierarchical Chunking] Created {len(parent_texts)} Parents and {len(child_chunks)} Children for {file_name}.")
-    return parent_texts, parent_ids, child_chunks, child_metadatas, child_ids

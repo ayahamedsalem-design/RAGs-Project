@@ -1,20 +1,20 @@
 # What each question (and each ingested document) cost: tokens and US dollars, per step.
 #
-# Every request that costs money goes through rag_common.post() (OpenRouter) or
-# rag_common.ollama_call() (local, free), and both call record() here. So cost is
+# Every request to OpenRouter goes through the client made by initialize_api()
+# (hybrid_rag/pdf_processing.py), whose hook calls record() here for each reply. So cost is
 # recorded in one place instead of in every pipeline.
 #
-#   with cost.track("naive", question) as qc:     # or start_query() ... finish_query()
+#   with cost.track("hybrid", question) as qc:    # or start_query() ... finish_query()
 #       ...model calls...                          # each one is recorded as a Call
 #   print(qc.summary())                            # the "=== Cost ===" block
 #
 # Where the numbers come from:
 #   "reported"    the cost OpenRouter actually charged (usage.cost in its reply). Preferred.
 #   "calculated"  the reply had no cost: tokens x the model's prices from OpenRouter's model
-#                 list (cached in RAG/.model_prices.json, refreshed after 24 hours)
+#                 list (cached in logs/model_prices.json, refreshed after 24 hours)
 #   "local"       Ollama: $0, but the tokens are still counted
 #
-# Saved to RAG/cost_log.csv (one row per question or document; the evaluation reads it).
+# Saved to logs/cost_log.csv (one row per question or document; the Usage page reads it).
 # The tracking lives in a ContextVar, so parallel Streamlit sessions never mix their costs.
 
 import csv, json, time, logging, contextvars
@@ -27,9 +27,9 @@ import requests
 
 logger = logging.getLogger("rag.cost")
 
-HERE = Path(__file__).resolve().parent
-COST_LOG = HERE / "cost_log.csv"
-PRICES_FILE = HERE / ".model_prices.json"
+ROOT = Path(__file__).resolve().parent.parent          # the project folder
+COST_LOG = ROOT / "logs" / "cost_log.csv"
+PRICES_FILE = ROOT / "logs" / "model_prices.json"
 PRICES_MAX_AGE = 24 * 3600
 PRICE_LISTS = ["https://openrouter.ai/api/v1/models",              # chat models
                "https://openrouter.ai/api/v1/embeddings/models"]   # embedding models
@@ -228,6 +228,7 @@ def model_prices():
     except (requests.RequestException, ValueError, KeyError) as e:
         logger.warning("Could not load OpenRouter's price list (%s)", e)
         return cached["prices"] if cached else {}
+    PRICES_FILE.parent.mkdir(parents=True, exist_ok=True)
     PRICES_FILE.write_text(json.dumps({"fetched": time.time(), "prices": prices}), encoding="utf-8")
     logger.debug("Loaded prices of %d models from OpenRouter", len(prices))
     return prices
@@ -235,13 +236,15 @@ def model_prices():
 
 # ---------- Saving ----------
 def _save(qc):
-    from RAG.rag_common import BACKEND, LLM_MODEL, EMBED_MODEL   # here: rag_common imports this module
+    import os
     steps = {k: {**v, "usd": round(v["usd"], 8)} for k, v in qc.by_step().items()}
     row = {"time": datetime.now().isoformat(timespec="seconds"), "system": qc.system,
-           "backend": BACKEND, "chat_model": LLM_MODEL, "embedding_model": EMBED_MODEL,
+           "backend": "openrouter", "chat_model": os.getenv("CHAT_MODEL"),
+           "embedding_model": os.getenv("EMBEDDING_MODEL"),
            "question": qc.question, "n_calls": qc.n_calls, "prompt_tokens": qc.prompt_tokens,
            "completion_tokens": qc.completion_tokens, "reasoning_tokens": qc.reasoning_tokens,
            "total_usd": f"{qc.total_usd:.8f}", "steps": json.dumps(steps)}
+    COST_LOG.parent.mkdir(parents=True, exist_ok=True)
     new = not COST_LOG.exists()
     try:
         with open(COST_LOG, "a", newline="", encoding="utf-8") as f:
