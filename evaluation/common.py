@@ -1,4 +1,4 @@
-# Shared settings for the evaluation of the two RAG pipelines (see run_eval.py).
+# Shared settings for the evaluation of all seven RAG pipelines (see run_eval.py).
 
 import json
 from pathlib import Path
@@ -16,6 +16,11 @@ DOCS = {"battery": "HummesETAL_Lajer_2023-2.pdf",
 PIPELINES = [
     ("hybrid", "Hybrid RAG", "hybrid_rag/hybrid.py"),
     ("crag_hybrid", "Corrective Hybrid RAG", "hybrid_rag/corrective_hybrid.py"),
+    ("basic", "Basic RAG", "other_rags/basic.py"),
+    ("parent_child", "Parent-Child (Hierarchical) RAG", "other_rags/parent_child.py"),
+    ("crag_parent_child", "Corrective Parent-Child RAG", "other_rags/corrective_parent_child.py"),
+    ("naive", "Ext Naive RAG", "ext_rag/ask.py"),
+    ("crag", "Ext Corrective RAG", "ext_rag/ask_crag.py"),
 ]
 LABEL = {name: label for name, label, _ in PIPELINES}
 
