@@ -5,7 +5,12 @@ from dotenv import load_dotenv
 
 # The two RAG pipelines and their helpers (package hybrid_rag/)
 from hybrid_rag.logging_setup import setup_logging
-from hybrid_rag.hybrid import run_hybrid_chat_session, initialize_hybrid_index
+from hybrid_rag.hybrid import (
+    run_hybrid_chat_session,
+    initialize_hybrid_index,
+    get_indexed_files,
+    remove_file_from_index,
+)
 from hybrid_rag.corrective_hybrid import run_corrective_hybrid_rag
 from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
@@ -38,11 +43,11 @@ COST_SYSTEM = {
 }
 
 
-def run_tracked(rag_type, rag_func, user_query):
+def run_tracked(rag_type, rag_func, user_query, selected_files=None):
     """Run one pipeline (with the usual retries) and record what the question cost.
     Requests from a failed attempt that was retried are included: they were paid for too."""
     with cost.track(COST_SYSTEM[rag_type], user_query):
-        return execute_with_retry(rag_func, user_query)
+        return execute_with_retry(rag_func, user_query, selected_files=selected_files)
 
 
 def show_cost(user_query):
@@ -68,25 +73,57 @@ GLOBAL_SESSION_ID = "global_chat_session"
 # 1. Sidebar: Knowledge Base Ingestion & Settings
 # ==========================================
 with st.sidebar:
-    st.header("1. Feed the Knowledge Base")
-    st.info("Upload PDF documents here to index them permanently into the Global Database.")
+    st.header("1. Knowledge Base Files")
+    indexed_files = get_indexed_files()
 
-    uploaded_file = st.file_uploader("Upload PDF to Global DB:", type=["pdf"], key="global_uploader")
+    if indexed_files:
+        st.caption("Select files to include in query (none checked = all):")
+        selected_files = [
+            fname
+            for fname in indexed_files
+            if st.checkbox(fname, value=True, key=f"query_file_{fname}")
+        ]
 
-    if uploaded_file:
-        if st.button("Index File into Global DB", use_container_width=True):
-            with st.spinner(f"Indexing '{uploaded_file.name}' into the Hybrid DB..."):
-                try:
-                    # Both pipelines search the same collection (global_hybrid_collection).
-                    # The embedding cost is saved as an "ingest_global" row in logs/cost_log.csv.
-                    with cost.track("ingest_global", uploaded_file.name):
-                        initialize_hybrid_index(uploaded_file)
+        files_to_remove = st.multiselect(
+            "Select file(s) to remove from DB:",
+            options=indexed_files,
+        )
+        if st.button("Remove Selected File(s)", use_container_width=True, disabled=not files_to_remove):
+            for fname in files_to_remove:
+                remove_file_from_index(fname)
+            st.success(f"Removed {len(files_to_remove)} file(s) from the Global Database!")
+            st.rerun()
+    else:
+        selected_files = []
+        st.warning("No files currently embedded in ChromaDB. Upload a PDF below.")
 
-                    logger.info(f"Successfully indexed '{uploaded_file.name}' into the Hybrid DB.")
-                    st.success(f"'{uploaded_file.name}' added to the Global Database!")
-                except Exception as e:
-                    logger.error(f"Indexing failed for '{uploaded_file.name}': {e}", exc_info=True)
-                    st.error(f"Error during indexing: {e}")
+    st.subheader("Upload New File(s)")
+    uploaded_files = st.file_uploader(
+        "Upload PDF(s) to Global DB:",
+        type=["pdf"],
+        accept_multiple_files=True,
+        key="global_uploader",
+    )
+
+    if uploaded_files:
+        if st.button("Index File(s) into Global DB", use_container_width=True):
+            indexed_count = 0
+            for uploaded_file in uploaded_files:
+                with st.spinner(f"Indexing '{uploaded_file.name}' into the Hybrid DB..."):
+                    try:
+                        # Both pipelines search the same collection (global_hybrid_collection).
+                        # The embedding cost is saved as an "ingest_global" row in logs/cost_log.csv.
+                        with cost.track("ingest_global", uploaded_file.name):
+                            initialize_hybrid_index(uploaded_file)
+
+                        logger.info(f"Successfully indexed '{uploaded_file.name}' into the Hybrid DB.")
+                        st.success(f"'{uploaded_file.name}' added to the Global Database!")
+                        indexed_count += 1
+                    except Exception as e:
+                        logger.error(f"Indexing failed for '{uploaded_file.name}': {e}", exc_info=True)
+                        st.error(f"Error during indexing '{uploaded_file.name}': {e}")
+            if indexed_count > 0:
+                st.rerun()
 
     st.divider()
     st.header("2. Query Architecture")
@@ -155,11 +192,11 @@ if user_query:
                 # run_tracked = the usual execute_with_retry + cost tracking (see the top)
                 if rag_type == "Hybrid RAG":
                     answer, retrieved_contexts = run_tracked(
-                        rag_type, run_hybrid_chat_session, user_query
+                        rag_type, run_hybrid_chat_session, user_query, selected_files=selected_files
                     )
                 elif rag_type == "Corrective Hybrid RAG":
                     answer, retrieved_contexts = run_tracked(
-                        rag_type, run_corrective_hybrid_rag, user_query
+                        rag_type, run_corrective_hybrid_rag, user_query, selected_files=selected_files
                     )
 
                 st.subheader("Model Response")

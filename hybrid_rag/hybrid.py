@@ -162,19 +162,68 @@ def initialize_hybrid_index(pdf_source):
     refresh_global_bm25()
 
 
-# ==========================================
-# 3. Querying (Global Multi-Question Hybrid Search)
-# ==========================================
+def get_indexed_files() -> list:
+    """Returns a sorted list of unique source filenames currently embedded in ChromaDB."""
+    refresh_global_bm25()
+    sources = {
+        m.get("source")
+        for m in GLOBAL_BM25_CACHE["metadatas"]
+        if isinstance(m, dict) and m.get("source")
+    }
+    return sorted(sources)
 
-def retrieve_hybrid_context(user_query: str, top_k: int = 6):
+
+def remove_file_from_index(file_name: str):
+    """Removes all chunks belonging to file_name from ChromaDB and refreshes the BM25 cache."""
+    logger.info(f"Removing '{file_name}' from Global Hybrid DB...")
+    global_hybrid_col.delete(where={"source": file_name})
+    GLOBAL_BM25_CACHE["bm25"] = None
+    refresh_global_bm25()
+    logger.info(f"Successfully removed '{file_name}' from Global Hybrid DB.")
+
+
+def get_bm25_subset(selected_files: list = None):
     """
-    Performs Hybrid Retrieval (Dense Vector + Sparse BM25 via RRF) across ALL indexed documents
-    for each sub-question in the user query.
+    Returns (bm25, chunks, metadatas, where_filter) scoped to selected_files.
+    Falls back to all indexed files when selected_files is empty/None or selects all files.
     """
     refresh_global_bm25()
     bm25 = GLOBAL_BM25_CACHE["bm25"]
     chunks = GLOBAL_BM25_CACHE["chunks"]
     metadatas = GLOBAL_BM25_CACHE["metadatas"]
+    where_filter = None
+
+    if selected_files:
+        selected_set = set(selected_files)
+        all_sources = {
+            m.get("source") for m in metadatas if isinstance(m, dict) and m.get("source")
+        }
+        if not all_sources.issubset(selected_set):
+            where_filter = {"source": {"$in": list(selected_set)}}
+            filtered_pairs = [
+                (c, m) for c, m in zip(chunks, metadatas)
+                if isinstance(m, dict) and m.get("source") in selected_set
+            ]
+            chunks = [c for c, _ in filtered_pairs]
+            metadatas = [m for _, m in filtered_pairs]
+            bm25 = BM25Okapi([bm25_tokenizer(c) for c in chunks]) if chunks else None
+
+    return bm25, chunks, metadatas, where_filter
+
+
+# ==========================================
+# 3. Querying (Global Multi-Question Hybrid Search)
+# ==========================================
+
+def retrieve_hybrid_context(user_query: str, top_k: int = 6, selected_files: list = None):
+    """
+    Performs Hybrid Retrieval (Dense Vector + Sparse BM25 via RRF) across selected (or ALL)
+    indexed documents for each sub-question in the user query.
+    """
+    bm25, chunks, metadatas, where_filter = get_bm25_subset(selected_files)
+
+    if not chunks or bm25 is None:
+        return "", []
 
     sub_queries = decompose_multi_questions(user_query)
     consolidated_scores = {}
@@ -196,6 +245,7 @@ def retrieve_hybrid_context(user_query: str, top_k: int = 6):
                 query_embeddings=[query_vec],
                 n_results=t_chunks_limit,
                 include=["documents"],
+                where=where_filter,
             )
             if dense_results.get("documents") and dense_results["documents"]:
                 dense_chunks = dense_results["documents"][0]
@@ -232,9 +282,9 @@ def retrieve_hybrid_context(user_query: str, top_k: int = 6):
     return full_context_text, formatted_contexts
 
 
-def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int = 5):
+def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int = 5, selected_files: list = None):
     """
-    Searches across ALL indexed documents using Hybrid RAG (Dense + BM25),
+    Searches across selected (or ALL) indexed documents using Hybrid RAG (Dense + BM25),
     supports multi-questions, and maintains a rolling window of chat history.
     """
     logger.info("=== Starting Global Multi-Query Hybrid RAG ===")
@@ -245,7 +295,9 @@ def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int 
         return "The database is empty. Please upload and index some PDFs first.", []
 
     # 1. Retrieve consolidated hybrid context
-    full_context_text, formatted_contexts = retrieve_hybrid_context(user_query, top_k=top_k)
+    full_context_text, formatted_contexts = retrieve_hybrid_context(
+        user_query, top_k=top_k, selected_files=selected_files
+    )
 
     # 2. Load rolling window history
     logger.info("Loading global conversation history...")

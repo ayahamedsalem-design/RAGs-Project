@@ -67,7 +67,15 @@ Open http://localhost:8501.
 2. **Ask**: choose *Hybrid RAG* or *Corrective Hybrid RAG* and type a question. Under the answer you see the retrieved chunks and what the answer cost (requests, tokens, US dollars).
 3. **Usage**: the *Usage* page in the sidebar shows spend, requests and tokens over time, cost per question per pipeline, and OpenRouter's own figures for the API key.
 
-With Docker: `docker compose up --build`, then open the same address. The vector store (`chroma_db_global/`) is kept between restarts.
+With Docker Compose: `docker compose up --build`, then open the same address. The vector store (`chroma_db_global/`) is kept between restarts.
+
+With `docker build` + `docker run` (single-command rebuild):
+
+```powershell
+.\rebuild.ps1
+```
+
+This builds `rags_img`, replaces the `global_rag_app` container only if the build succeeds, mounts `.env` read-only, and mounts `chroma_db_global/`, `logs/`, and `chat_history.json` so your vector store, cost logs, and chat history are preserved.
 
 ## Cost tracking
 

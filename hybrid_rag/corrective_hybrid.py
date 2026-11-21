@@ -7,8 +7,7 @@ try:
     from hybrid_rag.chat_history import persist_chat_history, load_file_history
     from hybrid_rag.pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
     from hybrid_rag.hybrid import (
-        refresh_global_bm25,
-        GLOBAL_BM25_CACHE,
+        get_bm25_subset,
         bm25_tokenizer,
         global_hybrid_col
     )
@@ -17,8 +16,7 @@ except ModuleNotFoundError:
     from chat_history import persist_chat_history, load_file_history
     from pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
     from hybrid import (
-        refresh_global_bm25,
-        GLOBAL_BM25_CACHE,
+        get_bm25_subset,
         bm25_tokenizer,
         global_hybrid_col
     )
@@ -76,9 +74,9 @@ Respond strictly with 'yes' if relevant, or 'no' if irrelevant. Do not provide e
 # 2. Querying (Global Multi-Question Corrective Hybrid RAG)
 # ==========================================
 
-def run_corrective_hybrid_rag(user_query: str, top_k_per_query: int = 4, history_limit: int = 5):
+def run_corrective_hybrid_rag(user_query: str, top_k_per_query: int = 4, history_limit: int = 5, selected_files: list = None):
     """
-    Searches across ALL indexed documents using Hybrid RAG (Dense + BM25),
+    Searches across selected (or ALL) indexed documents using Hybrid RAG (Dense + BM25),
     grades each chunk against its triggering sub-question, and generates a cited response.
     """
     logger.info("=== Starting Global Multi-Query Corrective Hybrid RAG ===")
@@ -89,10 +87,7 @@ def run_corrective_hybrid_rag(user_query: str, top_k_per_query: int = 4, history
         return "The database is empty. Please upload and index some PDFs first.", []
 
     # 1. Update BM25 Cache & Decompose Query
-    refresh_global_bm25()
-    bm25 = GLOBAL_BM25_CACHE["bm25"]
-    chunks = GLOBAL_BM25_CACHE["chunks"]
-    metadatas = GLOBAL_BM25_CACHE["metadatas"]
+    bm25, chunks, metadatas, where_filter = get_bm25_subset(selected_files)
 
     sub_queries = decompose_multi_questions(user_query)
     
@@ -103,6 +98,8 @@ def run_corrective_hybrid_rag(user_query: str, top_k_per_query: int = 4, history
 
     # 2. Retrieval Phase (Hybrid RRF per sub-query)
     for idx, sub_q in enumerate(sub_queries, start=1):
+        if not chunks or bm25 is None:
+            break
         logger.debug(f"Running Hybrid Retrieval for sub-query #{idx}: '{sub_q}'")
         
         dense_chunks = []
@@ -116,6 +113,7 @@ def run_corrective_hybrid_rag(user_query: str, top_k_per_query: int = 4, history
                 query_embeddings=[query_vec],
                 n_results=t_chunks_limit,
                 include=["documents"],
+                where=where_filter,
             )
             if dense_results.get("documents") and dense_results["documents"]:
                 dense_chunks = dense_results["documents"][0]
