@@ -1,10 +1,11 @@
 streamlit
 chromadb
+numpy
 openai
 pypdf
 rank-bm25
 python-dotenv
 langchain-text-splitters
 requests
-# evaluation report (evaluation/report.py)
+# evaluation report (evaluation/report.py) and Ext DOCX loader
 python-docx
