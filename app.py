@@ -1,20 +1,26 @@
 import os
 import logging
+
+# Set before any ChromaDB PersistentClient opens ./chroma_db_global so all packages share settings
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+
 import streamlit as st
 from dotenv import load_dotenv
 
-# The two RAG pipelines and their helpers (package hybrid_rag/)
+# Shared core utilities from hybrid_rag/ (kept unmodified for easy merges from refactor/hybrid-cleanup)
 from hybrid_rag.logging_setup import setup_logging
-from hybrid_rag.hybrid import (
-    run_hybrid_chat_session,
-    initialize_hybrid_index,
-    get_indexed_files,
-    remove_file_from_index,
-)
-from hybrid_rag.corrective_hybrid import run_corrective_hybrid_rag
 from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
 from hybrid_rag.chat_history import load_file_history, clear_all_history, load_all_history
+
+# Unified 7-pipeline registry and ChromaDB coordinator (hybrid_rag + other_rags + ext_rag)
+from other_rags.registry import (
+    COST_SYSTEM,
+    PIPELINES,
+    get_all_indexed_files,
+    index_file_all_stores,
+    remove_file_all_stores,
+)
 
 # Cost tracking (see hybrid_rag/cost.py): tokens and US dollars per question
 from hybrid_rag import cost
@@ -36,11 +42,7 @@ st.set_page_config(page_title="Global Knowledge Base RAG", page_icon="🤖", lay
 # Usage page reads. cost.track(...) starts a new total before the pipeline runs and saves it
 # when it ends; the requests themselves are recorded by the hook in initialize_api()
 # (hybrid_rag/pdf_processing.py).
-# Names used in the "system" column of cost_log.csv:
-COST_SYSTEM = {
-    "Hybrid RAG": "hybrid",
-    "Corrective Hybrid RAG": "crag_hybrid",
-}
+# Names used in the "system" column of cost_log.csv are defined in other_rags/registry.py (COST_SYSTEM).
 
 
 def run_tracked(rag_type, rag_func, user_query, selected_files=None):
@@ -62,7 +64,8 @@ def show_cost(user_query):
 
 st.title("Enterprise Global RAG System ")
 st.markdown(
-    "Query across **ALL** your indexed documents with Hybrid RAG or Corrective Hybrid RAG."
+    "Query across **ALL** your indexed documents with Hybrid, Corrective Hybrid, Basic, "
+    "Parent-Child, Corrective Parent-Child, Ext Naive, or Ext Corrective RAG."
 )
 st.divider()
 
@@ -74,7 +77,7 @@ GLOBAL_SESSION_ID = "global_chat_session"
 # ==========================================
 with st.sidebar:
     st.header("1. Knowledge Base Files")
-    indexed_files = get_indexed_files()
+    indexed_files = get_all_indexed_files()
 
     if indexed_files:
         st.caption("Select files to include in query (none checked = all):")
@@ -90,7 +93,7 @@ with st.sidebar:
         )
         if st.button("Remove Selected File(s)", use_container_width=True, disabled=not files_to_remove):
             for fname in files_to_remove:
-                remove_file_from_index(fname)
+                remove_file_all_stores(fname)
             st.success(f"Removed {len(files_to_remove)} file(s) from the Global Database!")
             st.rerun()
     else:
@@ -109,14 +112,14 @@ with st.sidebar:
         if st.button("Index File(s) into Global DB", use_container_width=True):
             indexed_count = 0
             for uploaded_file in uploaded_files:
-                with st.spinner(f"Indexing '{uploaded_file.name}' into the Hybrid DB..."):
+                with st.spinner(f"Indexing '{uploaded_file.name}' across Standard, Hierarchical, and Ext DBs..."):
                     try:
-                        # Both pipelines search the same collection (global_hybrid_collection).
-                        # The embedding cost is saved as an "ingest_global" row in logs/cost_log.csv.
+                        # Indexes into all 3 ChromaDB store groups (each skips if already present).
+                        # Embedding costs are saved as an "ingest_global" row in logs/cost_log.csv.
                         with cost.track("ingest_global", uploaded_file.name):
-                            initialize_hybrid_index(uploaded_file)
+                            index_file_all_stores(uploaded_file)
 
-                        logger.info(f"Successfully indexed '{uploaded_file.name}' into the Hybrid DB.")
+                        logger.info(f"Successfully indexed '{uploaded_file.name}' across all Global DBs.")
                         st.success(f"'{uploaded_file.name}' added to the Global Database!")
                         indexed_count += 1
                     except Exception as e:
@@ -129,10 +132,7 @@ with st.sidebar:
     st.header("2. Query Architecture")
     rag_type = st.radio(
         "Choose RAG Architecture:",
-        (
-            "Hybrid RAG",
-            "Corrective Hybrid RAG",
-        ),
+        tuple(PIPELINES.keys()),
         index=0,
     )
 
@@ -190,14 +190,9 @@ if user_query:
         with st.spinner(f"Running {rag_type}..."):
             try:
                 # run_tracked = the usual execute_with_retry + cost tracking (see the top)
-                if rag_type == "Hybrid RAG":
-                    answer, retrieved_contexts = run_tracked(
-                        rag_type, run_hybrid_chat_session, user_query, selected_files=selected_files
-                    )
-                elif rag_type == "Corrective Hybrid RAG":
-                    answer, retrieved_contexts = run_tracked(
-                        rag_type, run_corrective_hybrid_rag, user_query, selected_files=selected_files
-                    )
+                answer, retrieved_contexts = run_tracked(
+                    rag_type, PIPELINES[rag_type], user_query, selected_files=selected_files
+                )
 
                 st.subheader("Model Response")
                 st.write(answer)
@@ -208,6 +203,13 @@ if user_query:
                         for idx, chunk in enumerate(retrieved_contexts):
                             st.markdown(f"**Chunk [{idx + 1}]**")
                             if isinstance(chunk, dict):
+                                header_parts = [
+                                    p for p in (chunk.get("file"), chunk.get("loc")) if p
+                                ]
+                                if chunk.get("sim"):
+                                    header_parts.append(f"sim: {chunk['sim']}")
+                                if header_parts:
+                                    st.caption(" | ".join(header_parts))
                                 text_content = (
                                     chunk.get("text")
                                     or chunk.get("page_content")

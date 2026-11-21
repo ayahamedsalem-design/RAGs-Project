@@ -32,10 +32,14 @@ st.set_page_config(page_title="Usage", page_icon="💰", layout="wide")
 PIPELINES = [  # (name in cost_log.csv, label on the page)
     ("hybrid", "Hybrid RAG"),
     ("crag_hybrid", "Corrective Hybrid RAG"),
+    ("basic", "Basic RAG"),
+    ("parent_child", "Parent-Child RAG"),
+    ("crag_parent_child", "Corrective Parent-Child RAG"),
+    ("naive", "Ext Naive RAG"),
+    ("crag", "Ext Corrective RAG"),
 ]
-# Everything else: indexing (ingest_global), history summaries, and rows from the pipelines
-# that were removed (Ext Naive/Corrective, Basic, Parent-Child, ...), so old spending still shows
-OTHER = "Indexing, summaries & older pipelines"
+# Indexing (ingest, ingest_global) and history summaries share the last slot
+OTHER = "Indexing & summaries"
 LABELS = [label for _, label in PIPELINES] + [OTHER]
 QUESTION_SYSTEMS = {name for name, _ in PIPELINES}
 COLOURS = {
@@ -248,8 +252,9 @@ with tab1:
 
 steps = step_rows(df)
 with tab2:
-    st.caption("Where the money goes inside each pipeline. The pipelines only "
-               "distinguish chat and embedding requests.")
+    st.caption("Where the money goes inside each pipeline. The Ext pipelines break down individual "
+               "steps (rewrite, embed_query, grade, answer); the Global pipelines distinguish "
+               "chat and embedding requests.")
     s = (steps.groupby(["pipeline", "step"], sort=False)
          .agg(calls=("calls", "sum"), tokens_in=("prompt_tokens", "sum"),
               tokens_out=("completion_tokens", "sum"), reasoning=("reasoning_tokens", "sum"),
