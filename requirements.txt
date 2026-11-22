@@ -8,3 +8,7 @@ langchain-text-splitters
 requests
 # evaluation report (evaluation/report.py)
 python-docx
+# LangChain versions of the pipelines (hybrid_rag/lc/)
+langchain-core
+langchain-openai
+langchain-chroma
