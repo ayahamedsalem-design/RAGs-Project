@@ -7,10 +7,10 @@ Ask questions about PDF documents across **seven** Retrieval-Augmented Generatio
 | Pipeline | Package | Vector Store Collection | Retrieval & Strategy |
 | --- | --- | --- | --- |
 | **Hybrid RAG** | `hybrid_rag/hybrid.py` | `global_hybrid_collection` | Dense vector + BM25 fused with Reciprocal Rank Fusion (top 6) |
-| **Corrective Hybrid RAG** | `hybrid_rag/corrective_hybrid.py` | `global_hybrid_collection` | Hybrid RRF + 1-round per-chunk yes/no LLM grader |
+| **Hybrid Corrective RAG** | `hybrid_rag/hybrid_corrective.py` | `global_hybrid_collection` | 2-round fused CRAG: Hybrid RRF (top 15) + reference filter + batch LLM grader + Round-2 corrective queries |
 | **Basic RAG** | `other_rags/basic.py` | `global_hybrid_collection` (shared) | Pure dense vector search over shared 1000/200 chunks (OpenRouter `CHAT_MODEL`) |
-| **Parent-Child (Hierarchical) RAG** | `other_rags/parent_child.py` | `global_parent_collection` + `global_child_collection` | Searches 70-word child chunks, returns 300-word parent blocks |
-| **Corrective Parent-Child RAG** | `other_rags/corrective_parent_child.py` | `global_parent_collection` + `global_child_collection` | Hierarchical retrieval + 1-round per-chunk yes/no LLM grader |
+| **Parent-Child (Hierarchical) RAG** | `other_rags/parent_child.py` | `global_parent_collection` + `global_child_collection` | Searches 70-word child chunks, returns 300-word parent blocks with page numbers |
+| **Parent-Child Corrective RAG** | `other_rags/parent_child_corrective.py` | `global_parent_collection` + `global_child_collection` | 2-round fused CRAG: Parent-Child retrieval with page metadata + reference filter + batch LLM grader + Round-2 queries |
 | **Ext Naive RAG** | `ext_rag/ask.py` | `ext_chunks_openrouter` | Cosine similarity search (top 4) + LLM follow-up question rewriting |
 | **Ext Corrective RAG** | `ext_rag/ask_crag.py` | `ext_chunks_openrouter` | Cosine search + reference filter + batch LLM grader + Round 2 corrective queries |
 
@@ -22,8 +22,8 @@ pages/
   Usage.py                      Cost dashboard across all 7 pipelines (spend, requests, tokens, avg cost)
 hybrid_rag/                     Kept 100% unmodified from refactor/hybrid-cleanup for clean git merges
   hybrid.py                     Hybrid RAG indexing & answering (global_hybrid_collection)
-  corrective_hybrid.py          Corrective Hybrid RAG
-  pdf_processing.py             PDF reading, standard chunking, question splitting, OpenRouter client, prompt
+  hybrid_corrective.py          Hybrid Corrective RAG (2-round fused CRAG with batch grader & query rewriting)
+  pdf_processing.py             PDF reading, OCR fallback, standard chunking, question splitting, OpenRouter client
   chat_history.py               Unified conversation history (chat_history.json)
   summarizer.py                 "Summarize History" in the sidebar
   retry.py                      Retries for transient API errors
@@ -32,9 +32,9 @@ hybrid_rag/                     Kept 100% unmodified from refactor/hybrid-cleanu
 other_rags/                     Additive Global pipelines + unified coordinator
   registry.py                   Unified multi-store index/list/remove & 7-pipeline dispatch table
   basic.py                      Basic RAG (shares global_hybrid_collection, OpenRouter CHAT_MODEL)
-  parent_child.py               Parent-Child RAG (embeds parents & children via EMBEDDING_MODEL)
-  corrective_parent_child.py    Corrective Parent-Child RAG (1-round per-chunk yes/no grader)
-  hierarchical_chunking.py      Hierarchical word chunker (300-word parents / 70-word children)
+  parent_child.py               Parent-Child RAG (L2-normalized embeddings + page metadata for parents & children)
+  parent_child_corrective.py    Parent-Child Corrective RAG (2-round fused CRAG with page citations & query rewriting)
+  hierarchical_chunking.py      Hierarchical word chunker (300-word parents / 70-word children + page tracking & OCR)
 ext_rag/                        ChromaDB-backed Ext Naive & Ext Corrective pipelines
   rag_common.py                 Shared ChromaDB client, OpenRouter/Ollama helpers, hybrid_rag.cost hook
   ingest.py                     CLI multi-format ingest + Streamlit UI index/list/remove helpers

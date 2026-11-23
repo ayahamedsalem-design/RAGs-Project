@@ -2,6 +2,7 @@ import math
 import os
 import time
 import logging
+import numpy as np
 
 from hybrid_rag.logging_setup import setup_logging
 from hybrid_rag.chat_history import persist_chat_history, load_file_history
@@ -12,7 +13,7 @@ from hybrid_rag.pdf_processing import (
     SYS_PROMPT,
 )
 from hybrid_rag.hybrid import chroma_client
-from other_rags.hierarchical_chunking import extract_and_chunk_hierarchical
+from other_rags.hierarchical_chunking import extract_and_chunk_hierarchical_with_pages
 
 # ==========================================
 # 1. Setup & Configuration
@@ -50,7 +51,10 @@ def _embed_in_batches(texts: list, label: str, batch_size: int = 32) -> list:
                     model=EMBEDDING_MODEL,
                     input=batch,
                 )
-                embeddings_list.extend([item.embedding for item in response.data])
+                for item in response.data:
+                    arr = np.asarray(item.embedding, dtype=np.float32)
+                    norm = float(np.linalg.norm(arr))
+                    embeddings_list.append((arr / norm).tolist() if norm > 0.0 else arr.tolist())
                 success = True
                 time.sleep(1)
                 break
@@ -84,8 +88,8 @@ def index_parent_child_rag(pdf_source):
         return
 
     logger.info(f"Starting Hierarchical Extraction & Chunking for '{file_name}'...")
-    parent_texts, parent_ids, child_chunks, child_metadatas, child_ids = (
-        extract_and_chunk_hierarchical(
+    parent_texts, parent_ids, parent_metadatas, child_chunks, child_metadatas, child_ids = (
+        extract_and_chunk_hierarchical_with_pages(
             pdf_source,
             parent_chunk_words=300,
             child_chunk_words=70,
@@ -95,25 +99,28 @@ def index_parent_child_rag(pdf_source):
 
     if not child_chunks or not parent_texts:
         logger.warning(f"No valid chunks extracted from '{file_name}'.")
-        return
+        raise ValueError(
+            f"No extractable text was found in '{file_name}' (0 parent/child chunks created)."
+        )
 
     parent_embeddings = _embed_in_batches(parent_texts, label="parent chunks")
-    parent_metadatas = [{"source": file_name} for _ in parent_texts]
-    logger.info(f"Saving {len(parent_texts)} parent blocks to Global Parent DB...")
-    global_parent_col.add(
-        documents=parent_texts,
-        embeddings=parent_embeddings,
-        metadatas=parent_metadatas,
-        ids=parent_ids,
-    )
+    logger.info(f"Saving {len(parent_texts)} parent blocks (with page metadata) to Global Parent DB...")
+    for i in range(0, len(parent_texts), 1000):
+        global_parent_col.add(
+            documents=parent_texts[i : i + 1000],
+            embeddings=parent_embeddings[i : i + 1000],
+            metadatas=parent_metadatas[i : i + 1000],
+            ids=parent_ids[i : i + 1000],
+        )
 
     child_embeddings = _embed_in_batches(child_chunks, label="child chunks")
-    global_child_col.add(
-        documents=child_chunks,
-        embeddings=child_embeddings,
-        metadatas=child_metadatas,
-        ids=child_ids,
-    )
+    for i in range(0, len(child_chunks), 1000):
+        global_child_col.add(
+            documents=child_chunks[i : i + 1000],
+            embeddings=child_embeddings[i : i + 1000],
+            metadatas=child_metadatas[i : i + 1000],
+            ids=child_ids[i : i + 1000],
+        )
     logger.info(f"Successfully indexed '{file_name}' into Global Parent-Child DB.")
 
 
@@ -233,7 +240,9 @@ def run_parent_child_rag(
         if pid in doc_map:
             meta = meta_map.get(pid, {})
             source_file = meta.get("source", "Unknown_File") if isinstance(meta, dict) else "Unknown_File"
-            formatted_contexts.append(f"[Source: {source_file}]:\n{doc_map[pid]}")
+            page_label = meta.get("page") if isinstance(meta, dict) else None
+            header = f"[Source: {source_file} | Page: {page_label}]" if page_label else f"[Source: {source_file}]"
+            formatted_contexts.append(f"{header}:\n{doc_map[pid]}")
 
     full_context_text = "\n\n---\n\n".join(formatted_contexts)
 

@@ -15,10 +15,10 @@ DOCS = {"battery": "HummesETAL_Lajer_2023-2.pdf",
 # (name in the results and cost log, name in the app, module)
 PIPELINES = [
     ("hybrid", "Hybrid RAG", "hybrid_rag/hybrid.py"),
-    ("crag_hybrid", "Corrective Hybrid RAG", "hybrid_rag/corrective_hybrid.py"),
+    ("crag_hybrid", "Hybrid Corrective RAG", "hybrid_rag/hybrid_corrective.py"),
     ("basic", "Basic RAG", "other_rags/basic.py"),
     ("parent_child", "Parent-Child (Hierarchical) RAG", "other_rags/parent_child.py"),
-    ("crag_parent_child", "Corrective Parent-Child RAG", "other_rags/corrective_parent_child.py"),
+    ("crag_parent_child", "Parent-Child Corrective RAG", "other_rags/parent_child_corrective.py"),
     ("naive", "Ext Naive RAG", "ext_rag/ask.py"),
     ("crag", "Ext Corrective RAG", "ext_rag/ask_crag.py"),
 ]

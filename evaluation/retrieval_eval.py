@@ -515,7 +515,7 @@ def _retrieve_hybrid(q: dict, qcache: QueryEmbeddingCache, selected_files: list 
 
 
 def _retrieve_crag_hybrid(q: dict, qcache: QueryEmbeddingCache, selected_files: list | None) -> dict:
-    from hybrid_rag.corrective_hybrid import CHAT_MODEL, client_ai as crag_client
+    from hybrid_rag.hybrid_corrective import CHAT_MODEL, client_ai as crag_client
     from hybrid_rag.hybrid import (
         bm25_tokenizer,
         client_ai,
@@ -699,7 +699,7 @@ def _retrieve_parent_child(q: dict, qcache: QueryEmbeddingCache, selected_files:
 
 
 def _retrieve_crag_parent_child(q: dict, qcache: QueryEmbeddingCache, selected_files: list | None) -> dict:
-    from other_rags.corrective_parent_child import CHAT_MODEL, client_ai as crag_pc_client
+    from other_rags.parent_child_corrective import CHAT_MODEL, client_ai as crag_pc_client
     from other_rags.parent_child import (
         client_ai,
         get_child_where_filter,
@@ -1067,8 +1067,8 @@ def main():
 
     if args.grader_model:
         os.environ["CHAT_MODEL"] = args.grader_model
-        import hybrid_rag.corrective_hybrid as _ch
-        import other_rags.corrective_parent_child as _cpc
+        import hybrid_rag.hybrid_corrective as _ch
+        import other_rags.parent_child_corrective as _cpc
         import ext_rag.rag_common as _erc
         _ch.CHAT_MODEL = args.grader_model
         _cpc.CHAT_MODEL = args.grader_model

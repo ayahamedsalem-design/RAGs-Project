@@ -14,7 +14,7 @@ from hybrid_rag.hybrid import (
     get_indexed_files as get_hybrid_indexed_files,
     remove_file_from_index as remove_hybrid_file,
 )
-from hybrid_rag.corrective_hybrid import run_corrective_hybrid_rag
+from hybrid_rag.hybrid_corrective import run_hybrid_corrective_rag
 from other_rags.basic import run_basic_rag
 from other_rags.parent_child import (
     run_parent_child_rag,
@@ -22,7 +22,7 @@ from other_rags.parent_child import (
     get_parent_child_indexed_files,
     remove_parent_child_file,
 )
-from other_rags.corrective_parent_child import run_corrective_parent_child_rag
+from other_rags.parent_child_corrective import run_parent_child_corrective_rag
 from ext_rag.app_bridge import run_ext_naive_rag, run_ext_corrective_rag
 from ext_rag.ingest import (
     index_ext_file,
@@ -35,10 +35,10 @@ logger = logging.getLogger(__name__)
 # Names used in the "system" column of logs/cost_log.csv
 COST_SYSTEM = {
     "Hybrid RAG": "hybrid",
-    "Corrective Hybrid RAG": "crag_hybrid",
+    "Hybrid Corrective RAG": "crag_hybrid",
     "Basic RAG": "basic",
     "Parent-Child (Hierarchical) RAG": "parent_child",
-    "Corrective Parent-Child RAG": "crag_parent_child",
+    "Parent-Child Corrective RAG": "crag_parent_child",
     "Ext Naive RAG": "naive",
     "Ext Corrective RAG": "crag",
 }
@@ -46,10 +46,10 @@ COST_SYSTEM = {
 # Ordered mapping of Streamlit radio label -> runner(user_query, selected_files=None)
 PIPELINES = {
     "Hybrid RAG": run_hybrid_chat_session,
-    "Corrective Hybrid RAG": run_corrective_hybrid_rag,
+    "Hybrid Corrective RAG": run_hybrid_corrective_rag,
     "Basic RAG": run_basic_rag,
     "Parent-Child (Hierarchical) RAG": run_parent_child_rag,
-    "Corrective Parent-Child RAG": run_corrective_parent_child_rag,
+    "Parent-Child Corrective RAG": run_parent_child_corrective_rag,
     "Ext Naive RAG": run_ext_naive_rag,
     "Ext Corrective RAG": run_ext_corrective_rag,
 }
