@@ -1,6 +1,6 @@
 import os
 
-from hybrid_rag.pdf_processing import initialize_api
+from hybrid_rag.file_processing import initialize_api
 
 client_ai = initialize_api()
 

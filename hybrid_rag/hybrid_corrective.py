@@ -7,7 +7,12 @@ import numpy as np
 try:
     from hybrid_rag.logging_setup import setup_logging
     from hybrid_rag.chat_history import persist_chat_history, load_file_history
-    from hybrid_rag.pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
+    from hybrid_rag.file_processing import (
+        initialize_api,
+        decompose_multi_questions,
+        format_location,
+        SYS_PROMPT,
+    )
     from hybrid_rag.hybrid import (
         get_hybrid_search_state,
         bm25_tokenizer,
@@ -16,7 +21,12 @@ try:
 except ModuleNotFoundError:
     from logging_setup import setup_logging
     from chat_history import persist_chat_history, load_file_history
-    from pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
+    from file_processing import (
+        initialize_api,
+        decompose_multi_questions,
+        format_location,
+        SYS_PROMPT,
+    )
     from hybrid import (
         get_hybrid_search_state,
         bm25_tokenizer,
@@ -142,13 +152,21 @@ def _parse_grade(reply: str, n: int):
     return {"relevant": relevant, **_parse_parts(g, bool(relevant))}
 
 
+def _is_reference_chunk(cand: dict) -> bool:
+    """Only apply bibliography/reference-list filtering to unstructured prose chunks,
+    never to structured tabular/JSON chunks (which naturally contain dates/numbers)."""
+    if cand.get("data_kind") == "structured":
+        return False
+    return citation_density(cand["text"]) >= REFERENCE_THRESHOLD
+
+
 def grade(question: str, cands: list[dict]) -> dict:
     """
-    Batch LLM Grader: filters reference lists deterministically first, then evaluates
-    all remaining candidates in a single LLM call and proposes corrective queries for
-    any unanswered question parts.
+    Batch LLM Grader: filters reference lists deterministically first (for unstructured chunks),
+    then evaluates all remaining candidates in a single LLM call and proposes corrective queries
+    for any unanswered question parts.
     """
-    refs = [i for i, c in enumerate(cands, 1) if citation_density(c["text"]) >= REFERENCE_THRESHOLD]
+    refs = [i for i, c in enumerate(cands, 1) if _is_reference_chunk(c)]
     others = [(i, c) for i, c in enumerate(cands, 1) if i not in refs]
 
     if not others:
@@ -282,7 +300,8 @@ def search_hybrid_rrf(
             "id": cid,
             "text": doc,
             "path": meta.get("source", "Unknown"),
-            "loc": f"Page {meta.get('page', '?')}",
+            "loc": format_location(meta),
+            "data_kind": meta.get("data_kind", "unstructured"),
             "sim": sim,
             "via": via_label,
         })
@@ -342,7 +361,7 @@ def corrective_retrieve_hybrid(question: str, log: Log, selected_files: list = N
                 via_label=f"new query {qi}",
                 selected_files=selected_files,
             ):
-                if c["id"] not in seen and citation_density(c["text"]) < REFERENCE_THRESHOLD:
+                if c["id"] not in seen and not _is_reference_chunk(c):
                     seen.add(c["id"])
                     c_emb = id_to_emb.get(c["id"])
                     if c_emb is not None:
