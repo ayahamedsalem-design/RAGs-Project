@@ -5,7 +5,7 @@
 # same data, so the results can be compared with the originals:
 #   - same ChromaDB collection and vectors (global_hybrid_collection; nothing is re-indexed)
 #   - same models (CHAT_MODEL and EMBEDDING_MODEL from .env), through OpenRouter
-#   - same cost tracking: the HTTP client carries the hook from pdf_processing.py
+#   - same cost tracking: the HTTP client carries the hook from file_processing.py
 #   - same retrieval: vector search + BM25 keyword search (Arabic-normalized tokenizer),
 #     fused with Reciprocal Rank Fusion (k = 60), plus cached chunk IDs & embeddings
 #   - same prompt: SYS_PROMPT + the last turns of the chat history + context and question
@@ -39,11 +39,12 @@ from hybrid_rag.hybrid import (
     global_hybrid_col,
     refresh_global_bm25,
 )
-from hybrid_rag.pdf_processing import SYS_PROMPT, decompose_multi_questions
-try:
-    from hybrid_rag.pdf_processing import record_cost
-except ImportError:
-    from hybrid_rag.pdf_processing import _record_cost as record_cost
+from hybrid_rag.file_processing import (
+    SYS_PROMPT,
+    decompose_multi_questions,
+    format_location,
+    record_cost,
+)
 
 load_dotenv()
 logger = logging.getLogger("rag.lc")
@@ -206,14 +207,15 @@ def hybrid_search(question, top_n, selected_files=None):
 
 
 def format_chunk(doc):
-    """A chunk with its source/page label (plus sim/via when populated by Hybrid Corrective)."""
+    """A chunk with its source/location label (Page, Slide, Sheet/Rows, Table, Section)
+    plus sim/via when populated by Hybrid Corrective."""
     src = doc.metadata.get("source", "Unknown_File")
-    page = doc.metadata.get("page", "?")
+    loc = format_location(doc.metadata)
     sim = doc.metadata.get("sim")
     via = doc.metadata.get("via")
     if sim is not None and via:
-        return f"[Source: {src} | Page: {page} | sim: {sim:.3f} | {via}]:\n{doc.page_content}"
-    return f"[Source: {src} | Page: {page}]:\n{doc.page_content}"
+        return f"[Source: {src} | {loc} | sim: {sim:.3f} | {via}]:\n{doc.page_content}"
+    return f"[Source: {src} | {loc}]:\n{doc.page_content}"
 
 
 def format_context(docs):

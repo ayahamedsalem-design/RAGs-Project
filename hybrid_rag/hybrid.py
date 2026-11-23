@@ -10,21 +10,23 @@ from rank_bm25 import BM25Okapi
 try:    
     from hybrid_rag.logging_setup import setup_logging
     from hybrid_rag.chat_history import persist_chat_history, load_file_history
-    from hybrid_rag.pdf_processing import (    
+    from hybrid_rag.file_processing import (    
         initialize_api,
         resolve_file_name, 
         decompose_multi_questions, 
-        extract_and_chunk_standard,
+        extract_and_chunk_file,
+        format_location,
         SYS_PROMPT
     )
 except ModuleNotFoundError:
     from logging_setup import setup_logging
     from chat_history import persist_chat_history, load_file_history
-    from pdf_processing import (    
+    from file_processing import (    
         initialize_api,
         resolve_file_name, 
         decompose_multi_questions,
-        extract_and_chunk_standard,
+        extract_and_chunk_file,
+        format_location,
         SYS_PROMPT
     )
 
@@ -150,7 +152,7 @@ def initialize_hybrid_index(pdf_source, progress_callback=None):
         if progress_callback and total > 0:
             progress_callback(0.05 + 0.50 * (done / total), f"{file_name}: {message}")
 
-    chunks, metadatas = extract_and_chunk_standard(
+    chunks, metadatas = extract_and_chunk_file(
         pdf_source,
         chunk_size=1000,
         chunk_overlap=200,
@@ -161,7 +163,7 @@ def initialize_hybrid_index(pdf_source, progress_callback=None):
         logger.warning(f"No valid chunks extracted from '{file_name}'.")
         raise ValueError(
             f"No extractable text was found in '{file_name}' (0 chunks created). "
-            "The PDF may be empty, corrupted, or scanned without OCR enabled."
+            "The file may be empty, corrupted, or scanned without OCR enabled."
         )
 
     # Generate dense embeddings in batches with retry logic
@@ -350,8 +352,8 @@ def retrieve_hybrid_context(user_query: str, top_k: int = 6, selected_files: lis
     for doc in top_chunks:
         meta_info = chunk_to_meta.get(doc, {})
         source_file = meta_info.get("source", "Unknown_File") if isinstance(meta_info, dict) else "Unknown_File"
-        page_num = meta_info.get("page", "?") if isinstance(meta_info, dict) else "?"
-        formatted_contexts.append(f"[Source: {source_file} | Page: {page_num}]:\n{doc}")
+        loc_label = format_location(meta_info)
+        formatted_contexts.append(f"[Source: {source_file} | {loc_label}]:\n{doc}")
 
     full_context_text = "\n\n---\n\n".join(formatted_contexts)
     return full_context_text, formatted_contexts

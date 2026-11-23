@@ -12,6 +12,7 @@ from hybrid_rag.hybrid import (
     remove_file_from_index,
 )
 from hybrid_rag.hybrid_corrective import run_hybrid_corrective_rag
+from hybrid_rag.file_processing import SUPPORTED_EXTENSIONS
 from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
 from hybrid_rag.chat_history import load_file_history, clear_all_history, load_all_history
@@ -35,7 +36,7 @@ st.set_page_config(page_title="Global Knowledge Base RAG", page_icon="🤖", lay
 # adds those up per question and writes one row per question to logs/cost_log.csv, which the
 # Usage page reads. cost.track(...) starts a new total before the pipeline runs and saves it
 # when it ends; the requests themselves are recorded by the hook in initialize_api()
-# (hybrid_rag/pdf_processing.py).
+# (hybrid_rag/file_processing.py).
 # Names used in the "system" column of cost_log.csv:
 COST_SYSTEM = {
     "Hybrid RAG": "hybrid",
@@ -95,12 +96,12 @@ with st.sidebar:
             st.rerun()
     else:
         selected_files = []
-        st.warning("No files currently embedded in ChromaDB. Upload a PDF below.")
+        st.warning("No files currently embedded in ChromaDB. Upload a file below.")
 
     st.subheader("Upload New File(s)")
     uploaded_files = st.file_uploader(
-        "Upload PDF(s) to Global DB:",
-        type=["pdf"],
+        "Upload files (PDF, Word, PowerPoint, Excel, CSV, JSON, TXT/MD, Images):",
+        type=list(SUPPORTED_EXTENSIONS),
         accept_multiple_files=True,
         key="global_uploader",
     )

@@ -57,7 +57,7 @@ from hybrid_rag.lc.components import (
     reciprocal_rank_fusion,
     scope,
 )
-from hybrid_rag.pdf_processing import SYS_PROMPT, decompose_multi_questions
+from hybrid_rag.file_processing import SYS_PROMPT, decompose_multi_questions, format_location
 
 logger = logging.getLogger("rag.lc.hybrid_corrective")
 
@@ -133,9 +133,17 @@ def grader_chain():
     return _GRADER_CHAIN
 
 
+def _is_reference_doc(doc: Document) -> bool:
+    """Only apply bibliography/reference-list filtering to unstructured prose chunks,
+    never to structured tabular/JSON chunks."""
+    if doc.metadata.get("data_kind") == "structured":
+        return False
+    return citation_density(doc.page_content) >= REFERENCE_THRESHOLD
+
+
 def grade_documents_lc(question: str, cands: list[Document]) -> dict:
-    """Filters reference lists deterministically, then grades remaining Documents in one LCEL call."""
-    refs = [i for i, d in enumerate(cands, 1) if citation_density(d.page_content) >= REFERENCE_THRESHOLD]
+    """Filters reference lists deterministically (unstructured only), then grades remaining Documents in one LCEL call."""
+    refs = [i for i, d in enumerate(cands, 1) if _is_reference_doc(d)]
     others = [(i, d) for i, d in enumerate(cands, 1) if i not in refs]
 
     if not others:
@@ -149,7 +157,7 @@ def grade_documents_lc(question: str, cands: list[Document]) -> dict:
         }
 
     listing = "\n\n".join(
-        f"[Candidate {k}] (file: {d.metadata.get('source', 'Unknown')}, Page {d.metadata.get('page', '?')})\n"
+        f"[Candidate {k}] (file: {d.metadata.get('source', 'Unknown')}, {format_location(d.metadata)})\n"
         f"{d.page_content}"
         for k, (_, d) in enumerate(others, 1)
     )
@@ -230,7 +238,7 @@ def corrective_retrieve_sub_query(payload: dict) -> dict:
                 selected_files=selected_files,
             ):
                 cid = d.metadata["chunk_id"]
-                if cid not in seen and citation_density(d.page_content) < REFERENCE_THRESHOLD:
+                if cid not in seen and not _is_reference_doc(d):
                     seen.add(cid)
                     c_emb = id_to_emb.get(cid)
                     if c_emb is not None:

@@ -20,7 +20,7 @@ hybrid_rag/                the two pipelines and everything they share
     components.py          shared LangChain wrappers (ChatOpenAI, OpenAIEmbeddings, Chroma, BM25ChunkRetriever)
     hybrid_lc.py           Hybrid RAG as a LangChain LCEL chain
     hybrid_corrective_lc.py Hybrid Corrective RAG (2-round fused CRAG) as a LangChain LCEL chain
-  pdf_processing.py        PDF reading, chunking, question splitting, OpenRouter client, prompt
+  file_processing.py       Multi-format ingestion (PDF+OCR, Word, PPTX, Excel/CSV Smart Row-Batching, JSON, TXT/MD), OpenRouter client, prompt
   chat_history.py          conversation history (chat_history.json)
   summarizer.py            "Summarize History" in the sidebar
   retry.py                 retries for temporary API errors
@@ -83,7 +83,7 @@ This builds `rags_img`, replaces the `global_rag_app` container only if the buil
 
 ## Cost tracking
 
-Every reply from OpenRouter includes the tokens used and the US dollars charged. The client created by `initialize_api()` (`hybrid_rag/pdf_processing.py`) hands that to `hybrid_rag/cost.py`, which adds up all requests of one question and writes one row to `logs/cost_log.csv`. If a reply has no cost, it is calculated from OpenRouter's price list (cached in `logs/model_prices.json`).
+Every reply from OpenRouter includes the tokens used and the US dollars charged. The client created by `initialize_api()` (`hybrid_rag/file_processing.py`) hands that to `hybrid_rag/cost.py`, which adds up all requests of one question and writes one row to `logs/cost_log.csv`. If a reply has no cost, it is calculated from OpenRouter's price list (cached in `logs/model_prices.json`).
 
 ## Evaluation
 

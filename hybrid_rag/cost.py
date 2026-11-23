@@ -1,7 +1,7 @@
 # What each question (and each ingested document) cost: tokens and US dollars, per step.
 #
 # Every request to OpenRouter goes through the client made by initialize_api()
-# (hybrid_rag/pdf_processing.py), whose hook calls record() here for each reply. So cost is
+# (hybrid_rag/file_processing.py), whose hook calls record() here for each reply. So cost is
 # recorded in one place instead of in every pipeline.
 #
 #   with cost.track("hybrid", question) as qc:    # or start_query() ... finish_query()
