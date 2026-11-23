@@ -20,8 +20,16 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy the requirements file first to leverage Docker cache
 COPY requirements.txt .
-# Install dependencies from the requirements file
+# Install base dependencies from the requirements file
 RUN uv pip install -r requirements.txt
+
+# Install lightweight OCR Python dependencies in a separate layer
+# (limits concurrent uv downloads so slow networks / Docker DNS don't time out)
+ENV UV_HTTP_TIMEOUT=300
+ENV UV_CONCURRENT_DOWNLOADS=2
+ENV UV_LINK_MODE=copy
+COPY requirements-ocr.txt .
+RUN --mount=type=cache,target=/root/.cache/uv uv pip install -r requirements-ocr.txt
 
 # ==========================================
 # Stage 2: Runner (Production)
@@ -31,6 +39,19 @@ FROM python:3.13-slim
 # Prevent Python from writing .pyc files and enable unbuffered console logging
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+
+# Install Tesseract OCR with Arabic & English language packs (for scanned PDFs) and curl (for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-ara \
+    tesseract-ocr-eng \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install poppler-utils (pdftoppm) for lightweight PDF-to-image rendering (supports JBIG2)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
 
 # Activate the virtual environment from the builder stage
 ENV PATH="/opt/venv/bin:$PATH"

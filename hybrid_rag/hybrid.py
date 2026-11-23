@@ -45,46 +45,77 @@ global_hybrid_col = chroma_client.get_or_create_collection(name="global_hybrid_c
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 CHAT_MODEL = os.getenv("CHAT_MODEL")
 
-# Global runtime cache for the consolidated BM25 index across all documents
+logger.info(f"Embedding Model: {EMBEDDING_MODEL}")
+logger.info(f"Chating Model: {CHAT_MODEL}")
+
+# Global runtime cache for the consolidated BM25 index + chunk IDs & embeddings across all documents
 GLOBAL_BM25_CACHE = {
     "bm25": None,
+    "ids": [],
     "chunks": [],
     "metadatas": [],
+    "doc_to_id": {},
+    "doc_to_meta": {},
+    "id_to_emb": {},
     "doc_count": 0,
 }
 
 GLOBAL_SESSION_ID = "global_chat_session"
 
 
+ARABIC_DIACRITICS_RE = re.compile(r"[\u064B-\u065F\u0670\u0640]")
+
+
+def normalize_arabic(text: str) -> str:
+    """Strips Arabic diacritics/tatweel and unifies common letter variants for BM25 matching."""
+    text = ARABIC_DIACRITICS_RE.sub("", text)
+    text = re.sub(r"[أإآٱ]", "ا", text)
+    text = text.replace("ى", "ي")
+    return text
+
+
 def bm25_tokenizer(text: str) -> list:
-    """Cleans and tokenizes text into lowercase alphanumeric words for BM25."""
-    return re.findall(r"\b\w+\b", text.lower())
+    """Cleans, normalizes Arabic, and tokenizes text into lowercase words for BM25."""
+    normalized = normalize_arabic(text.lower())
+    return re.findall(r"\b\w+\b", normalized)
 
 
 def refresh_global_bm25():
     """
-    Ensures the in-memory BM25 index reflects all chunks currently stored
-    in the global ChromaDB collection.
+    Ensures the in-memory BM25 index (plus cached IDs & embeddings) reflects all
+    chunks currently stored in the global ChromaDB collection.
     """
     total_db_docs = global_hybrid_col.count()
     if total_db_docs == 0:
         GLOBAL_BM25_CACHE["bm25"] = None
+        GLOBAL_BM25_CACHE["ids"] = []
         GLOBAL_BM25_CACHE["chunks"] = []
         GLOBAL_BM25_CACHE["metadatas"] = []
+        GLOBAL_BM25_CACHE["doc_to_id"] = {}
+        GLOBAL_BM25_CACHE["doc_to_meta"] = {}
+        GLOBAL_BM25_CACHE["id_to_emb"] = {}
         GLOBAL_BM25_CACHE["doc_count"] = 0
         return
 
-    # Rebuild BM25 only if cache is empty or new documents were added to ChromaDB
+    # Rebuild BM25 only if cache is empty or new documents were added/removed in ChromaDB
     if GLOBAL_BM25_CACHE["bm25"] is None or GLOBAL_BM25_CACHE["doc_count"] != total_db_docs:
         logger.info(f"Building consolidated BM25 index for {total_db_docs} chunks from Global DB...")
-        db_records = global_hybrid_col.get(include=["documents", "metadatas"])
+        db_records = global_hybrid_col.get(include=["documents", "metadatas", "embeddings"])
+        all_ids = db_records.get("ids", [])
         all_chunks = db_records.get("documents", [])
         all_metadatas = db_records.get("metadatas", [])
+        all_embeddings = db_records.get("embeddings")
+        if all_embeddings is None:
+            all_embeddings = []
 
         tokenized_corpus = [bm25_tokenizer(chunk) for chunk in all_chunks]
         GLOBAL_BM25_CACHE["bm25"] = BM25Okapi(tokenized_corpus)
+        GLOBAL_BM25_CACHE["ids"] = all_ids
         GLOBAL_BM25_CACHE["chunks"] = all_chunks
         GLOBAL_BM25_CACHE["metadatas"] = all_metadatas
+        GLOBAL_BM25_CACHE["doc_to_id"] = {doc: cid for doc, cid in zip(all_chunks, all_ids)}
+        GLOBAL_BM25_CACHE["doc_to_meta"] = {doc: meta for doc, meta in zip(all_chunks, all_metadatas)}
+        GLOBAL_BM25_CACHE["id_to_emb"] = {cid: emb for cid, emb in zip(all_ids, all_embeddings)}
         GLOBAL_BM25_CACHE["doc_count"] = total_db_docs
         logger.info("Consolidated BM25 index built successfully.")
 
@@ -93,7 +124,7 @@ def refresh_global_bm25():
 # 2. Indexing (Feed Global DB Once per File)
 # ==========================================
 
-def initialize_hybrid_index(pdf_source):
+def initialize_hybrid_index(pdf_source, progress_callback=None):
     """
     Indexes a PDF document into the global hybrid collection and refreshes the BM25 index.
     Skips indexing if the file already exists in the database.
@@ -106,17 +137,32 @@ def initialize_hybrid_index(pdf_source):
     if existing_docs and existing_docs.get("ids") and len(existing_docs["ids"]) > 0:
         logger.info(f"Document '{file_name}' is already indexed in Global Hybrid DB. Skipping.")
         refresh_global_bm25()
+        if progress_callback:
+            progress_callback(1.0, f"'{file_name}' is already indexed.")
         return
 
-    # Extract and split text using the shared utility
+    # Extract and split text (with automatic OCR fallback for scanned pages)
     logger.info(f"Starting Extraction & Standard Chunking for '{file_name}'...")
+    if progress_callback:
+        progress_callback(0.02, f"Extracting text from '{file_name}'...")
+
+    def _ocr_progress(done: int, total: int, message: str):
+        if progress_callback and total > 0:
+            progress_callback(0.05 + 0.50 * (done / total), f"{file_name}: {message}")
+
     chunks, metadatas = extract_and_chunk_standard(
-        pdf_source, chunk_size=1000, chunk_overlap=200
+        pdf_source,
+        chunk_size=1000,
+        chunk_overlap=200,
+        progress_callback=_ocr_progress,
     )
 
     if not chunks:
         logger.warning(f"No valid chunks extracted from '{file_name}'.")
-        return
+        raise ValueError(
+            f"No extractable text was found in '{file_name}' (0 chunks created). "
+            "The PDF may be empty, corrupted, or scanned without OCR enabled."
+        )
 
     # Generate dense embeddings in batches with retry logic
     embeddings_list = []
@@ -127,6 +173,12 @@ def initialize_hybrid_index(pdf_source):
     for idx, i in enumerate(range(0, len(chunks), batch_size), start=1):
         batch = chunks[i : i + batch_size]
         success = False
+
+        if progress_callback:
+            progress_callback(
+                0.55 + 0.40 * ((idx - 1) / total_batches),
+                f"{file_name}: Embedding batch {idx}/{total_batches} ({len(chunks)} chunks)...",
+            )
 
         for attempt in range(3):
             try:
@@ -148,18 +200,24 @@ def initialize_hybrid_index(pdf_source):
 
         time.sleep(1)
 
-    # Save to Global Hybrid Collection with unique UUIDs
+    # Save to Global Hybrid Collection with unique UUIDs (batched for large books)
+    if progress_callback:
+        progress_callback(0.96, f"{file_name}: Saving {len(chunks)} chunks to ChromaDB...")
     chunk_ids = [f"hybrid_{uuid.uuid4().hex[:8]}" for _ in range(len(chunks))]
-    global_hybrid_col.add(
-        documents=chunks,
-        embeddings=embeddings_list,
-        metadatas=metadatas,
-        ids=chunk_ids,
-    )
+    add_batch_size = 1000
+    for i in range(0, len(chunks), add_batch_size):
+        global_hybrid_col.add(
+            documents=chunks[i : i + add_batch_size],
+            embeddings=embeddings_list[i : i + add_batch_size],
+            metadatas=metadatas[i : i + add_batch_size],
+            ids=chunk_ids[i : i + add_batch_size],
+        )
     logger.info(f"Successfully added {len(chunks)} chunks from '{file_name}' to Global Hybrid DB.")
 
     # Refresh global BM25 cache to include the newly added chunks
     refresh_global_bm25()
+    if progress_callback:
+        progress_callback(1.0, f"Indexed {len(chunks)} chunks from '{file_name}'.")
 
 
 def get_indexed_files() -> list:
@@ -209,6 +267,23 @@ def get_bm25_subset(selected_files: list = None):
             bm25 = BM25Okapi([bm25_tokenizer(c) for c in chunks]) if chunks else None
 
     return bm25, chunks, metadatas, where_filter
+
+
+def get_hybrid_search_state(selected_files: list = None):
+    """
+    Returns (bm25, chunks, metadatas, doc_to_id, doc_to_meta, id_to_emb, where_filter)
+    scoped to selected_files, reusing the in-memory ChromaDB cache without extra DB scans.
+    """
+    bm25, chunks, metadatas, where_filter = get_bm25_subset(selected_files)
+    return (
+        bm25,
+        chunks,
+        metadatas,
+        GLOBAL_BM25_CACHE["doc_to_id"],
+        GLOBAL_BM25_CACHE["doc_to_meta"],
+        GLOBAL_BM25_CACHE["id_to_emb"],
+        where_filter,
+    )
 
 
 # ==========================================
@@ -322,7 +397,7 @@ def run_hybrid_chat_session(user_query: str, top_k: int = 6, history_limit: int 
 
     messages_to_send.append({"role": "user", "content": current_turn_prompt})
 
-    logger.info("Invoking LLM 'nvidia/nemotron-3.5-lightning:free'...")
+    logger.info(f"Invoking LLM '{CHAT_MODEL}'...")
     try:
         completion = client_ai.chat.completions.create(
             model=CHAT_MODEL,

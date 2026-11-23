@@ -1,12 +1,13 @@
-# Shared LangChain building blocks for the LangChain versions of the two pipelines.
+# Shared LangChain building blocks for the LangChain versions of the two pipelines
+# (hybrid_lc.py and hybrid_corrective_lc.py).
 #
-# They mirror hybrid_rag/hybrid.py step for step, on the same data, so the results can be
-# compared with the originals:
+# They mirror hybrid_rag/hybrid.py and hybrid_rag/hybrid_corrective.py step for step, on the
+# same data, so the results can be compared with the originals:
 #   - same ChromaDB collection and vectors (global_hybrid_collection; nothing is re-indexed)
 #   - same models (CHAT_MODEL and EMBEDDING_MODEL from .env), through OpenRouter
 #   - same cost tracking: the HTTP client carries the hook from pdf_processing.py
-#   - same retrieval: for each sub-question, the top 10 chunks by vector search and the top 10
-#     by BM25 keyword search, fused with Reciprocal Rank Fusion (k = 60), best top_k kept
+#   - same retrieval: vector search + BM25 keyword search (Arabic-normalized tokenizer),
+#     fused with Reciprocal Rank Fusion (k = 60), plus cached chunk IDs & embeddings
 #   - same prompt: SYS_PROMPT + the last turns of the chat history + context and question
 #
 # What LangChain provides here: the chat model and embeddings (ChatOpenAI, OpenAIEmbeddings),
@@ -30,8 +31,19 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from hybrid_rag.chat_history import load_file_history
-from hybrid_rag.hybrid import GLOBAL_SESSION_ID, bm25_tokenizer, chroma_client, global_hybrid_col
-from hybrid_rag.pdf_processing import SYS_PROMPT, _record_cost, decompose_multi_questions
+from hybrid_rag.hybrid import (
+    GLOBAL_BM25_CACHE,
+    GLOBAL_SESSION_ID,
+    bm25_tokenizer,
+    chroma_client,
+    global_hybrid_col,
+    refresh_global_bm25,
+)
+from hybrid_rag.pdf_processing import SYS_PROMPT, decompose_multi_questions
+try:
+    from hybrid_rag.pdf_processing import record_cost
+except ImportError:
+    from hybrid_rag.pdf_processing import _record_cost as record_cost
 
 load_dotenv()
 logger = logging.getLogger("rag.lc")
@@ -39,48 +51,63 @@ logger = logging.getLogger("rag.lc")
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
 COLLECTION = "global_hybrid_collection"
 RRF_K = 60                 # Reciprocal Rank Fusion constant (same as hybrid.py)
-PER_BRANCH = 10            # chunks taken from each search (vector, BM25) per sub-question
+PER_BRANCH = 10            # default chunks taken from each search (vector, BM25) per sub-question
 
 
 # ---------- Models (OpenRouter, with cost tracking) ----------
 def _http_client():
     """The HTTP client the models use: the same cost hook as initialize_api(), so every
     LangChain request is recorded in hybrid_rag/cost.py like the original pipelines' ones."""
-    return httpx.Client(event_hooks={"response": [_record_cost]})
+    return httpx.Client(event_hooks={"response": [record_cost]})
 
 
 @lru_cache(maxsize=None)
-def get_llm(temperature=0.2, max_tokens=None):
-    """CHAT_MODEL through OpenRouter. hybrid.py answers at temperature 0.2; the corrective
-    grader uses temperature 0 and at most 5 tokens."""
-    return ChatOpenAI(model=os.getenv("CHAT_MODEL"), base_url=OPENROUTER_URL,
-                      api_key=os.getenv("OPENROUTER_API_KEY"), temperature=temperature,
-                      max_tokens=max_tokens, timeout=30, http_client=_http_client())
+def get_llm(temperature=0.2, max_tokens=None, disable_reasoning=False):
+    """CHAT_MODEL through OpenRouter. Answer steps use temperature 0.2; the CRAG batch
+    grader uses temperature 0 with reasoning disabled for fast, deterministic JSON."""
+    kwargs = {
+        "model": os.getenv("CHAT_MODEL"),
+        "base_url": OPENROUTER_URL,
+        "api_key": os.getenv("OPENROUTER_API_KEY"),
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "timeout": 30,
+        "http_client": _http_client(),
+    }
+    if disable_reasoning:
+        kwargs["extra_body"] = {"reasoning": {"enabled": False}}
+    return ChatOpenAI(**kwargs)
 
 
 @lru_cache(maxsize=None)
 def get_embeddings():
     """EMBEDDING_MODEL through OpenRouter. check_embedding_ctx_length=False sends the text
     itself (not OpenAI token ids), as the original pipelines do."""
-    return OpenAIEmbeddings(model=os.getenv("EMBEDDING_MODEL"), base_url=OPENROUTER_URL,
-                            api_key=os.getenv("OPENROUTER_API_KEY"),
-                            check_embedding_ctx_length=False, timeout=30,
-                            http_client=_http_client())
+    return OpenAIEmbeddings(
+        model=os.getenv("EMBEDDING_MODEL"),
+        base_url=OPENROUTER_URL,
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        check_embedding_ctx_length=False,
+        timeout=30,
+        http_client=_http_client(),
+    )
 
 
 @lru_cache(maxsize=None)
 def get_vector_store():
     """The existing collection as a LangChain vector store. It uses hybrid.py's Chroma client,
     so there is only one client for the folder (two with different settings would clash)."""
-    return Chroma(client=chroma_client, collection_name=COLLECTION,
-                  embedding_function=get_embeddings())
+    return Chroma(
+        client=chroma_client,
+        collection_name=COLLECTION,
+        embedding_function=get_embeddings(),
+    )
 
 
 # ---------- BM25 keyword search ----------
 class BM25ChunkRetriever(BaseRetriever):
-    """BM25 keyword search as a LangChain retriever: rank_bm25 with hybrid.py's tokenizer, so
-    it ranks chunks exactly like the original. (Written here rather than taken from
-    langchain-community, which is being discontinued.)"""
+    """BM25 keyword search as a LangChain retriever: rank_bm25 with hybrid.py's Arabic-aware
+    tokenizer, so it ranks chunks identically to hybrid.py."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     docs: list
@@ -100,16 +127,27 @@ _BM25_CACHE = {}
 
 
 def all_chunks():
-    """Every chunk in the collection as a Document (text + source/page), re-read when the
-    collection changes (a file indexed or removed)."""
-    count = global_hybrid_col.count()
+    """Every chunk in the collection as a LangChain Document (with id + source/page metadata),
+    sharing hybrid.py's in-memory cache so IDs and embeddings are loaded only once."""
+    refresh_global_bm25()
+    count = GLOBAL_BM25_CACHE["doc_count"]
     if count != _CORPUS["count"]:
-        got = global_hybrid_col.get(include=["documents", "metadatas"])
-        _CORPUS["docs"] = [Document(page_content=t, metadata=m or {})
-                           for t, m in zip(got["documents"], got["metadatas"])]
+        ids = GLOBAL_BM25_CACHE["ids"]
+        texts = GLOBAL_BM25_CACHE["chunks"]
+        metas = GLOBAL_BM25_CACHE["metadatas"]
+        _CORPUS["docs"] = [
+            Document(id=cid, page_content=t, metadata={**(m or {}), "chunk_id": cid})
+            for cid, t, m in zip(ids, texts, metas)
+        ]
         _CORPUS["count"] = count
         _BM25_CACHE.clear()
     return _CORPUS["docs"]
+
+
+def get_cached_id_maps():
+    """Returns (doc_to_id, id_to_emb) from hybrid.py's shared in-memory cache."""
+    refresh_global_bm25()
+    return GLOBAL_BM25_CACHE["doc_to_id"], GLOBAL_BM25_CACHE["id_to_emb"]
 
 
 def scope(selected_files=None):
@@ -120,8 +158,10 @@ def scope(selected_files=None):
         selected = set(selected_files)
         sources = {d.metadata.get("source") for d in docs if d.metadata.get("source")}
         if not sources <= selected:
-            return ([d for d in docs if d.metadata.get("source") in selected],
-                    {"source": {"$in": sorted(selected)}})
+            return (
+                [d for d in docs if d.metadata.get("source") in selected],
+                {"source": {"$in": sorted(selected)}},
+            )
     return docs, None
 
 
@@ -166,9 +206,14 @@ def hybrid_search(question, top_n, selected_files=None):
 
 
 def format_chunk(doc):
-    """A chunk with the label the original pipelines give it."""
-    return (f"[Source: {doc.metadata.get('source', 'Unknown_File')} | "
-            f"Page: {doc.metadata.get('page', '?')}]:\n{doc.page_content}")
+    """A chunk with its source/page label (plus sim/via when populated by Hybrid Corrective)."""
+    src = doc.metadata.get("source", "Unknown_File")
+    page = doc.metadata.get("page", "?")
+    sim = doc.metadata.get("sim")
+    via = doc.metadata.get("via")
+    if sim is not None and via:
+        return f"[Source: {src} | Page: {page} | sim: {sim:.3f} | {via}]:\n{doc.page_content}"
+    return f"[Source: {src} | Page: {page}]:\n{doc.page_content}"
 
 
 def format_context(docs):
@@ -178,8 +223,6 @@ def format_context(docs):
 
 
 # ---------- Prompt and chat history ----------
-# The same messages hybrid.py sends: system prompt, earlier turns, then context + question.
-# SYS_PROMPT is passed as a message (not a template string), so braces in it can't break it.
 ANSWER_PROMPT = ChatPromptTemplate.from_messages([
     SystemMessage(content=SYS_PROMPT),
     MessagesPlaceholder("history"),

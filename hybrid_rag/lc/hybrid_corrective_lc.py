@@ -1,0 +1,382 @@
+# Hybrid Corrective RAG (2-Round Fused CRAG) built with LangChain LCEL:
+# the LangChain version of hybrid_rag/hybrid_corrective.py.
+#
+# Combines the winning 2-round Fused CRAG algorithm from hybrid_rag/hybrid_corrective.py
+# with the LangChain architecture from hybrid_rag/lc/components.py:
+#   1. Retrieval (per sub-question, parallelized via LangChain .batch()):
+#      - Embed sub-question via OpenAIEmbeddings
+#      - Dense vector search (Chroma.similarity_search_by_vector, k=15) + BM25ChunkRetriever (k=15),
+#        merged via Reciprocal Rank Fusion (k=60), filtered by cosine similarity >= MIN_SIMILARITY
+#   2. Round-1 Batch Grading (LCEL chain: GRADER_PROMPT | ChatOpenAI(temp=0) | StrOutputParser):
+#      - Deterministic citation_density pre-filter drops bibliography/reference chunks first
+#      - Single LLM call returns relevant indices, part-level sufficiency, missing parts, and
+#        corrective search queries
+#   3. Round-2 Corrective Retrieval (only when Round 1 is insufficient):
+#      - Batch-embeds grader-suggested queries via OpenAIEmbeddings.embed_documents()
+#      - Runs Hybrid RRF (k=4 per query), filters duplicates/references/low cosine similarity
+#        to the ORIGINAL sub-question vector, and runs Round-2 LCEL Batch Grading (up to MAX_GRADED)
+#   4. Answer Generation (LCEL RunnableBranch):
+#      - If 0 verified chunks survive -> short-circuits immediately with NOT_COVERED (0 Answer LLM cost)
+#      - Otherwise sorts by cosine similarity, keeps top MAX_CONTEXT=6, appends any missing-parts
+#        CRAG note to SYS_PROMPT, and invokes ChatPromptTemplate | ChatOpenAI(temp=0.2) | StrOutputParser
+#   5. Saves the turn to shared chat_history.json and returns (answer, labelled_contexts).
+
+import logging
+
+from langchain_core.documents import Document
+from langchain_core.messages import SystemMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnableBranch, RunnableLambda, RunnablePassthrough
+
+from hybrid_rag.chat_history import persist_chat_history
+from hybrid_rag.hybrid import GLOBAL_SESSION_ID, global_hybrid_col
+from hybrid_rag.hybrid_corrective import (
+    EXTRA_PER_QUERY,
+    GRADER_PROMPT,
+    GRADER_TEMPERATURE,
+    INITIAL_CANDIDATES,
+    MAX_CONTEXT,
+    MAX_GRADED,
+    MIN_SIMILARITY,
+    NOT_COVERED,
+    REFERENCE_THRESHOLD,
+    Log,
+    _cosine_similarity,
+    _parse_grade,
+    citation_density,
+)
+from hybrid_rag.lc.components import (
+    bm25_retriever,
+    format_context,
+    get_cached_id_maps,
+    get_embeddings,
+    get_llm,
+    get_vector_store,
+    history_messages,
+    reciprocal_rank_fusion,
+    scope,
+)
+from hybrid_rag.pdf_processing import SYS_PROMPT, decompose_multi_questions
+
+logger = logging.getLogger("rag.lc.hybrid_corrective")
+
+MAX_PARALLEL_SUBQUERIES = 4
+
+BATCH_GRADER_PROMPT = ChatPromptTemplate.from_messages([
+    SystemMessage(content=GRADER_PROMPT),
+    ("human", "QUESTION: {question}\n\nCANDIDATES:\n\n{listing}"),
+])
+
+
+# ---------- 1. Hybrid RRF Retrieval (LangChain Chroma + BM25ChunkRetriever) ----------
+def search_hybrid_rrf_lc(
+    qvec: list[float],
+    query_text: str,
+    k: int,
+    via_label: str,
+    selected_files: list = None,
+) -> list[Document]:
+    """Dense (Chroma.similarity_search_by_vector) + Sparse (BM25ChunkRetriever) fused via RRF,
+    returning LangChain Documents enriched with chunk_id, cosine sim, and via metadata."""
+    docs, where = scope(selected_files)
+    if not docs:
+        return []
+
+    effective_k = min(k, len(docs))
+    bm25 = bm25_retriever(docs, where, effective_k)
+    store = get_vector_store()
+    doc_to_id, id_to_emb = get_cached_id_maps()
+
+    try:
+        dense = store.similarity_search_by_vector(qvec, k=effective_k, filter=where)
+    except Exception as e:
+        logger.error(f"[{via_label}] Dense search failed for '{query_text}': {e}", exc_info=True)
+        dense = []
+
+    sparse = bm25.invoke(query_text)
+    fused = reciprocal_rank_fusion([dense, sparse])[:effective_k]
+
+    enriched = []
+    for idx, d in enumerate(fused):
+        cid = d.metadata.get("chunk_id") or d.id or doc_to_id.get(d.page_content, f"unknown_{idx}")
+        c_emb = id_to_emb.get(cid)
+        sim = _cosine_similarity(qvec, c_emb) if c_emb is not None else MIN_SIMILARITY
+        enriched.append(
+            Document(
+                id=cid,
+                page_content=d.page_content,
+                metadata={
+                    **d.metadata,
+                    "chunk_id": cid,
+                    "sim": sim,
+                    "via": via_label,
+                },
+            )
+        )
+    return enriched
+
+
+# ---------- 2. LCEL Batch Grader Chain ----------
+_GRADER_CHAIN = None
+
+
+def grader_chain():
+    """LCEL chain: BATCH_GRADER_PROMPT | ChatOpenAI(temp=0, reasoning off) | StrOutputParser."""
+    global _GRADER_CHAIN
+    if _GRADER_CHAIN is None:
+        _GRADER_CHAIN = (
+            BATCH_GRADER_PROMPT
+            | get_llm(temperature=GRADER_TEMPERATURE, disable_reasoning=True)
+            | StrOutputParser()
+        )
+    return _GRADER_CHAIN
+
+
+def grade_documents_lc(question: str, cands: list[Document]) -> dict:
+    """Filters reference lists deterministically, then grades remaining Documents in one LCEL call."""
+    refs = [i for i, d in enumerate(cands, 1) if citation_density(d.page_content) >= REFERENCE_THRESHOLD]
+    others = [(i, d) for i, d in enumerate(cands, 1) if i not in refs]
+
+    if not others:
+        return {
+            "relevant": [],
+            "sufficient": False,
+            "missing": "",
+            "queries": [],
+            "multi_document": False,
+            "refs": refs,
+        }
+
+    listing = "\n\n".join(
+        f"[Candidate {k}] (file: {d.metadata.get('source', 'Unknown')}, Page {d.metadata.get('page', '?')})\n"
+        f"{d.page_content}"
+        for k, (_, d) in enumerate(others, 1)
+    )
+
+    try:
+        reply = grader_chain().invoke({"question": question, "listing": listing})
+    except Exception as e:
+        logger.warning(f"LCEL batch grading call failed ({e}); retrying without disable_reasoning...")
+        fallback_chain = BATCH_GRADER_PROMPT | get_llm(temperature=GRADER_TEMPERATURE) | StrOutputParser()
+        reply = fallback_chain.invoke({"question": question, "listing": listing})
+
+    sub = _parse_grade(reply, len(others))
+    if sub is None:
+        logger.warning("Batch grader reply unreadable; falling back to top 4 non-reference candidates.")
+        return {
+            "relevant": [others[k - 1][0] for k in range(1, min(4, len(others)) + 1)],
+            "sufficient": True,
+            "missing": "",
+            "queries": [],
+            "multi_document": False,
+            "refs": refs,
+            "failed": True,
+        }
+
+    return {
+        **sub,
+        "relevant": [others[k - 1][0] for k in sub["relevant"]],
+        "refs": refs,
+    }
+
+
+# ---------- 3. 2-Round Corrective Retrieval per Sub-Question ----------
+def corrective_retrieve_sub_query(payload: dict) -> dict:
+    """Runs the 2-round CRAG loop for a single sub-question and returns verified Documents + missing note."""
+    sub_q = payload["sub_query"]
+    selected_files = payload["selected_files"]
+    log = Log()
+
+    embedder = get_embeddings()
+    qvec = embedder.embed_query(sub_q)
+    log.qvec = qvec
+
+    # Round 1: Initial wide Hybrid RRF retrieval (k=15)
+    cands = [
+        d
+        for d in search_hybrid_rrf_lc(
+            qvec, sub_q, k=INITIAL_CANDIDATES, via_label="question", selected_files=selected_files
+        )
+        if d.metadata["sim"] >= MIN_SIMILARITY
+    ]
+    log.append(f"[LC CRAG] Retrieved {len(cands)} candidates (sim >= {MIN_SIMILARITY}) for '{sub_q}'")
+    if not cands:
+        return {"docs": [], "status": "NOT FOUND", "missing": ""}
+
+    # Round 1: Batch grade
+    g = grade_documents_lc(sub_q, cands)
+    relevant = [cands[i - 1] for i in g["relevant"]]
+    log.append(f"[LC CRAG] Round 1: {len(relevant)}/{len(cands)} relevant. Sufficient: {g['sufficient']}")
+    if g["sufficient"] and relevant:
+        return {"docs": relevant, "status": "CORRECT", "missing": g["missing"]}
+
+    # Round 2: Corrective retrieval with grader-suggested queries
+    queries = g["queries"] or [sub_q]
+    log.append("[LC CRAG] New search queries: " + "; ".join(f'"{q}"' for q in queries))
+
+    _, id_to_emb = get_cached_id_maps()
+    seen = {d.metadata["chunk_id"] for d in cands}
+    new_cands = []
+
+    if queries:
+        qvecs = embedder.embed_documents(queries)
+        for qi, (q_text, q_emb) in enumerate(zip(queries, qvecs), 1):
+            for d in search_hybrid_rrf_lc(
+                q_emb,
+                q_text,
+                k=EXTRA_PER_QUERY,
+                via_label=f"new query {qi}",
+                selected_files=selected_files,
+            ):
+                cid = d.metadata["chunk_id"]
+                if cid not in seen and citation_density(d.page_content) < REFERENCE_THRESHOLD:
+                    seen.add(cid)
+                    c_emb = id_to_emb.get(cid)
+                    if c_emb is not None:
+                        d.metadata["sim"] = _cosine_similarity(qvec, c_emb)
+                    if d.metadata["sim"] >= MIN_SIMILARITY:
+                        new_cands.append(d)
+
+    if not new_cands:
+        return {
+            "docs": relevant,
+            "status": "PARTIAL" if relevant else "NOT FOUND",
+            "missing": g["missing"],
+        }
+
+    # Round 2: Final grading on combined pool
+    pool = (relevant + new_cands)[:MAX_GRADED]
+    g2 = grade_documents_lc(sub_q, pool)
+    relevant2 = [pool[i - 1] for i in g2["relevant"]]
+    log.append(f"[LC CRAG] Round 2: {len(relevant2)}/{len(pool)} relevant.")
+    return {
+        "docs": relevant2,
+        "status": "CORRECTED" if g2["sufficient"] else "PARTIAL",
+        "missing": g2["missing"],
+    }
+
+
+def retrieve_and_merge_lc(state: dict) -> dict:
+    """Decomposes the question, runs 2-round CRAG across sub-questions in parallel (.batch()),
+    merges unique verified Documents, sorts by cosine sim, and truncates to MAX_CONTEXT."""
+    sub_queries = decompose_multi_questions(state["question"])
+    payloads = [{"sub_query": sq, "selected_files": state["selected_files"]} for sq in sub_queries]
+
+    if len(payloads) == 1:
+        sub_results = [corrective_retrieve_sub_query(payloads[0])]
+    else:
+        sub_results = RunnableLambda(corrective_retrieve_sub_query).batch(
+            payloads, config={"max_concurrency": MAX_PARALLEL_SUBQUERIES}
+        )
+
+    merged_by_id = {}
+    missing_parts = []
+    for res in sub_results:
+        if res["missing"]:
+            missing_parts.append(res["missing"])
+        for d in res["docs"]:
+            cid = d.metadata["chunk_id"]
+            if cid not in merged_by_id or d.metadata["sim"] > merged_by_id[cid].metadata["sim"]:
+                merged_by_id[cid] = d
+
+    final_docs = sorted(merged_by_id.values(), key=lambda d: -d.metadata["sim"])[:MAX_CONTEXT]
+    combined_missing = "; ".join(dict.fromkeys(missing_parts))
+    return {"docs": final_docs, "missing": combined_missing}
+
+
+# ---------- 4. Answer Generation & Full LCEL Chain ----------
+def _build_answer_messages(state: dict) -> list:
+    """Builds [SystemMessage(+missing note), *history, HumanMessage(context+question)]."""
+    sys_inst = SYS_PROMPT
+    if state.get("missing"):
+        sys_inst += (
+            f"\n\nNOTE: Likely missing aspects: {state['missing']}. "
+            "Answer what the sources support and say clearly which parts the documents do not cover."
+        )
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessage(content=sys_inst),
+        MessagesPlaceholder("history"),
+        ("human", "[Context from Global Database]:\n{context}\n\n[User Question(s)]:\n{question}"),
+    ])
+    return prompt.format_messages(
+        history=state["history"],
+        context=state["context"],
+        question=state["question"],
+    )
+
+
+def build_chain():
+    """
+    Full LCEL chain for 2-Round Fused Hybrid Corrective RAG.
+    Input:  {"question", "history_limit", "selected_files"}
+    Output: same dict plus "docs", "missing", "context", "history", and "answer".
+    """
+    answer_branch = RunnableBranch(
+        # Short-circuit with 0 Answer LLM cost when no verified chunks survive grading
+        (lambda x: not x["docs"], RunnableLambda(lambda _: NOT_COVERED)),
+        RunnableLambda(_build_answer_messages) | get_llm(temperature=0.2) | StrOutputParser(),
+    )
+
+    return (
+        # 1. 2-round hybrid retrieval + batch grading + corrective query rewriting
+        RunnablePassthrough.assign(_crag=RunnableLambda(retrieve_and_merge_lc))
+        | RunnablePassthrough.assign(
+            docs=lambda x: x["_crag"]["docs"],
+            missing=lambda x: x["_crag"]["missing"],
+        )
+        # 2. Format verified context + load rolling chat history
+        | RunnablePassthrough.assign(
+            context=lambda x: format_context(x["docs"])[0] if x["docs"] else "",
+            history=lambda x: history_messages(x["history_limit"]),
+        )
+        # 3. Short-circuit if empty, else invoke ChatOpenAI via LCEL
+        | RunnablePassthrough.assign(answer=answer_branch)
+    )
+
+
+_CHAIN = None
+
+
+def run_hybrid_corrective_lc(
+    user_query: str,
+    history_limit: int = 5,
+    selected_files: list = None,
+):
+    """
+    Answer one question with 2-Round Fused Hybrid Corrective RAG (LangChain LCEL).
+    Returns (answer, verified_labelled_contexts) — drop-in compatible with
+    run_hybrid_corrective_rag() in hybrid_rag/hybrid_corrective.py.
+    """
+    global _CHAIN
+    logger.info("=== Starting Hybrid Corrective RAG (LangChain LCEL) ===")
+    logger.info(f"User Query: '{user_query}'")
+
+    if global_hybrid_col.count() == 0:
+        logger.error("Global Hybrid DB is empty. Please upload and index documents first.")
+        return "The database is empty. Please upload and index some PDFs first.", []
+
+    if _CHAIN is None:
+        _CHAIN = build_chain()
+
+    result = _CHAIN.invoke({
+        "question": user_query,
+        "history_limit": history_limit,
+        "selected_files": selected_files,
+    })
+
+    full_context_text, verified_contexts = format_context(result["docs"])
+    persist_chat_history(GLOBAL_SESSION_ID, user_query, result["answer"], full_context_text)
+    return result["answer"], verified_contexts
+
+
+if __name__ == "__main__":
+    sample_query = (
+        "1. What are the general steps in cultured meat production?\n"
+        "2. Why is Mycoplasma contamination difficult to detect visually?"
+    )
+    answer, docs = run_hybrid_corrective_lc(sample_query)
+    print("\n" + "=" * 60)
+    print("FINAL MODEL ANSWER (LangChain LCEL):")
+    print("=" * 60)
+    print(answer)
