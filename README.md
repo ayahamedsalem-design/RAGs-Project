@@ -3,7 +3,7 @@
 Ask questions about PDF documents with two Retrieval-Augmented Generation (RAG) pipelines, in a Streamlit app that also shows what every answer cost.
 
 - **Hybrid RAG**: semantic (vector) search and keyword (BM25) search, merged with Reciprocal Rank Fusion, so neither exact terms nor meaning are missed.
-- **Corrective Hybrid RAG**: the same hybrid search, plus an LLM grader that checks every retrieved chunk against the question and drops the irrelevant ones before answering.
+- **Hybrid Corrective RAG**: 2-round fused CRAG — hybrid search (top 15 candidates), reference-list filtering, batch LLM grading with part-sufficiency check, automatic Round-2 corrective query rewriting when parts are missing, and refusal short-circuit when no relevant chunks exist.
 
 Both pipelines split multi-part questions into sub-questions, keep a rolling window of the conversation (last 5 turns), and cite the source file and page of every fact.
 
@@ -15,7 +15,7 @@ pages/
   Usage.py                 cost dashboard (spend, requests, tokens, cost per question)
 hybrid_rag/                the two pipelines and everything they share
   hybrid.py                Hybrid RAG: indexing (initialize_hybrid_index) and answering
-  corrective_hybrid.py     Corrective Hybrid RAG: hybrid search + per-chunk grading
+  hybrid_corrective.py     Hybrid Corrective RAG: 2-round fused CRAG with batch grading & query rewriting
   pdf_processing.py        PDF reading, chunking, question splitting, OpenRouter client, prompt
   chat_history.py          conversation history (chat_history.json)
   summarizer.py            "Summarize History" in the sidebar

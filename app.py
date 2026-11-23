@@ -11,7 +11,7 @@ from hybrid_rag.hybrid import (
     get_indexed_files,
     remove_file_from_index,
 )
-from hybrid_rag.corrective_hybrid import run_corrective_hybrid_rag
+from hybrid_rag.hybrid_corrective import run_hybrid_corrective_rag
 from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
 from hybrid_rag.chat_history import load_file_history, clear_all_history, load_all_history
@@ -39,7 +39,7 @@ st.set_page_config(page_title="Global Knowledge Base RAG", page_icon="🤖", lay
 # Names used in the "system" column of cost_log.csv:
 COST_SYSTEM = {
     "Hybrid RAG": "hybrid",
-    "Corrective Hybrid RAG": "crag_hybrid",
+    "Hybrid Corrective RAG": "crag_hybrid",
 }
 
 
@@ -62,7 +62,7 @@ def show_cost(user_query):
 
 st.title("Enterprise Global RAG System ")
 st.markdown(
-    "Query across **ALL** your indexed documents with Hybrid RAG or Corrective Hybrid RAG."
+    "Query across **ALL** your indexed documents with Hybrid RAG or Hybrid Corrective RAG (2-Round CRAG)."
 )
 st.divider()
 
@@ -109,19 +109,24 @@ with st.sidebar:
         if st.button("Index File(s) into Global DB", use_container_width=True):
             indexed_count = 0
             for uploaded_file in uploaded_files:
-                with st.spinner(f"Indexing '{uploaded_file.name}' into the Hybrid DB..."):
-                    try:
-                        # Both pipelines search the same collection (global_hybrid_collection).
-                        # The embedding cost is saved as an "ingest_global" row in logs/cost_log.csv.
-                        with cost.track("ingest_global", uploaded_file.name):
-                            initialize_hybrid_index(uploaded_file)
+                progress_bar = st.progress(0.0, text=f"Indexing '{uploaded_file.name}'...")
+                try:
+                    def _update_progress(fraction: float, text: str, _bar=progress_bar):
+                        _bar.progress(min(max(float(fraction), 0.0), 1.0), text=text)
 
-                        logger.info(f"Successfully indexed '{uploaded_file.name}' into the Hybrid DB.")
-                        st.success(f"'{uploaded_file.name}' added to the Global Database!")
-                        indexed_count += 1
-                    except Exception as e:
-                        logger.error(f"Indexing failed for '{uploaded_file.name}': {e}", exc_info=True)
-                        st.error(f"Error during indexing '{uploaded_file.name}': {e}")
+                    # Both pipelines search the same collection (global_hybrid_collection).
+                    # The embedding cost is saved as an "ingest_global" row in logs/cost_log.csv.
+                    with cost.track("ingest_global", uploaded_file.name):
+                        initialize_hybrid_index(uploaded_file, progress_callback=_update_progress)
+
+                    logger.info(f"Successfully indexed '{uploaded_file.name}' into the Hybrid DB.")
+                    st.success(f"'{uploaded_file.name}' added to the Global Database!")
+                    indexed_count += 1
+                except Exception as e:
+                    logger.error(f"Indexing failed for '{uploaded_file.name}': {e}", exc_info=True)
+                    st.error(f"Error during indexing '{uploaded_file.name}': {e}")
+                finally:
+                    progress_bar.empty()
             if indexed_count > 0:
                 st.rerun()
 
@@ -131,7 +136,7 @@ with st.sidebar:
         "Choose RAG Architecture:",
         (
             "Hybrid RAG",
-            "Corrective Hybrid RAG",
+            "Hybrid Corrective RAG",
         ),
         index=0,
     )
@@ -194,9 +199,9 @@ if user_query:
                     answer, retrieved_contexts = run_tracked(
                         rag_type, run_hybrid_chat_session, user_query, selected_files=selected_files
                     )
-                elif rag_type == "Corrective Hybrid RAG":
+                elif rag_type == "Hybrid Corrective RAG":
                     answer, retrieved_contexts = run_tracked(
-                        rag_type, run_corrective_hybrid_rag, user_query, selected_files=selected_files
+                        rag_type, run_hybrid_corrective_rag, user_query, selected_files=selected_files
                     )
 
                 st.subheader("Model Response")
