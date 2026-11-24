@@ -170,7 +170,7 @@ with st.sidebar:
     st.header("3. Conversations")
 
     # Start a brand-new conversation while keeping all previous chats accessible below
-    if st.button("➕ New Chat", use_container_width=True, type="primary"):
+    if st.button("+ New Chat", use_container_width=True, type="primary"):
         new_sid = create_session_id()
         st.session_state["active_session_id"] = new_sid
         st.session_state.pop("history_summary", None)
