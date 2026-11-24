@@ -1,3 +1,5 @@
+"""Global Basic RAG pipeline using pure dense vector search over ``global_hybrid_collection``."""
+
 import os
 import logging
 
@@ -35,14 +37,15 @@ def run_basic_rag(
     top_k_per_query: int = 3,
     history_limit: int = 5,
     selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
 ):
     """
     Searches across selected (or ALL) indexed documents using pure dense vector search
     over the shared global_hybrid_collection (1000-char / 200-overlap standard chunks),
-    supports multi-questions, and maintains a rolling window of chat history.
+    supports multi-questions, and maintains a rolling window of chat history per session.
     """
     logger.info("=== Starting Global Multi-Query Basic RAG ===")
-    logger.info(f"User Query: '{user_query}'")
+    logger.info(f"Session: '{session_id}' | User Query: '{user_query}'")
 
     if global_hybrid_col.count() == 0:
         logger.error("Global standard DB is empty. Please upload and index documents first.")
@@ -97,9 +100,9 @@ def run_basic_rag(
         full_context_text = "\n\n---\n\n".join(formatted_contexts)
     logger.info(f"Retrieved {len(formatted_contexts)} unique chunks across all sub-queries.")
 
-    # 3. Load rolling window history
-    logger.info("Loading global conversation history...")
-    global_history = load_file_history(GLOBAL_SESSION_ID)
+    # 3. Load rolling window history for the active session
+    logger.info(f"Loading conversation history for session '{session_id}'...")
+    global_history = load_file_history(session_id)
     recent_history = (
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
     )
@@ -135,8 +138,8 @@ def run_basic_rag(
         logger.critical(f"LLM generation failed: {e}", exc_info=True)
         raise e
 
-    # 5. Persist chat history
-    persist_chat_history(GLOBAL_SESSION_ID, user_query, assistant_reply, full_context_text)
+    # 5. Persist chat history under the active session ID
+    persist_chat_history(session_id, user_query, assistant_reply, full_context_text)
     return assistant_reply, formatted_contexts
 
 

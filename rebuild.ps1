@@ -49,4 +49,7 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+# Ensure mounted writable paths are owned by appuser inside the container (avoids SQLite code 14 on WSL2 drvfs)
+docker exec -u 0 $ContainerName chown -R appuser:appuser /app/chroma_db_global /app/logs /app/chat_history.json
+
 Write-Host "Done. App is running at http://localhost:8501"

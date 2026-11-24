@@ -6,15 +6,16 @@
             "format": "%(asctime)s [%(levelname)s] %(name)s (%(filename)s:%(lineno)d): %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S"
         },
-        "simple": {
-            "format": "[%(levelname)s] %(message)s"
+        "console_clean": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            "datefmt": "%H:%M:%S"
         }
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "level": "DEBUG",
-            "formatter": "simple",
+            "level": "INFO",
+            "formatter": "console_clean",
             "stream": "ext://sys.stdout"
         },
         "file_rotating": {
@@ -47,11 +48,32 @@
             "propagate": true
         },
         "urllib3": {
-            "handlers": [
-                "console"
-            ],
             "level": "WARNING",
-            "propagate": false
+            "propagate": true
+        },
+        "httpcore": {
+            "level": "WARNING",
+            "propagate": true
+        },
+        "httpx": {
+            "level": "WARNING",
+            "propagate": true
+        },
+        "openai": {
+            "level": "WARNING",
+            "propagate": true
+        },
+        "chromadb": {
+            "level": "WARNING",
+            "propagate": true
+        },
+        "PIL": {
+            "level": "WARNING",
+            "propagate": true
+        },
+        "watchdog": {
+            "level": "WARNING",
+            "propagate": true
         }
     }
 }

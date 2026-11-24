@@ -1,3 +1,5 @@
+"""Bridge exposing Ext Naive RAG and Ext Corrective RAG with the unified pipeline signature."""
+
 import logging
 
 from hybrid_rag.logging_setup import setup_logging
@@ -56,23 +58,30 @@ def _format_context_entries(contexts):
 
 
 # ----------------- 1. Ext Naive RAG Runner -----------------
-def run_ext_naive_rag(user_query: str, selected_files: list = None):
+def run_ext_naive_rag(
+    user_query: str,
+    selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
+):
     """
-    Matches the standard pipeline contract: (user_query, selected_files=None) -> (answer, contexts).
+    Matches the standard pipeline contract: (user_query, selected_files=None, session_id=...) -> (answer, contexts).
     Cost tracking is managed by the caller (app.py's run_tracked or evaluation/run_eval.py).
     """
+    logger.info(f"=== Starting Ext Naive RAG | Session: '{session_id}' ===")
     try:
         col = _open_collection()
     except RAGError as e:
+        logger.error(f"Ext Naive store error: {e}")
         return str(e), []
     if col is None:
+        logger.error("Ext Naive store is empty.")
         return EMPTY_STORE_MSG, []
 
     where_filter, active_files = _resolve_where_filter(col, selected_files)
     if active_files == 0:
         return "No indexed chunks were found for the selected file(s) in the Ext DB.", []
 
-    turns = memory.recent_turns(GLOBAL_SESSION_ID)
+    turns = memory.recent_turns(session_id)
     standalone = memory.rewrite_question(user_query, turns)
     results = ext_ask.search(col, standalone, TOP_K, where=where_filter)
 
@@ -94,7 +103,7 @@ def run_ext_naive_rag(user_query: str, selected_files: list = None):
     ]
 
     memory.save_turn(
-        GLOBAL_SESSION_ID,
+        session_id,
         user_query,
         standalone,
         answer,
@@ -105,20 +114,27 @@ def run_ext_naive_rag(user_query: str, selected_files: list = None):
 
 
 # ----------------- 2. Ext Corrective RAG (CRAG) Runner -----------------
-def run_ext_corrective_rag_with_log(user_query: str, selected_files: list = None):
+def run_ext_corrective_rag_with_log(
+    user_query: str,
+    selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
+):
     """Same as run_ext_corrective_rag, also returning the CRAG step log (for evaluation)."""
+    logger.info(f"=== Starting Ext Corrective RAG | Session: '{session_id}' ===")
     try:
         col = _open_collection()
     except RAGError as e:
+        logger.error(f"Ext Corrective store error: {e}")
         return str(e), [], ext_crag.Log()
     if col is None:
+        logger.error("Ext Corrective store is empty.")
         return EMPTY_STORE_MSG, [], ext_crag.Log()
 
     where_filter, active_files = _resolve_where_filter(col, selected_files)
     if active_files == 0:
         return "No indexed chunks were found for the selected file(s) in the Ext DB.", [], ext_crag.Log()
 
-    turns = memory.recent_turns(GLOBAL_SESSION_ID)
+    turns = memory.recent_turns(session_id)
     standalone = memory.rewrite_question(user_query, turns)
 
     log = ext_crag.Log()
@@ -128,7 +144,7 @@ def run_ext_corrective_rag_with_log(user_query: str, selected_files: list = None
 
     if not chunks:
         answer = ext_crag.NOT_COVERED
-        memory.save_turn(GLOBAL_SESSION_ID, user_query, standalone, answer, [], "crag")
+        memory.save_turn(session_id, user_query, standalone, answer, [], "crag")
         return answer, [], log
 
     for c in chunks:
@@ -161,7 +177,7 @@ def run_ext_corrective_rag_with_log(user_query: str, selected_files: list = None
     ]
 
     memory.save_turn(
-        GLOBAL_SESSION_ID,
+        session_id,
         user_query,
         standalone,
         answer,
@@ -171,11 +187,15 @@ def run_ext_corrective_rag_with_log(user_query: str, selected_files: list = None
     return answer, retrieved_contexts, log
 
 
-def run_ext_corrective_rag(user_query: str, selected_files: list = None):
+def run_ext_corrective_rag(
+    user_query: str,
+    selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
+):
     """
-    Matches the standard pipeline contract: (user_query, selected_files=None) -> (answer, contexts).
+    Matches the standard pipeline contract: (user_query, selected_files=None, session_id=...) -> (answer, contexts).
     """
     answer, retrieved_contexts, _ = run_ext_corrective_rag_with_log(
-        user_query, selected_files=selected_files
+        user_query, selected_files=selected_files, session_id=session_id
     )
     return answer, retrieved_contexts

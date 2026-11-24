@@ -1,3 +1,5 @@
+"""2-Round Fused Parent-Child Corrective RAG (CRAG) pipeline over hierarchical ChromaDB collections."""
+
 import os
 import logging
 
@@ -180,13 +182,14 @@ def run_parent_child_corrective_rag(
     user_query: str,
     history_limit: int = 5,
     selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
 ):
     """
     Searches across selected (or ALL) indexed documents using 2-Round Fused Parent-Child CRAG
     (Child Search -> Parent Blocks with Page Citations -> Batch Grading -> Round-2 Query Rewriting).
     """
     logger.info("=== Starting Global Multi-Query Fused Parent-Child CRAG ===")
-    logger.info(f"Original User Query: '{user_query}'")
+    logger.info(f"Session: '{session_id}' | Original User Query: '{user_query}'")
 
     if global_child_col.count() == 0 or global_parent_col.count() == 0:
         logger.error("Hierarchical DB is empty.")
@@ -209,8 +212,9 @@ def run_parent_child_corrective_rag(
         chunks, status, missing = corrective_retrieve_parent_child(
             sub_q, log, selected_files=selected_files
         )
-        for line in log:
-            logger.info(f"[CRAG Log SQ{idx}] {line}")
+        logger.info(
+            f"[Parent-Child CRAG SQ{idx}] Completed with status={status} ({len(chunks)} relevant block(s))."
+        )
         if missing:
             all_missing_parts.append(missing)
         for c in chunks:
@@ -219,7 +223,7 @@ def run_parent_child_corrective_rag(
 
     if not all_verified_chunks:
         logger.warning("No relevant parent blocks passed the CRAG filter across all sub-queries.")
-        persist_chat_history(GLOBAL_SESSION_ID, user_query, NOT_COVERED, "")
+        persist_chat_history(session_id, user_query, NOT_COVERED, "")
         return NOT_COVERED, []
 
     final_chunks = sorted(all_verified_chunks.values(), key=lambda c: -c["sim"])[:MAX_CONTEXT]
@@ -231,9 +235,13 @@ def run_parent_child_corrective_rag(
     ]
     full_context_text = "\n\n---\n\n".join(verified_contexts)
 
-    global_history = load_file_history(GLOBAL_SESSION_ID)
+    global_history = load_file_history(session_id)
     recent_history = (
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
+    )
+    logger.info(
+        f"Using {len(recent_history)} recent turns from session '{session_id}' "
+        f"(Total saved: {len(global_history)})."
     )
 
     combined_missing = "; ".join(set(all_missing_parts))
@@ -267,7 +275,7 @@ def run_parent_child_corrective_rag(
         logger.critical(f"LLM generation failed: {e}", exc_info=True)
         raise e
 
-    persist_chat_history(GLOBAL_SESSION_ID, user_query, reply, full_context_text)
+    persist_chat_history(session_id, user_query, reply, full_context_text)
     return reply, verified_contexts
 
 

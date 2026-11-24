@@ -1,3 +1,5 @@
+"""Global Parent-Child (Hierarchical) RAG pipeline backed by ChromaDB parent and child collections."""
+
 import math
 import os
 import time
@@ -44,6 +46,7 @@ def _embed_in_batches(texts: list, label: str, batch_size: int = 32) -> list:
     for idx, i in enumerate(range(0, len(texts), batch_size), start=1):
         batch = texts[i : i + batch_size]
         success = False
+        last_error = None
 
         for attempt in range(3):
             try:
@@ -59,12 +62,19 @@ def _embed_in_batches(texts: list, label: str, batch_size: int = 32) -> list:
                 time.sleep(1)
                 break
             except Exception as e:
+                last_error = e
+                status_code = getattr(e, "status_code", None)
+                if status_code is not None and 400 <= status_code < 500 and status_code != 429:
+                    logger.error(f"{label} batch {idx} failed with non-retryable HTTP {status_code}: {e}")
+                    break
                 logger.warning(f"{label} batch {idx} attempt {attempt + 1} failed: {e}. Retrying in 2s...")
                 time.sleep(2)
 
         if not success:
-            logger.error(f"Failed to generate embeddings for {label} batch {idx}. Halting indexing.")
-            raise RuntimeError(f"Embeddings service failed to respond for {label}.")
+            logger.error(f"Failed to generate embeddings for {label} batch {idx}. Halting indexing: {last_error}")
+            raise RuntimeError(
+                f"Embeddings failed for {label} on batch {idx}/{total_batches}: {last_error}"
+            ) from last_error
 
     return embeddings_list
 
@@ -174,13 +184,14 @@ def run_parent_child_rag(
     max_parents: int = 6,
     history_limit: int = 5,
     selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
 ):
     """
     Searches across selected (or ALL) indexed documents using child embeddings, retrieves
-    unique parent contexts, supports multi-questions, and maintains chat history.
+    unique parent contexts, supports multi-questions, and maintains chat history per session.
     """
     logger.info("=== Starting Global Multi-Query Parent-Child RAG ===")
-    logger.info(f"User Query: '{user_query}'")
+    logger.info(f"Session: '{session_id}' | User Query: '{user_query}'")
 
     if global_child_col.count() == 0 or global_parent_col.count() == 0:
         logger.error("Global Hierarchical DB is empty. Please upload and index documents first.")
@@ -246,9 +257,9 @@ def run_parent_child_rag(
 
     full_context_text = "\n\n---\n\n".join(formatted_contexts)
 
-    # 3. Load rolling window history
-    logger.info("Loading global conversation history...")
-    global_history = load_file_history(GLOBAL_SESSION_ID)
+    # 3. Load rolling window history for the active session
+    logger.info(f"Loading conversation history for session '{session_id}'...")
+    global_history = load_file_history(session_id)
     recent_history = (
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
     )
@@ -284,8 +295,8 @@ def run_parent_child_rag(
         logger.critical(f"LLM generation failed: {e}", exc_info=True)
         raise e
 
-    # 5. Persist chat history
-    persist_chat_history(GLOBAL_SESSION_ID, user_query, assistant_reply, full_context_text)
+    # 5. Persist chat history under the active session ID
+    persist_chat_history(session_id, user_query, assistant_reply, full_context_text)
     return assistant_reply, formatted_contexts
 
 

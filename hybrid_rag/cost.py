@@ -1,3 +1,9 @@
+"""Token and USD cost tracker for OpenRouter chat and embedding requests.
+
+Every request made through ``initialize_api()`` is intercepted by an httpx response hook
+and aggregated per question/document via a ``ContextVar``, then persisted to ``logs/cost_log.csv``.
+"""
+
 # What each question (and each ingested document) cost: tokens and US dollars, per step.
 #
 # Every request to OpenRouter goes through the client made by initialize_api()
@@ -236,6 +242,7 @@ def model_prices():
 
 # ---------- Saving ----------
 def _save(qc):
+    """Appends one completed QueryCost summary row to ``logs/cost_log.csv``."""
     import os
     steps = {k: {**v, "usd": round(v["usd"], 8)} for k, v in qc.by_step().items()}
     row = {"time": datetime.now().isoformat(timespec="seconds"), "system": qc.system,

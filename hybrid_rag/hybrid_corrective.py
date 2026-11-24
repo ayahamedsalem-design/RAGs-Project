@@ -1,3 +1,9 @@
+"""2-Round Fused Hybrid Corrective RAG (CRAG) pipeline.
+
+Extends Hybrid RRF retrieval with deterministic bibliography filtering, batch LLM relevance
+grading, and an automatic Round 2 corrective search when any part of a question is unanswered.
+"""
+
 import os
 import re
 import json
@@ -371,13 +377,14 @@ def run_hybrid_corrective_rag(
     user_query: str,
     history_limit: int = 5,
     selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
 ):
     """
     Searches across selected (or ALL) indexed documents using 2-Round Fused Hybrid CRAG
     (Dense + BM25 via RRF -> Batch Grading -> Corrective Query Rewriting -> Cited Answer).
     """
     logger.info("=== Starting Global Multi-Query Fused Hybrid CRAG ===")
-    logger.info(f"Original User Query: '{user_query}'")
+    logger.info(f"Session: '{session_id}' | Original User Query: '{user_query}'")
 
     if global_hybrid_col.count() == 0:
         logger.error("Hybrid Collection is empty.")
@@ -395,9 +402,9 @@ def run_hybrid_corrective_rag(
         chunks, status, missing = corrective_retrieve_hybrid(
             sub_q, log, selected_files=selected_files
         )
-
-        for line in log:
-            logger.info(f"[CRAG Log SQ{idx}] {line}")
+        logger.info(
+            f"[CRAG SQ{idx}] Completed with status={status} ({len(chunks)} relevant chunk(s))."
+        )
 
         if missing:
             all_missing_parts.append(missing)
@@ -408,7 +415,7 @@ def run_hybrid_corrective_rag(
 
     if not all_verified_chunks:
         logger.warning("No relevant chunks passed the CRAG filter across all sub-queries.")
-        persist_chat_history(GLOBAL_SESSION_ID, user_query, NOT_COVERED, "")
+        persist_chat_history(session_id, user_query, NOT_COVERED, "")
         return NOT_COVERED, []
 
     final_chunks = sorted(all_verified_chunks.values(), key=lambda c: -c["sim"])[:MAX_CONTEXT]
@@ -420,12 +427,13 @@ def run_hybrid_corrective_rag(
     ]
     full_context_text = "\n\n---\n\n".join(verified_contexts)
 
-    global_history = load_file_history(GLOBAL_SESSION_ID)
+    global_history = load_file_history(session_id)
     recent_history = (
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
     )
     logger.info(
-        f"Using {len(recent_history)} recent turns from history (Total saved: {len(global_history)})."
+        f"Using {len(recent_history)} recent turns from session '{session_id}' "
+        f"(Total saved: {len(global_history)})."
     )
 
     combined_missing = "; ".join(set(all_missing_parts))
@@ -460,7 +468,7 @@ def run_hybrid_corrective_rag(
         logger.critical(f"Generation failed: {e}", exc_info=True)
         raise e
 
-    persist_chat_history(GLOBAL_SESSION_ID, user_query, reply, full_context_text)
+    persist_chat_history(session_id, user_query, reply, full_context_text)
     return reply, verified_contexts
 
 
