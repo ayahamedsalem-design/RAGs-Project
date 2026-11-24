@@ -111,7 +111,7 @@ def step_rows(df):
 
 
 # ---------- Page ----------
-st.title("💰 Usage")
+st.title("Usage")
 st.caption("What every question cost, across all RAG pipelines: tokens and US dollars as "
            f"reported by OpenRouter. Source: `{COST_LOG.relative_to(COST_LOG.parent.parent).as_posix()}`")
 
