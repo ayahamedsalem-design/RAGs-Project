@@ -66,15 +66,17 @@ with col_refresh:
 
 search_query = st.text_input("Search logs (keyword, filename, model, or error message):", "")
 
+# Read the selected rotating log file safely (replacing any invalid bytes)
 log_path = LOG_DIR / selected_file_name
 if not log_path.exists():
     st.info(f"Log file `{log_path.relative_to(PROJECT_ROOT).as_posix()}` does not exist yet.")
     st.stop()
 
 raw_content = log_path.read_text(encoding="utf-8", errors="replace")
+# Group multiline Python stack traces with their parent timestamped log line
 all_records = parse_log_records(raw_content)
 
-# Summary metrics across the full selected log file
+# Summary metrics across the full selected log file (before user filters)
 error_count = sum(1 for r in all_records if r["level"] in ("ERROR", "CRITICAL"))
 warning_count = sum(1 for r in all_records if r["level"] == "WARNING")
 info_count = sum(1 for r in all_records if r["level"] == "INFO")
@@ -85,7 +87,7 @@ m2.metric("Errors / Critical", f"{error_count:,}")
 m3.metric("Warnings", f"{warning_count:,}")
 m4.metric("Info", f"{info_count:,}")
 
-# Apply level and keyword filters
+# Apply severity level and case-insensitive substring keyword filters
 filtered = all_records
 if selected_levels:
     allowed_levels = set(selected_levels)
@@ -95,7 +97,7 @@ if search_query.strip():
     needle = search_query.strip().lower()
     filtered = [r for r in filtered if needle in r["text"].lower()]
 
-# Keep the most recent N entries (newest first toggle)
+# Keep the most recent N matching entries, optionally reversed so newest appear on top
 newest_first = st.checkbox("Show newest entries first", value=True)
 if isinstance(max_entries, int):
     filtered = filtered[-max_entries:]
@@ -104,6 +106,7 @@ if newest_first:
 
 st.caption(f"Showing **{len(filtered):,}** matching log entries from `logs/{selected_file_name}`.")
 
+# Render filtered log output in a scrollable code block + provide raw file download
 if filtered:
     rendered_text = "\n".join(r["text"] for r in filtered)
     st.code(rendered_text, language="log")

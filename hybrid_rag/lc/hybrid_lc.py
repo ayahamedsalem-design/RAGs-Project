@@ -51,6 +51,7 @@ def build_chain():
     )
 
 
+# Lazy singleton for the compiled LCEL chain (built once on first query)
 _CHAIN = None
 
 
@@ -70,14 +71,17 @@ def run_hybrid_lc(
     logger.info("=== Starting Hybrid RAG (LangChain) ===")
     logger.info(f"Session: '{session_id}' | User Query: '{user_query}'")
 
+    # Guard against querying an empty ChromaDB collection before hitting the API
     if global_hybrid_col.count() == 0:
         logger.error("Global Hybrid DB is empty. Please upload and index documents first.")
         return "The database is empty. Please upload and index some PDFs first.", []
 
+    # Build the LCEL Runnable graph once and reuse across all subsequent turns
     if _CHAIN is None:
         _CHAIN = build_chain()
 
     try:
+        # Execute the 3-stage LCEL chain: retrieve -> format context & history -> generate answer
         result = _CHAIN.invoke(
             {
                 "question": user_query,
@@ -91,6 +95,7 @@ def run_hybrid_lc(
         logger.critical(f"LangChain Hybrid RAG execution failed: {exc}", exc_info=True)
         raise
 
+    # Format retrieved Documents into labelled strings for Streamlit display and history logging
     full_context_text, formatted_contexts = format_context(result["docs"])
     logger.info(
         f"Hybrid RAG (LangChain) completed: {len(formatted_contexts)} chunk(s) retrieved, "

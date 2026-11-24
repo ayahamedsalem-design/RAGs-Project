@@ -96,8 +96,10 @@ def initialize_api():
     load_dotenv()
     api_key = os.getenv("OPENROUTER_API_KEY")
 
+    # If cost tracking is unavailable (standalone script execution), return a plain OpenAI client
     if cost is None:
         return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=30)
+    # Attach record_cost to httpx response events so every chat/embedding request is logged automatically
     return OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=api_key,
@@ -109,13 +111,16 @@ def initialize_api():
 def record_cost(response):
     """Called by httpx for every reply from OpenRouter (chat and embeddings)."""
     try:
+        # Ignore failed HTTP responses since OpenRouter does not bill non-200 errors
         if response.status_code != 200:
             return
+        # Ensure the response body is buffered before parsing JSON usage fields
         response.read()
         data = response.json()
         step = "embedding" if "/embeddings" in str(response.url) else "chat"
         cost.record(step, data.get("model"), data.get("usage"), response.elapsed.total_seconds())
     except Exception as e:
+        # Never break a RAG answer just because cost parsing failed on an unexpected payload
         logger.debug(f"Cost tracking skipped one reply: {e}")
 
 
@@ -136,12 +141,15 @@ def resolve_file_name(file_source) -> str:
 
 def get_valid_file_path(file_source) -> str:
     """Ensures a valid readable local file path while preserving the original file extension."""
+    # Case 1: already a local filesystem path
     if isinstance(file_source, (str, Path)):
         return str(file_source)
 
+    # Case 2: file-like object whose `.name` already points to an existing file on disk
     if hasattr(file_source, "name") and isinstance(file_source.name, str) and os.path.exists(file_source.name):
         return file_source.name
 
+    # Case 3: in-memory upload (e.g., Streamlit UploadedFile) -> spill to a temp file keeping its extension
     file_name = resolve_file_name(file_source)
     suffix = Path(file_name).suffix.lower() or ".pdf"
 
@@ -732,18 +740,21 @@ def _extract_pdf(
     progress_callback=None,
 ) -> tuple[list[str], list[dict]]:
     """Extracts text per PDF page, runs OCR fallback on scanned pages, and splits into page-tagged chunks."""
+    # Threshold below which a PDF page is considered scanned/image-only and routed to OCR
     reader = PdfReader(valid_path)
     total_pages = len(reader.pages)
 
     page_texts: dict[int, str] = {}
     pages_needing_ocr: list[int] = []
 
+    # First pass: fast native text extraction via pypdf; flag near-empty pages for OCR
     for page_idx, page in enumerate(reader.pages):
         extracted = (page.extract_text() or "").strip()
         page_texts[page_idx] = extracted
         if len(re.sub(r"\s+", "", extracted)) < OCR_MIN_PAGE_CHARS:
             pages_needing_ocr.append(page_idx)
 
+    # Second pass (conditional): run parallel Tesseract OCR only on flagged scanned pages
     if pages_needing_ocr and is_ocr_enabled(use_ocr):
         resolved_lang = ocr_lang or os.getenv("OCR_LANG", "ara+eng")
         resolved_dpi = int(ocr_dpi or os.getenv("OCR_DPI", "250"))
@@ -762,16 +773,19 @@ def _extract_pdf(
                 max_workers=resolved_workers,
                 progress_callback=progress_callback,
             )
+            # Only overwrite native pypdf text when OCR actually recovered more characters
             for p_idx, ocr_text in ocr_texts.items():
                 if len(ocr_text.strip()) > len(page_texts[p_idx]):
                     page_texts[p_idx] = ocr_text.strip()
         except RuntimeError as exc:
+            # If the PDF is mixed (some native pages), warn and keep native pages; if 100% scanned, fail loudly
             if has_text_pages:
                 logger.warning(f"[OCR] Skipping OCR on {len(pages_needing_ocr)} page(s) in '{file_name}': {exc}")
             else:
                 logger.error(f"[OCR] Cannot process scanned PDF '{file_name}': {exc}")
                 raise
 
+    # Third pass: split each page's text into overlapping chunks tagged with 1-based Page metadata
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size, chunk_overlap=chunk_overlap, separators=["\n\n", "\n", " ", ""]
     )
@@ -783,6 +797,7 @@ def _extract_pdf(
             continue
         for chunk in splitter.split_text(page_text):
             cleaned = re.sub(r"\s+", " ", chunk).strip()
+            # Drop tiny header/footer fragments (< 31 chars) that add retrieval noise
             if len(cleaned) > 30:
                 chunks.append(cleaned)
                 metadatas.append({
@@ -884,6 +899,7 @@ def _extract_docx(file_path: str, file_name: str, chunk_size: int, chunk_overlap
                 })
         para_buffer = []
 
+    # Walk raw XML body children so paragraphs and tables stay in exact document reading order
     body = doc.element.body
     for child in body.iterchildren():
         if isinstance(child, CT_P):
@@ -891,6 +907,7 @@ def _extract_docx(file_path: str, file_name: str, chunk_size: int, chunk_overlap
             text = p.text.strip()
             if not text:
                 continue
+            # Flush accumulated text on every Word Heading so each chunk keeps its real section title
             style_name = (p.style.name or "").lower() if p.style else ""
             if style_name.startswith("heading"):
                 _flush_paragraphs()
@@ -898,6 +915,7 @@ def _extract_docx(file_path: str, file_name: str, chunk_size: int, chunk_overlap
                 section_title = f"Section: {text[:60]}"
             para_buffer.append(text)
         elif isinstance(child, CT_Tbl):
+            # Flush prose before the table, then chunk the table with smart row-batching
             _flush_paragraphs()
             table_num += 1
             tbl = Table(child, doc)
@@ -1096,6 +1114,7 @@ def extract_and_chunk_file(
     Returns (chunks, metadatas) where each metadata dict carries:
       {"source", "file_type", "data_kind", "loc", "page"}.
     """
+    # Track whether file_source was already on disk so finally: only deletes temp files we created
     is_existing_path = isinstance(file_source, (str, Path)) or (
         hasattr(file_source, "name")
         and isinstance(file_source.name, str)
@@ -1106,6 +1125,7 @@ def extract_and_chunk_file(
     ext = Path(file_name).suffix.lower() or Path(valid_path).suffix.lower()
 
     try:
+        # Dispatch to the format-specific extractor based on normalized file extension
         if ext == ".pdf":
             chunks, metadatas = _extract_pdf(
                 valid_path, file_name, chunk_size, chunk_overlap, use_ocr, ocr_lang, ocr_dpi, progress_callback
@@ -1137,6 +1157,7 @@ def extract_and_chunk_file(
         logger.info(f"[File Processing] Created {len(chunks)} chunks for '{file_name}' (type={ext}).")
         return chunks, metadatas
     finally:
+        # Clean up temporary files spilled from Streamlit UploadedFile buffers
         if not is_existing_path and valid_path and os.path.exists(valid_path):
             try:
                 os.remove(valid_path)

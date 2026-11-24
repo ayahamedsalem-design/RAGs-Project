@@ -107,6 +107,7 @@ with st.sidebar:
     indexed_files = get_indexed_files()
 
     if indexed_files:
+        # Render one checkbox per indexed document so users can scope retrieval to specific files
         st.caption("Select files to include in query (none checked = all):")
         selected_files = [
             fname
@@ -114,6 +115,7 @@ with st.sidebar:
             if st.checkbox(fname, value=True, key=f"query_file_{fname}")
         ]
 
+        # Allow permanent deletion of selected documents from ChromaDB and the in-memory BM25 cache
         files_to_remove = st.multiselect(
             "Select file(s) to remove from DB:",
             options=indexed_files,
@@ -128,6 +130,7 @@ with st.sidebar:
         selected_files = []
         st.warning("No files currently embedded in ChromaDB. Upload a file below.")
 
+    # Multi-file uploader accepting all 15 structured & unstructured formats declared in file_processing.py
     st.subheader("Upload New File(s)")
     uploaded_files = st.file_uploader(
         "Upload files (PDF, Word, PowerPoint, Excel, CSV, JSON, TXT/MD, Images):",
@@ -140,6 +143,7 @@ with st.sidebar:
         if st.button("Index File(s) into Global DB", use_container_width=True):
             indexed_count = 0
             for uploaded_file in uploaded_files:
+                # Live progress bar updated during OCR extraction, batch embedding, and ChromaDB write
                 progress_bar = st.progress(0.0, text=f"Indexing '{uploaded_file.name}'...")
                 try:
                     def _update_progress(fraction: float, text: str, _bar=progress_bar):
@@ -158,6 +162,7 @@ with st.sidebar:
                     st.error(f"Error during indexing '{uploaded_file.name}': {e}")
                 finally:
                     progress_bar.empty()
+            # Trigger a rerun so newly indexed files appear immediately in the sidebar list
             if indexed_count > 0:
                 st.rerun()
 
@@ -279,6 +284,7 @@ with st.sidebar:
 # ==========================================
 # 2. Main Area: Chat Interface
 # ==========================================
+# Render optional History Summary banner at the top of the chat pane when generated
 if st.session_state.get("history_summary"):
     with st.expander("📝 History Summary", expanded=True):
         st.markdown(st.session_state["history_summary"])
@@ -287,6 +293,7 @@ if st.session_state.get("history_summary"):
             st.session_state.pop("history_summary", None)
             st.rerun()
 
+# Load persisted Q&A turns belonging exclusively to the currently active chat session
 active_history = load_file_history(active_session_id)
 
 # Render chat history for the active conversation
@@ -299,7 +306,7 @@ for message in active_history:
             with st.expander("View Retrieved Context Chunks"):
                 st.text(message["rag_context"])
 
-# Handle new user input
+# Handle new user input from the bottom chat box
 user_query = st.chat_input("Ask any question...")
 
 if user_query:
@@ -310,7 +317,7 @@ if user_query:
     with st.chat_message("assistant"):
         with st.spinner(f"Running {rag_type}..."):
             try:
-                # run_tracked = the usual execute_with_retry + cost tracking (see the top)
+                # Dispatch to the selected LangChain LCEL pipeline wrapped in retry + cost tracking
                 if rag_type == "Hybrid RAG":
                     answer, retrieved_contexts = run_tracked(
                         rag_type,
@@ -332,6 +339,7 @@ if user_query:
                 st.write(answer)
                 show_cost(user_query)          # what this question cost (tokens, USD)
 
+                # Display the exact retrieved/verified chunks handed to the Answer LLM
                 with st.expander("View Retrieved Context Chunks"):
                     if isinstance(retrieved_contexts, list):
                         for idx, chunk in enumerate(retrieved_contexts):

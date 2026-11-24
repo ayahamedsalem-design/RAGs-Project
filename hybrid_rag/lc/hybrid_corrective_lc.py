@@ -81,15 +81,18 @@ def search_hybrid_rrf_lc(
     store = get_vector_store()
     doc_to_id, id_to_emb = get_cached_id_maps()
 
+    # Run dense search using the pre-computed query vector (avoids re-embedding the same text)
     try:
         dense = store.similarity_search_by_vector(qvec, k=effective_k, filter=where)
     except Exception as e:
         logger.error(f"[{via_label}] Dense search failed for '{query_text}': {e}", exc_info=True)
         dense = []
 
+    # Run sparse Arabic-aware BM25 search and merge dense + sparse lists via RRF
     sparse = bm25.invoke(query_text)
     fused = reciprocal_rank_fusion([dense, sparse])[:effective_k]
 
+    # Enrich each fused Document with exact cosine similarity from cached embeddings (0 extra DB calls)
     enriched = []
     for idx, d in enumerate(fused):
         cid = d.metadata.get("chunk_id") or d.id or doc_to_id.get(d.page_content, f"unknown_{idx}")
@@ -136,6 +139,7 @@ def _is_reference_doc(doc: Document) -> bool:
 
 def grade_documents_lc(question: str, cands: list[Document]) -> dict:
     """Filters reference lists deterministically (unstructured only), then grades remaining Documents in one LCEL call."""
+    # Deterministically strip bibliography/reference-list noise (unstructured prose only)
     refs = [i for i, d in enumerate(cands, 1) if _is_reference_doc(d)]
     others = [(i, d) for i, d in enumerate(cands, 1) if i not in refs]
 
@@ -149,6 +153,7 @@ def grade_documents_lc(question: str, cands: list[Document]) -> dict:
             "refs": refs,
         }
 
+    # Format remaining candidates as a single numbered prompt so all grading happens in 1 LLM call
     listing = "\n\n".join(
         f"[Candidate {k}] (file: {d.metadata.get('source', 'Unknown')}, {format_location(d.metadata)})\n"
         f"{d.page_content}"
@@ -158,12 +163,14 @@ def grade_documents_lc(question: str, cands: list[Document]) -> dict:
     try:
         reply = grader_chain().invoke({"question": question, "listing": listing})
     except Exception as e:
+        # Retry without `disable_reasoning` if the configured provider/model rejects that parameter
         logger.warning(f"LCEL batch grading call failed ({e}); retrying without disable_reasoning...")
         fallback_chain = BATCH_GRADER_PROMPT | get_llm(temperature=GRADER_TEMPERATURE) | StrOutputParser()
         reply = fallback_chain.invoke({"question": question, "listing": listing})
 
     sub = _parse_grade(reply, len(others))
     if sub is None:
+        # Safe fallback: keep top 4 non-reference candidates instead of returning an empty answer
         logger.warning("Batch grader reply unreadable; falling back to top 4 non-reference candidates.")
         return {
             "relevant": [others[k - 1][0] for k in range(1, min(4, len(others)) + 1)],
@@ -175,6 +182,7 @@ def grade_documents_lc(question: str, cands: list[Document]) -> dict:
             "failed": True,
         }
 
+    # Translate local 1..M grader indices back to the original 1..N `cands` indices
     return {
         **sub,
         "relevant": [others[k - 1][0] for k in sub["relevant"]],
@@ -261,6 +269,7 @@ def corrective_retrieve_sub_query(payload: dict) -> dict:
 def retrieve_and_merge_lc(state: dict) -> dict:
     """Decomposes the question, runs 2-round CRAG across sub-questions in parallel (.batch()),
     merges unique verified Documents, sorts by cosine sim, and truncates to MAX_CONTEXT."""
+    # Split compound user queries and run 2-round CRAG concurrently across sub-questions via LCEL .batch()
     sub_queries = decompose_multi_questions(state["question"])
     logger.info(f"[LC CRAG] Decomposed query into {len(sub_queries)} sub-question(s).")
     payloads = [{"sub_query": sq, "selected_files": state["selected_files"]} for sq in sub_queries]
@@ -272,6 +281,7 @@ def retrieve_and_merge_lc(state: dict) -> dict:
             payloads, config={"max_concurrency": MAX_PARALLEL_SUBQUERIES}
         )
 
+    # Deduplicate verified chunks by chunk_id, keeping the highest cosine similarity if seen in >1 sub-query
     merged_by_id = {}
     missing_parts = []
     for idx, res in enumerate(sub_results, 1):
@@ -285,6 +295,7 @@ def retrieve_and_merge_lc(state: dict) -> dict:
             if cid not in merged_by_id or d.metadata["sim"] > merged_by_id[cid].metadata["sim"]:
                 merged_by_id[cid] = d
 
+    # Keep the top MAX_CONTEXT (6) highest-similarity verified chunks and deduplicate missing aspect notes
     final_docs = sorted(merged_by_id.values(), key=lambda d: -d.metadata["sim"])[:MAX_CONTEXT]
     combined_missing = "; ".join(dict.fromkeys(missing_parts))
     logger.info(f"[LC CRAG] Compiled {len(final_docs)} unique verified chunk(s) for generation.")

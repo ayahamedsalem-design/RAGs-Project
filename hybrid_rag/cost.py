@@ -124,12 +124,14 @@ class QueryCost:
         return "\n".join(lines)
 
 
+# ContextVars isolate cost tracking per thread/async task so concurrent users never collide
 _current = contextvars.ContextVar("rag_cost_current", default=None)
 _last = contextvars.ContextVar("rag_cost_last", default=None)
 
 
 def start_query(system, question):
     """Begin tracking the cost of one question (or document)."""
+    # Create a fresh QueryCost accumulator and bind it to the current execution context
     qc = QueryCost(system, question)
     _current.set(qc)
     return qc
@@ -137,10 +139,12 @@ def start_query(system, question):
 
 def finish_query(save=True):
     """Stop tracking; save the row to cost_log.csv (unless save=False) and return it."""
+    # Detach the active tracker so later stray API calls aren't accidentally billed to this query
     qc = _current.get()
     _current.set(None)
     if qc is None:
         return None
+    # Save reference to the completed QueryCost so the Streamlit UI can display it via last_query()
     _last.set(qc)
     if not qc.calls:
         return qc                 # nothing was asked of a model (e.g. the store is empty)
@@ -158,13 +162,16 @@ def track(system, question):
     spent is logged as a warning but not saved as a row (it isn't a finished question)."""
     qc = start_query(system, question)
     try:
+        # Expose `qc` to the `with cost.track(...) as qc:` block
         yield qc
     except BaseException:
+        # Unwind without appending an incomplete row to cost_log.csv
         finish_query(save=False)
         if qc.calls:
             logger.warning("Stopped after %d calls that cost $%.6f (not saved to %s)",
                            qc.n_calls, qc.total_usd, COST_LOG.name)
         raise
+    # Normal completion: persist the aggregated row to logs/cost_log.csv
     finish_query()
 
 
@@ -177,10 +184,12 @@ def record(step, model, usage, seconds, local=False):
     """Add one request to the question being tracked. usage is OpenRouter's usage object
     (or, for Ollama, {"prompt_tokens", "completion_tokens"})."""
     usage = usage or {}
+    # Extract standard OpenRouter token counters (reasoning & cached tokens are nested sub-dicts)
     prompt = int(usage.get("prompt_tokens") or 0)
     completion = int(usage.get("completion_tokens") or 0)
     reasoning = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)
     cached = int((usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0)
+    # Prefer OpenRouter's exact reported cost; fall back to local price-list calculation if absent
     if local:
         usd, source = 0.0, "local"
     elif usage.get("cost") is not None:
@@ -191,6 +200,7 @@ def record(step, model, usage, seconds, local=False):
                 round(seconds, 3))
     logger.debug("cost %s %s: %d in / %d out / %d reasoning / %d cached tokens, $%.6f (%s)",
                  call.step, model, prompt, completion, reasoning, cached, usd, source)
+    # Append to the active QueryCost if a `cost.track(...)` context is currently open
     qc = _current.get()
     if qc is None:
         logger.debug("No question is being tracked; this call is not counted")

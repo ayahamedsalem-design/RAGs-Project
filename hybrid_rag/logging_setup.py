@@ -77,17 +77,20 @@ DEFAULT_LOGGING_CONFIG = {
 def setup_logging(config_path: Path = CONFIG_FILE, force: bool = False) -> None:
     """Initializes logging once from ``config_path`` (creating defaults if missing)."""
     global _CONFIGURED
+    # Idempotency check: skip re-initialization unless the caller explicitly forces a reload
     if _CONFIGURED and not force:
         return
 
+    # Ensure logs/ exists before RotatingFileHandler attempts to open app.log / errors.log
     LOG_DIR.mkdir(parents=True, exist_ok=True)
 
     if config_path.is_file():
-        # Load external JSON logging config
+        # Load external JSON logging config from config/logging_config.json
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
         except json.JSONDecodeError:
+            # Fall back safely to basic stdout logging rather than crashing app startup
             logging.basicConfig(level=logging.INFO)
             logging.error(
                 f"Malformed logging config in '{config_path}'. Reverting to basicConfig.",
@@ -96,7 +99,7 @@ def setup_logging(config_path: Path = CONFIG_FILE, force: bool = False) -> None:
             _CONFIGURED = True
             return
     else:
-        # Persist defaults when no config file exists yet
+        # First-run bootstrap: write DEFAULT_LOGGING_CONFIG so users can customize it later
         config = DEFAULT_LOGGING_CONFIG
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(config_path, "w", encoding="utf-8") as f:
@@ -108,5 +111,6 @@ def setup_logging(config_path: Path = CONFIG_FILE, force: bool = False) -> None:
         if filename and not Path(filename).is_absolute():
             handler["filename"] = (PROJECT_ROOT / filename).as_posix()
 
+    # Apply the full formatter/handler/logger hierarchy in one atomic call
     logging.config.dictConfig(config)
     _CONFIGURED = True

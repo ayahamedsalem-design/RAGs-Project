@@ -102,6 +102,7 @@ def _cosine_similarity(vec_a, vec_b) -> float:
     a = np.asarray(vec_a, dtype=np.float32)
     b = np.asarray(vec_b, dtype=np.float32)
     denom = float(np.linalg.norm(a) * np.linalg.norm(b))
+    # Guard against zero-magnitude vectors to avoid NaN division
     if denom == 0.0:
         return 0.0
     return float(np.dot(a, b) / denom)
@@ -110,6 +111,7 @@ def _cosine_similarity(vec_a, vec_b) -> float:
 def citation_density(text: str) -> float:
     """Citation markers per 100 words; reference lists score far higher than normal prose."""
     words = max(len(text.split()), 1)
+    # Count publication years (1900-2099), DOIs/URLs (weighted 2x), and journal/page patterns
     years = len(re.findall(r"\b(?:19|20)\d{2}[a-z]?\b", text))
     links = len(re.findall(r"doi|https?://|Available (?:online|at)|Accessed", text, re.I))
     pages = len(re.findall(r"\b\d+\s*\(\d+\)|\bpp?\.\s*\d+|\d+\s*[-\u2013]\s*\d+\.", text))
@@ -118,6 +120,7 @@ def citation_density(text: str) -> float:
 
 def _read_json(reply: str):
     """Extracts and parses the first JSON object found in the grader LLM reply."""
+    # Greedy brace match strips any accidental markdown fences or surrounding prose
     m = re.search(r"\{.*\}", reply or "", re.DOTALL)
     if not m:
         logger.warning("No JSON found in grader reply: %r", (reply or "")[:300])
@@ -131,14 +134,17 @@ def _read_json(reply: str):
 
 def _parse_parts(r: dict, have_relevant: bool) -> dict:
     """Extracts sufficiency status, unanswered aspects, and Round 2 search queries from grader JSON."""
+    # Keep only valid part entries that have non-empty descriptions
     parts = [p for p in r.get("parts", []) if isinstance(p, dict) and str(p.get("part", "")).strip()]
     unanswered = [str(p["part"]).strip() for p in parts if not p.get("answered")]
+    # Combine unanswered part phrases + explicit grader queries, deduplicating case-insensitively
     queries = []
     for q in unanswered + [q for q in r.get("queries", []) if isinstance(q, str)]:
         q = q.strip()
         if q and q.lower() not in (x.lower() for x in queries):
             queries.append(q)
     return {
+        # Sufficient only if we kept >=1 chunk AND every decomposed part is marked answered
         "sufficient": have_relevant and bool(parts) and not unanswered,
         "missing": "; ".join(unanswered),
         "queries": queries[:MAX_EXTRA_QUERIES],
@@ -151,6 +157,7 @@ def _parse_grade(reply: str, n: int):
     g = _read_json(reply)
     if g is None:
         return None
+    # Sanitize candidate indices against out-of-range, non-integer, or duplicate values
     relevant = []
     for x in g.get("relevant", []):
         try:
@@ -176,6 +183,7 @@ def grade(question: str, cands: list[dict]) -> dict:
     then evaluates all remaining candidates in a single LLM call and proposes corrective queries
     for any unanswered question parts.
     """
+    # Separate bibliography/reference-list noise deterministically before spending LLM tokens
     refs = [i for i, c in enumerate(cands, 1) if _is_reference_chunk(c)]
     others = [(i, c) for i, c in enumerate(cands, 1) if i not in refs]
 
@@ -189,6 +197,7 @@ def grade(question: str, cands: list[dict]) -> dict:
             "refs": refs,
         }
 
+    # Renumber surviving candidates 1..M for the single-call batch grading prompt
     listing = "\n\n".join(
         f"[Candidate {k}] (file: {c['path']}, {c['loc']})\n{c['text']}"
         for k, (_, c) in enumerate(others, 1)
@@ -198,6 +207,7 @@ def grade(question: str, cands: list[dict]) -> dict:
         {"role": "user", "content": f"QUESTION: {question}\n\nCANDIDATES:\n\n{listing}"},
     ]
 
+    # Disable chain-of-thought reasoning for fast, cheap, deterministic JSON output
     try:
         response = client_ai.chat.completions.create(
             model=CHAT_MODEL,
@@ -207,6 +217,7 @@ def grade(question: str, cands: list[dict]) -> dict:
         )
         reply = response.choices[0].message.content
     except Exception as e:
+        # Fallback for providers/models that reject the OpenRouter `reasoning` parameter
         logger.warning(f"Batch grading call failed ({e}); retrying without extra_body...")
         response = client_ai.chat.completions.create(
             model=CHAT_MODEL,
@@ -217,6 +228,7 @@ def grade(question: str, cands: list[dict]) -> dict:
 
     sub = _parse_grade(reply, len(others))
     if sub is None:
+        # Safe degradation: keep top 4 non-reference chunks instead of failing the user's question
         logger.warning("Batch grader reply unreadable; falling back to top 4 non-reference candidates.")
         return {
             "relevant": [others[k - 1][0] for k in range(1, min(4, len(others)) + 1)],
@@ -228,6 +240,7 @@ def grade(question: str, cands: list[dict]) -> dict:
             "failed": True,
         }
 
+    # Map local 1..M grader indices back to the original 1..N `cands` positions
     return {
         **sub,
         "relevant": [others[k - 1][0] for k in sub["relevant"]],
@@ -436,20 +449,24 @@ def run_hybrid_corrective_rag(
             if c["id"] not in all_verified_chunks:
                 all_verified_chunks[c["id"]] = c
 
+    # Short-circuit with 0 Answer LLM cost if no verified chunks survived across any sub-query
     if not all_verified_chunks:
         logger.warning("No relevant chunks passed the CRAG filter across all sub-queries.")
         persist_chat_history(session_id, user_query, NOT_COVERED, "")
         return NOT_COVERED, []
 
+    # Sort unique verified chunks by highest cosine similarity and cap at MAX_CONTEXT (6)
     final_chunks = sorted(all_verified_chunks.values(), key=lambda c: -c["sim"])[:MAX_CONTEXT]
     logger.info(f"Compiled {len(final_chunks)} unique highly relevant chunks across all sub-queries.")
 
+    # Label each chunk with source, location, similarity score, and retrieval origin (`via`)
     verified_contexts = [
         f"[Source: {c['path']} | {c['loc']} | sim: {c['sim']:.3f} | {c['via']}]:\n{c['text']}"
         for c in final_chunks
     ]
     full_context_text = "\n\n---\n\n".join(verified_contexts)
 
+    # Load rolling window of recent conversation turns for the active session
     global_history = load_file_history(session_id)
     recent_history = (
         global_history[-history_limit:] if len(global_history) > history_limit else global_history
@@ -459,6 +476,7 @@ def run_hybrid_corrective_rag(
         f"(Total saved: {len(global_history)})."
     )
 
+    # Inform the Answer LLM about any unanswered sub-parts detected by the grader
     combined_missing = "; ".join(set(all_missing_parts))
     sys_inst = SYS_PROMPT
     if combined_missing:

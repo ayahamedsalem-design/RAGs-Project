@@ -25,9 +25,11 @@ def execute_with_retry(rag_func, *args, max_retries: int = 3, delay: float = 2, 
     current_delay = delay
     for attempt in range(1, max_retries + 1):
         try:
+            # Execute the target RAG callable with all forwarded arguments
             return rag_func(*args, **kwargs)
         except Exception as exc:
             err_msg = str(exc)
+            # Only retry errors that look temporary (HTTP 5xx, 429 rate limits, timeouts, network drops)
             is_transient = any(marker in err_msg for marker in TRANSIENT_ERROR_MARKERS)
             if is_transient and attempt < max_retries:
                 logger.warning(
@@ -35,8 +37,10 @@ def execute_with_retry(rag_func, *args, max_retries: int = 3, delay: float = 2, 
                     f"(retrying in {current_delay}s): {err_msg}"
                 )
                 time.sleep(current_delay)
+                # Exponential backoff (e.g. 2s -> 4s -> 8s) to avoid hammering the API
                 current_delay *= 2
                 continue
+            # Log clearly when retries are exhausted; non-transient errors (e.g. 400/401) fail immediately
             if is_transient:
                 logger.error(
                     f"All {max_retries} retry attempts exhausted for {rag_func.__name__}: {err_msg}"

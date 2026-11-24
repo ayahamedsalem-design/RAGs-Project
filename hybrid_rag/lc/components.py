@@ -118,7 +118,9 @@ class BM25ChunkRetriever(BaseRetriever):
         return self.bm25.get_top_n(bm25_tokenizer(query), self.docs, n=self.k)
 
 
+# In-memory cache of LangChain Documents (rebuilt only when ChromaDB's chunk count changes)
 _CORPUS = {"count": -1, "docs": []}
+# Cache of BM25ChunkRetriever instances keyed by (corpus_count, file_filter_str, k)
 _BM25_CACHE = {}
 
 
@@ -127,10 +129,12 @@ def all_chunks():
     sharing hybrid.py's in-memory cache so IDs and embeddings are loaded only once."""
     refresh_global_bm25()
     count = GLOBAL_BM25_CACHE["doc_count"]
+    # Rebuild the Document list and invalidate BM25 retrievers only when documents are added/deleted
     if count != _CORPUS["count"]:
         ids = GLOBAL_BM25_CACHE["ids"]
         texts = GLOBAL_BM25_CACHE["chunks"]
         metas = GLOBAL_BM25_CACHE["metadatas"]
+        # Store chunk_id inside metadata too so downstream CRAG steps can look up cached embeddings
         _CORPUS["docs"] = [
             Document(id=cid, page_content=t, metadata={**(m or {}), "chunk_id": cid})
             for cid, t, m in zip(ids, texts, metas)
@@ -154,6 +158,7 @@ def scope(selected_files=None):
     if selected_files:
         selected = set(selected_files)
         sources = {d.metadata.get("source") for d in docs if d.metadata.get("source")}
+        # Only filter when the user selected a strict subset of the indexed corpus
         if not sources <= selected:
             return (
                 [d for d in docs if d.metadata.get("source") in selected],
@@ -165,6 +170,7 @@ def scope(selected_files=None):
 def bm25_retriever(docs, where, k):
     """Returns a cached BM25ChunkRetriever scoped to ``(corpus_count, where_filter, k)``."""
     key = (_CORPUS["count"], str(where), k)
+    # Build once per unique (corpus version, file scope, k) and reuse on subsequent queries
     if key not in _BM25_CACHE:
         logger.debug(f"[LC] Building cached BM25ChunkRetriever for {len(docs)} chunk(s) (k={k}).")
         _BM25_CACHE[key] = BM25ChunkRetriever.from_documents(docs, k=k)
@@ -178,7 +184,9 @@ def reciprocal_rank_fusion(ranked_lists, k=RRF_K):
     scores, first_seen = {}, {}
     for docs in ranked_lists:
         for rank, d in enumerate(docs, start=1):
+            # Accumulate reciprocal rank contribution across dense + sparse lists & sub-queries
             scores[d.page_content] = scores.get(d.page_content, 0.0) + 1.0 / (k + rank)
+            # Keep the first Document object seen for metadata preservation
             first_seen.setdefault(d.page_content, d)
     ranked = sorted(scores, key=scores.get, reverse=True)       # stable: ties keep first order
     return [first_seen[text] for text in ranked]
@@ -194,6 +202,7 @@ def hybrid_search(question, top_n, selected_files=None):
     bm25 = bm25_retriever(docs, where, n)
     store = get_vector_store()
     ranked_lists = []
+    # Split compound questions so each sub-question retrieves its own focused dense + sparse lists
     for sub_q in decompose_multi_questions(question):
         try:
             dense = store.similarity_search(sub_q, k=n, filter=where)
@@ -201,6 +210,7 @@ def hybrid_search(question, top_n, selected_files=None):
             logger.error(f"Dense search failed for sub-query '{sub_q}': {e}", exc_info=True)
             dense = []
         ranked_lists += [dense, bm25.invoke(sub_q)]
+    # Fuse all dense & sparse rankings into the final deduplicated top_n Documents
     fused = reciprocal_rank_fusion(ranked_lists)[:top_n]
     logger.info(f"[LC] Hybrid RRF selected top {len(fused)} unique chunk(s) across sub-queries.")
     return fused

@@ -231,9 +231,11 @@ if len(questions):
     st.altair_chart((bars + labels).properties(height=44 * len(per) + 30), width="stretch")
 
 # ---------- Tables ----------
+# Split detailed cost breakdowns across 4 focused tabs: Pipeline, Step, Model, and Recent Runs
 tab1, tab2, tab3, tab4 = st.tabs(["By pipeline", "By step", "By model", "Recent questions"])
 
 with tab1:
+    # Aggregate spend, tokens, and percentage share per RAG pipeline
     t = (df.groupby("pipeline")
          .agg(rows=("total_usd", "size"), requests=("n_calls", "sum"),
               tokens_in=("prompt_tokens", "sum"), tokens_out=("output_tokens", "sum"),
@@ -248,8 +250,10 @@ with tab1:
         "avg_per_row": st.column_config.NumberColumn("Avg per question", format="$%.6f"),
         "share": st.column_config.ProgressColumn("Share of spend", format="%.1f%%", min_value=0, max_value=100)})
 
+# Expand JSON `steps` column into one row per (pipeline, step) for step- and model-level tables
 steps = step_rows(df)
 with tab2:
+    # Show chat vs embedding cost distribution inside each pipeline
     st.caption("Where the money goes inside each pipeline. The pipelines only "
                "distinguish chat and embedding requests.")
     s = (steps.groupby(["pipeline", "step"], sort=False)
@@ -265,6 +269,7 @@ with tab2:
                                                              format="%.1f%%", min_value=0, max_value=100)})
 
 with tab3:
+    # Rank individual OpenRouter models (chat & embedding) by total USD spend
     m = (steps.groupby("model")
          .agg(requests=("calls", "sum"), tokens_in=("prompt_tokens", "sum"),
               tokens_out=("completion_tokens", "sum"), reasoning=("reasoning_tokens", "sum"),
@@ -277,6 +282,7 @@ with tab3:
         "share": st.column_config.ProgressColumn("Share of spend", format="%.1f%%", min_value=0, max_value=100)})
 
 with tab4:
+    # Show the 200 most recent questions/ingested files in reverse chronological order
     recent = df.sort_values("time", ascending=False)[
         ["time", "pipeline", "question", "n_calls", "prompt_tokens", "completion_tokens",
          "reasoning_tokens", "total_usd"]].head(200)
@@ -286,5 +292,6 @@ with tab4:
         "n_calls": "Requests", "prompt_tokens": st.column_config.NumberColumn("Tokens in", format="localized"), "completion_tokens": st.column_config.NumberColumn("Tokens out", format="localized"),
         "reasoning_tokens": st.column_config.NumberColumn("Reasoning", format="localized"), "total_usd": st.column_config.NumberColumn("Cost", format="$%.6f")})
 
+# Allow exporting the raw CSV audit log for external analysis in Excel/Pandas
 st.download_button("Download cost_log.csv", COST_LOG.read_bytes(), file_name="cost_log.csv",
                    mime="text/csv")

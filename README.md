@@ -4,11 +4,10 @@
 [![LangChain LCEL](https://img.shields.io/badge/LangChain-LCEL-1C3C3C?logo=langchain&logoColor=white)](https://python.langchain.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.67%2B-0EA5E9?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![ChromaDB](https://img.shields.io/badge/Vector%20DB-ChromaDB-FF6F00)](https://www.trychroma.com/)
-[![Docker Ready](https://img.shields.io/badge/Docker-Multi--Stage-2496ED?logo=docker&logoColor=white)](./Dockerfile)
 
-A production-oriented, **bilingual (English & Arabic)** Retrieval-Augmented Generation (RAG) platform powered by **LangChain Expression Language (LCEL)**, **ChromaDB**, and **Arabic-aware BM25 + Reciprocal Rank Fusion (RRF)**, served through a multi-page **Streamlit** web application with real-time token/USD cost analytics, multi-session chat management, OCR-backed multi-format document ingestion, and full Docker support.
+A production-oriented, **bilingual (English & Arabic)** Retrieval-Augmented Generation (RAG) platform powered by **LangChain Expression Language (LCEL)**, **ChromaDB**, and **Arabic-aware BM25 + Reciprocal Rank Fusion (RRF)**, served through a multi-page **Streamlit** web application with real-time token/USD cost analytics, multi-session chat management, and OCR-backed multi-format document ingestion.
 
-> **Active Branch (`langchain`):** The Streamlit application (`App.py`) runs directly on the **LangChain LCEL** pipelines (`HybridLC` and `HybridCorrectiveLC` under `hybrid_rag/lc/`), while keeping the native OpenAI-SDK reference implementations (`hybrid_rag/hybrid.py` and `hybrid_rag/hybrid_corrective.py`) available for parity testing and shared indexing/caching.
+> **Active Branch (`langchain`):** The Streamlit application (`App.py`) runs directly on the **LangChain LCEL** pipelines (`HybridLC` and `HybridCorrectiveLC` under `hybrid_rag/lc/`), while keeping the native OpenAI-SDK reference implementations (`hybrid_rag/hybrid.py` and `hybrid_rag/hybrid_corrective.py`) available for parity and shared indexing/caching.
 
 ---
 
@@ -22,11 +21,8 @@ A production-oriented, **bilingual (English & Arabic)** Retrieval-Augmented Gene
 - [Multi-Format Ingestion & Bilingual OCR](#multi-format-ingestion--bilingual-ocr)
 - [Streamlit Multi-Page Application](#streamlit-multi-page-application)
 - [Observability: Cost Tracking, Retries & Logging](#observability-cost-tracking-retries--logging)
-- [Benchmark Evaluation Results (120 Bilingual Questions)](#benchmark-evaluation-results-120-bilingual-questions)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
-  - [Local Setup](#local-setup)
-  - [Docker Deployment](#docker-deployment)
 - [Repository Branch Map](#repository-branch-map)
 - [Technology Stack](#technology-stack)
 
@@ -35,13 +31,12 @@ A production-oriented, **bilingual (English & Arabic)** Retrieval-Augmented Gene
 ## Key Capabilities
 
 - **Dual LangChain LCEL Pipelines:** Switch live in the UI between **Hybrid RAG (`HybridLC`)** for fast, low-cost retrieval and **Hybrid Corrective RAG (`HybridCorrectiveLC`)** for high-precision, self-correcting 2-round CRAG with zero-cost refusal short-circuiting.
-- **Bilingual English & Arabic Retrieval:** Combines semantic dense embeddings (`openai/text-embedding-3-small`) with an Arabic-aware `BM25ChunkRetriever` (diacritic/tatweel removal, Alef/Ya normalization) fused via Reciprocal Rank Fusion (`k = 60`), achieving **0.00% cross-lingual bleed** on CRAG across a 10-book mixed corpus.
+- **Bilingual English & Arabic Retrieval:** Combines semantic dense embeddings (`openai/text-embedding-3-small`) with an Arabic-aware `BM25ChunkRetriever` (diacritic/tatweel removal, Alef/Ya normalization) fused via Reciprocal Rank Fusion (`k = 60`) for strong lexical and semantic recall across mixed-language collections.
 - **15 Supported File Formats + OCR:** Ingests unstructured documents (`PDF` with automatic Tesseract `ara+eng` OCR fallback for scanned books, `DOCX`, `PPTX`, `TXT`, `MD`, and images) alongside structured datasets (`CSV`, `XLSX`, `XLS`, `JSON`) with smart row-batching and structured-data protection.
 - **Source & Location Grounding:** Every retrieved chunk carries rich metadata (`Page`, `Slide`, `Sheet/Rows`, `Table`, `Records`, `Section`, or `Image`) enforced by the system prompt for verifiable citations.
 - **Multi-Session Chat & Flexible History Summarization:** Create new chats (`+ New Chat`), switch between saved conversations, delete individual chats or clear all history, and summarize the active chat, any custom subset of chats, or all chats at once.
 - **Real-Time Cost & Token Dashboard (`Usage`):** Automatically intercepts every OpenRouter HTTP response (including LangChain calls, embeddings, CRAG grading, and history summaries), logs exact token counts and USD charges to `logs/cost_log.csv`, and cross-checks against live OpenRouter API key/account credits.
 - **In-App System Logs Viewer (`Logs`):** Inspect rotating `logs/app.log` and `logs/errors.log` directly in Streamlit with multiline stack-trace grouping, severity filtering, keyword search, and download.
-- **Production Multi-Stage Docker Build:** Ships with Python 3.13, `uv`, Tesseract OCR (`ara` + `eng`), Poppler (`pdftoppm`), a non-root `appuser`, healthchecks, and a one-command Windows rebuild script (`rebuild.ps1`) that preserves vector stores, logs, and chat history.
 
 ---
 
@@ -125,7 +120,7 @@ Handled by [`hybrid_rag/file_processing.py`](hybrid_rag/file_processing.py) and 
 Additional indexing features:
 - **Duplicate Detection:** Checks already-indexed source filenames before re-embedding and skips duplicates cleanly.
 - **Batch Embeddings with Progress UI:** Sends batched embedding requests to OpenRouter with live Streamlit progress updates and fail-fast handling for non-retryable `4xx` API errors.
-- **High-Throughput Scanned PDF OCR:** Supports multi-threaded OCR (`OMP_THREAD_LIMIT=1` prevents Tesseract OpenMP thread contention inside Docker/Linux containers).
+- **High-Throughput Scanned PDF OCR:** Supports multi-threaded OCR with `OMP_THREAD_LIMIT=1` to prevent Tesseract OpenMP thread contention on large scanned PDFs.
 
 ---
 
@@ -159,64 +154,6 @@ The UI uses a clean sky-blue theme (`primaryColor = "#0EA5E9"` in [`.streamlit/c
 
 ---
 
-## Benchmark Evaluation Results (120 Bilingual Questions)
-
-Both LangChain LCEL pipelines were evaluated end-to-end on a **120-question mixed bilingual benchmark** (**60 English Native PDF questions + 60 Arabic Scanned OCR PDF questions** across 6 books), searching **globally across all 10 indexed PDFs (`6,343` chunks)** in `chroma_db_global`:
-
-- **Models:** Embeddings `openai/text-embedding-3-small` (1536 dims) · Answer & CRAG Grader LLM `deepseek/deepseek-v4-flash` · Gold-Standard RAGAS & Accuracy Judge `deepseek/deepseek-v4-flash` (reasoning enabled).
-- **Protocol:** Every question evaluated standalone (`history=[]`) without mutating production `chroma_db_global` or `chat_history.json`.
-
-### Evaluation 1 — Pre-LLM Retrieval Quality (Chunks Handed to Answer LLM)
-
-| Metric | `HybridLC` (LCEL RRF) | `HybridCorrectiveLC` (LCEL 2-Round CRAG) | Advantage |
-| :--- | :---: | :---: | :---: |
-| Avg Chunks Returned (`K`) | `6.00` | **`2.64`** | `HybridCorrectiveLC` (-56% context size) |
-| Document Accuracy (`Source Hit@K`) | **`100.0%`** | `98.3%` | `HybridLC` |
-| Document Precision (Right-PDF %) | `96.9%` | **`97.6%`** | `HybridCorrectiveLC` |
-| **Cross-Lingual Bleed (%)** | `0.28%` | **`0.00%`** | `HybridCorrectiveLC` |
-| Deterministic `Fact Hit@K` / `Full Coverage` | `90.8%` / `80.8%` | **`93.3%`** / **`84.2%`** | `HybridCorrectiveLC` |
-| Deterministic `Precision@K` / `MRR` / `nDCG@K` | `37.5%` / `0.81` / `0.80` | **`76.1%`** / **`0.86`** / **`0.88`** | `HybridCorrectiveLC` |
-| **Gold RAGAS Context Precision (Mean / AP)** | `33.2%` (`78.0%`) | **`84.1%`** (**`93.4%`**) | `HybridCorrectiveLC` (**+50.9 pp**) |
-| **Gold RAGAS Context Recall (Mean / Full)** | `86.2%` (`78.3%`) | **`90.8%`** (**`85.0%`**) | `HybridCorrectiveLC` (**+4.6 pp**) |
-| Pre-LLM Retrieval Latency / Total Cost (120 Qs) | **`2.9s`** / **`$0.00405`** | `5.8s` / `$0.07437` | `HybridLC` |
-
-> **CRAG Grader Impact (`HybridCorrectiveLC` Pre-Grading `k=15` vs Post-Grading `k=2.64`):** Removed **94.0%** of irrelevant noise chunks, increased Deterministic `Precision@K` by **+47.8 pp** (`28.3% -> 76.1%`), eliminated cross-lingual bleed (`0.06% -> 0.00%`), and triggered Round-2 corrective searches in only **8 / 120 questions (6.7%)**.
-
-### Evaluation 2 — End-to-End LLM Answers & Gold-Standard Judge
-
-| Metric | `HybridLC` (LCEL RRF) | `HybridCorrectiveLC` (LCEL 2-Round CRAG) |
-| :--- | :---: | :---: |
-| **Answer Accuracy (Points / 240)** | `202 / 240` (**84.2%**) | **`211 / 240` (87.9%)** |
-| Breakdown (`2/2` Correct · `1/2` Partial · `0/2` Wrong) | `89` / `24` / `7` | **`96`** / `19` / **`5`** |
-| **Faithfulness** (Zero Hallucinations) | `97.5%` | **`98.3%`** |
-| **Citation Accuracy** (Non-Refusal) | `97.5%` | **`99.2%`** |
-| **False Refusals** (Full / Partial) | `4` / `5` | **`2`** / **`1`** |
-| **Head-to-Head Wins (120 Qs)** | `5` wins | **`11` wins** (`104` ties) |
-| Avg API Requests / End-to-End Latency per Q | **`3.2` req** · **`9.0s`** | `4.5` req · `11.2s` |
-| Total Cost (120 Qs) / Avg Cost per Question | **`$0.03823`** (**`$0.00032/Q`**) | `$0.09657` (`$0.00080/Q`) |
-
-### English (Native PDFs) vs Arabic (Scanned OCR PDFs) Breakdown
-
-| Subset | Pipeline | Answer Accuracy (`2/1/0`) | RAGAS CtxPrec / CtxRecall | Faithfulness / Citations | False Refusals (F/P) |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **English (60 Qs, Native)** | `HybridLC` | `93.3%` (`53/6/1`) | `38.9%` / `94.7%` | `96.7%` / `98.3%` | `0 / 0` |
-| **English (60 Qs, Native)** | `HybridCorrectiveLC` | **`95.8%`** (`55/5/0`) | **`91.4%`** / **`99.2%`** | **`100.0%`** / **`100.0%`** | `0 / 0` |
-| **Arabic (60 Qs, Scanned OCR)** | `HybridLC` | `75.0%` (`36/18/6`) | `27.5%` / `77.7%` | `98.3%` / `96.6%` | `4 / 5` |
-| **Arabic (60 Qs, Scanned OCR)** | `HybridCorrectiveLC` | **`80.0%`** (`41/14/5`) | **`76.9%`** / **`82.4%`** | `96.7%` / **`98.3%`** | **`2 / 1`** |
-
-### Per-Document Accuracy (6 Books × 20 Questions)
-
-| Document | Language / Source Type | `HybridLC` Accuracy | `HybridCorrectiveLC` Accuracy |
-| :--- | :--- | :---: | :---: |
-| Cultured Meat (`Advice For Risk Associated with Cultured Meat.pdf`) | EN · Native PDF | `97.5%` | **`97.5%`** |
-| Bishop PRML (`Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf`) | EN · Native PDF | `95.0%` | **`97.5%`** |
-| Battery Technology (`HummesETAL_Lajer_2023-2.pdf`) | EN · Native PDF | `87.5%` | **`92.5%`** |
-| Refutation of the Logicians (`الرد على المنطقيين`) | AR · Scanned OCR | `80.0%` | **`90.0%`** (+10.0 pp) |
-| Nutritional Culture (`الثقافة الغذائية`) | AR · Scanned OCR | `82.5%` | **`87.5%`** (+5.0 pp) |
-| Andalusian History (`التاريخ الأندلسي`) | AR · Scanned OCR | `62.5%` | **`62.5%`** |
-
----
-
 ## Project Structure
 
 ```text
@@ -243,9 +180,6 @@ RAGs-Project/
 │   └── logging_config.json            # Python logging dictConfig (console + rotating app.log & errors.log)
 ├── .streamlit/
 │   └── config.toml                    # Sky-blue UI theme (#0EA5E9) with automatic Light/Dark mode
-├── Dockerfile                         # Multi-stage Python 3.13 + uv + Tesseract (ara+eng) + Poppler + non-root appuser
-├── docker-compose.yml                 # Docker Compose service with persistent ChromaDB volume & healthcheck
-├── rebuild.ps1                        # One-command safe Windows Docker rebuild & restart script
 ├── pyproject.toml                     # Project metadata & dependency specification
 ├── requirements.txt                   # Core Python dependencies
 ├── requirements-ocr.txt               # Lightweight OCR Python layer (pytesseract, pdf2image, Pillow)
@@ -254,8 +188,7 @@ RAGs-Project/
     ├── .env                           # API key and model configuration
     ├── chroma_db_global/              # Persistent global ChromaDB vector store
     ├── chat_history.json              # Multi-session conversation history
-    ├── logs/                          # app.log, errors.log, cost_log.csv, model_prices.json
-    └── evaluation/                    # Local benchmark scripts, datasets, and generated .md/.docx reports
+    └── logs/                          # app.log, errors.log, cost_log.csv, model_prices.json
 ```
 
 ---
@@ -264,9 +197,9 @@ RAGs-Project/
 
 ### Prerequisites
 
-- **Python 3.13+** and **[uv](https://docs.astral.sh/uv/)** (or Docker Desktop for containerized execution)
+- **Python 3.13+** and **[uv](https://docs.astral.sh/uv/)**
 - An **[OpenRouter](https://openrouter.ai/)** API key
-- *(Optional for local scanned-PDF OCR)* **Tesseract OCR** (with `ara` and `eng` traineddata) and **Poppler** — already pre-installed in the Docker image.
+- *(Optional for scanned-PDF OCR)* **Tesseract OCR** (with `ara` and `eng` language packs) and **Poppler** (`pdftoppm`)
 
 ### Local Setup
 
@@ -300,31 +233,6 @@ RAGs-Project/
 
 ---
 
-### Docker Deployment
-
-#### Option A — Recommended Single-Command Rebuild (Windows PowerShell)
-
-```powershell
-.\rebuild.ps1
-```
-
-What `rebuild.ps1` does automatically:
-- Ensures `chroma_db_global/`, `logs/`, and `chat_history.json` exist on the host.
-- Builds the multi-stage `rags_img` Docker image (with Tesseract `ara+eng` and Poppler pre-installed).
-- Stops and replaces `global_rag_app` **only if the build succeeds**.
-- Mounts `.env` (read-only) plus `chroma_db_global/`, `logs/`, and `chat_history.json` so your indexed knowledge base, cost logs, and chat history persist across rebuilds.
-- Applies `chown -R appuser:appuser` on mounted writable paths to prevent SQLite permission errors (`code 14`) on Windows/WSL2 mounts.
-
-#### Option B — Docker Compose
-
-```bash
-docker compose up -d --build
-```
-
-The app will be available at **http://localhost:8501** with a built-in healthcheck at `/_stcore/health`.
-
----
-
 ## Repository Branch Map
 
 | Branch | Active Pipelines in `App.py` | Purpose |
@@ -344,4 +252,4 @@ The app will be available at **http://localhost:8501** with a built-in healthche
 | **Retrieval & Storage** | ChromaDB (`PersistentClient`) · `rank-bm25` (`BM25Okapi` with Arabic normalization) · Reciprocal Rank Fusion (`RRF`) |
 | **Document Processing & OCR** | `pypdf` · `python-docx` · `python-pptx` · `openpyxl` · `pytesseract` · `pdf2image` · Poppler · Tesseract (`ara` + `eng`) |
 | **Frontend & Visualization** | Streamlit `1.67+` · Altair · Pandas |
-| **Runtime & DevOps** | Python `3.13` · `uv` · Docker (multi-stage non-root build) · Docker Compose |
+| **Runtime & Tooling** | Python `3.13` · `uv` |

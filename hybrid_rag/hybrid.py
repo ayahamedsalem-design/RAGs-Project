@@ -70,13 +70,17 @@ GLOBAL_BM25_CACHE = {
 GLOBAL_SESSION_ID = "global_chat_session"
 
 
+# Unicode range covering Arabic harakat (diacritics: Fatha..Sukun, dagger Alef) and Tatweel (kashida)
 ARABIC_DIACRITICS_RE = re.compile(r"[\u064B-\u065F\u0670\u0640]")
 
 
 def normalize_arabic(text: str) -> str:
     """Strips Arabic diacritics/tatweel and unifies common letter variants for BM25 matching."""
+    # Remove vowel marks and elongation characters so e.g. "العِلْم" matches "العلم"
     text = ARABIC_DIACRITICS_RE.sub("", text)
+    # Normalize all Alef forms (أ إ آ ٱ) to bare Alef (ا)
     text = re.sub(r"[أإآٱ]", "ا", text)
+    # Normalize Alef Maqsura (ى) to Ya (ي) to bridge OCR/spelling variations
     text = text.replace("ى", "ي")
     return text
 
@@ -84,6 +88,7 @@ def normalize_arabic(text: str) -> str:
 def bm25_tokenizer(text: str) -> list:
     """Cleans, normalizes Arabic, and tokenizes text into lowercase words for BM25."""
     normalized = normalize_arabic(text.lower())
+    # Extract alphanumeric word tokens across both Latin and Arabic Unicode scripts
     return re.findall(r"\b\w+\b", normalized)
 
 
@@ -93,6 +98,7 @@ def refresh_global_bm25():
     chunks currently stored in the global ChromaDB collection.
     """
     total_db_docs = global_hybrid_col.count()
+    # Reset all cached structures when the collection is empty
     if total_db_docs == 0:
         GLOBAL_BM25_CACHE["bm25"] = None
         GLOBAL_BM25_CACHE["ids"] = []
@@ -107,6 +113,7 @@ def refresh_global_bm25():
     # Rebuild BM25 only if cache is empty or new documents were added/removed in ChromaDB
     if GLOBAL_BM25_CACHE["bm25"] is None or GLOBAL_BM25_CACHE["doc_count"] != total_db_docs:
         logger.info(f"Building consolidated BM25 index for {total_db_docs} chunks from Global DB...")
+        # Single bulk fetch of texts, metadata, and vectors so downstream lookups need zero extra DB calls
         db_records = global_hybrid_col.get(include=["documents", "metadatas", "embeddings"])
         all_ids = db_records.get("ids", [])
         all_chunks = db_records.get("documents", [])
@@ -115,6 +122,7 @@ def refresh_global_bm25():
         if all_embeddings is None:
             all_embeddings = []
 
+        # Build BM25Okapi inverted index and fast O(1) lookup dictionaries shared with CRAG & LCEL
         tokenized_corpus = [bm25_tokenizer(chunk) for chunk in all_chunks]
         GLOBAL_BM25_CACHE["bm25"] = BM25Okapi(tokenized_corpus)
         GLOBAL_BM25_CACHE["ids"] = all_ids
@@ -188,6 +196,7 @@ def initialize_hybrid_index(pdf_source, progress_callback=None):
                 f"{file_name}: Embedding batch {idx}/{total_batches} ({len(chunks)} chunks)...",
             )
 
+        # Map OCR page progress into the [5% .. 55%] band of the Streamlit progress bar
         for attempt in range(3):
             try:
                 response = client_ai.embeddings.create(
@@ -196,11 +205,12 @@ def initialize_hybrid_index(pdf_source, progress_callback=None):
                 )
                 embeddings_list.extend([item.embedding for item in response.data])
                 success = True
-                time.sleep(3)
+                time.sleep(3)  # Gentle pacing to respect OpenRouter rate limits
                 break
             except Exception as e:
                 last_error = e
                 status_code = getattr(e, "status_code", None)
+                # Fail fast on permanent client errors (e.g. 400/401/404/410) except 429 rate-limit
                 if status_code is not None and 400 <= status_code < 500 and status_code != 429:
                     logger.error(f"Batch {idx} failed with non-retryable HTTP {status_code}: {e}")
                     break
@@ -271,6 +281,7 @@ def get_bm25_subset(selected_files: list = None):
         all_sources = {
             m.get("source") for m in metadatas if isinstance(m, dict) and m.get("source")
         }
+        # Only build a scoped BM25 index + Chroma `where` filter when a strict subset is selected
         if not all_sources.issubset(selected_set):
             where_filter = {"source": {"$in": list(selected_set)}}
             filtered_pairs = [
