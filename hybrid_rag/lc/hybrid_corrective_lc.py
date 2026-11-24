@@ -1,25 +1,16 @@
-# Hybrid Corrective RAG (2-Round Fused CRAG) built with LangChain LCEL:
-# the LangChain version of hybrid_rag/hybrid_corrective.py.
-#
-# Combines the winning 2-round Fused CRAG algorithm from hybrid_rag/hybrid_corrective.py
-# with the LangChain architecture from hybrid_rag/lc/components.py:
-#   1. Retrieval (per sub-question, parallelized via LangChain .batch()):
-#      - Embed sub-question via OpenAIEmbeddings
-#      - Dense vector search (Chroma.similarity_search_by_vector, k=15) + BM25ChunkRetriever (k=15),
-#        merged via Reciprocal Rank Fusion (k=60), filtered by cosine similarity >= MIN_SIMILARITY
-#   2. Round-1 Batch Grading (LCEL chain: GRADER_PROMPT | ChatOpenAI(temp=0) | StrOutputParser):
-#      - Deterministic citation_density pre-filter drops bibliography/reference chunks first
-#      - Single LLM call returns relevant indices, part-level sufficiency, missing parts, and
-#        corrective search queries
-#   3. Round-2 Corrective Retrieval (only when Round 1 is insufficient):
-#      - Batch-embeds grader-suggested queries via OpenAIEmbeddings.embed_documents()
-#      - Runs Hybrid RRF (k=4 per query), filters duplicates/references/low cosine similarity
-#        to the ORIGINAL sub-question vector, and runs Round-2 LCEL Batch Grading (up to MAX_GRADED)
-#   4. Answer Generation (LCEL RunnableBranch):
-#      - If 0 verified chunks survive -> short-circuits immediately with NOT_COVERED (0 Answer LLM cost)
-#      - Otherwise sorts by cosine similarity, keeps top MAX_CONTEXT=6, appends any missing-parts
-#        CRAG note to SYS_PROMPT, and invokes ChatPromptTemplate | ChatOpenAI(temp=0.2) | StrOutputParser
-#   5. Saves the turn to shared chat_history.json and returns (answer, labelled_contexts).
+"""2-Round Fused Hybrid Corrective RAG (CRAG) built with LangChain LCEL.
+
+LangChain counterpart of ``hybrid_rag/hybrid_corrective.py`` sharing the same ChromaDB
+collection, OpenRouter models, cost tracking, and session-scoped chat history:
+1. Retrieval (per sub-question, parallelized via ``.batch()``): dense vector search + BM25 fused
+   via RRF and filtered by cosine similarity.
+2. Round 1 Batch Grading: deterministic bibliography pre-filter + single LCEL JSON grading call.
+3. Round 2 Corrective Retrieval: runs only when Round 1 is insufficient, using grader-suggested
+   queries and re-grading the merged pool.
+4. Answer Generation: LCEL ``RunnableBranch`` short-circuits with ``NOT_COVERED`` (0 LLM cost)
+   if no verified chunks survive; otherwise generates a cited answer with session history.
+5. Persistence: saves the turn to ``chat_history.json`` under the active ``session_id``.
+"""
 
 import logging
 
@@ -30,6 +21,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableBranch, RunnableLambda, RunnablePassthrough
 
 from hybrid_rag.chat_history import persist_chat_history
+from hybrid_rag.file_processing import SYS_PROMPT, decompose_multi_questions, format_location
 from hybrid_rag.hybrid import GLOBAL_SESSION_ID, global_hybrid_col
 from hybrid_rag.hybrid_corrective import (
     EXTRA_PER_QUERY,
@@ -57,8 +49,9 @@ from hybrid_rag.lc.components import (
     reciprocal_rank_fusion,
     scope,
 )
-from hybrid_rag.file_processing import SYS_PROMPT, decompose_multi_questions, format_location
+from hybrid_rag.logging_setup import setup_logging
 
+setup_logging()
 logger = logging.getLogger("rag.lc.hybrid_corrective")
 
 MAX_PARALLEL_SUBQUERIES = 4
@@ -269,6 +262,7 @@ def retrieve_and_merge_lc(state: dict) -> dict:
     """Decomposes the question, runs 2-round CRAG across sub-questions in parallel (.batch()),
     merges unique verified Documents, sorts by cosine sim, and truncates to MAX_CONTEXT."""
     sub_queries = decompose_multi_questions(state["question"])
+    logger.info(f"[LC CRAG] Decomposed query into {len(sub_queries)} sub-question(s).")
     payloads = [{"sub_query": sq, "selected_files": state["selected_files"]} for sq in sub_queries]
 
     if len(payloads) == 1:
@@ -280,7 +274,10 @@ def retrieve_and_merge_lc(state: dict) -> dict:
 
     merged_by_id = {}
     missing_parts = []
-    for res in sub_results:
+    for idx, res in enumerate(sub_results, 1):
+        logger.info(
+            f"[LC CRAG SQ{idx}] Completed with status={res['status']} ({len(res['docs'])} relevant chunk(s))."
+        )
         if res["missing"]:
             missing_parts.append(res["missing"])
         for d in res["docs"]:
@@ -290,6 +287,7 @@ def retrieve_and_merge_lc(state: dict) -> dict:
 
     final_docs = sorted(merged_by_id.values(), key=lambda d: -d.metadata["sim"])[:MAX_CONTEXT]
     combined_missing = "; ".join(dict.fromkeys(missing_parts))
+    logger.info(f"[LC CRAG] Compiled {len(final_docs)} unique verified chunk(s) for generation.")
     return {"docs": final_docs, "missing": combined_missing}
 
 
@@ -317,7 +315,7 @@ def _build_answer_messages(state: dict) -> list:
 def build_chain():
     """
     Full LCEL chain for 2-Round Fused Hybrid Corrective RAG.
-    Input:  {"question", "history_limit", "selected_files"}
+    Input:  {"question", "history_limit", "selected_files", "session_id"}
     Output: same dict plus "docs", "missing", "context", "history", and "answer".
     """
     answer_branch = RunnableBranch(
@@ -333,10 +331,12 @@ def build_chain():
             docs=lambda x: x["_crag"]["docs"],
             missing=lambda x: x["_crag"]["missing"],
         )
-        # 2. Format verified context + load rolling chat history
+        # 2. Format verified context + load rolling session chat history
         | RunnablePassthrough.assign(
             context=lambda x: format_context(x["docs"])[0] if x["docs"] else "",
-            history=lambda x: history_messages(x["history_limit"]),
+            history=lambda x: history_messages(
+                x["history_limit"], x.get("session_id", GLOBAL_SESSION_ID)
+            ),
         )
         # 3. Short-circuit if empty, else invoke ChatOpenAI via LCEL
         | RunnablePassthrough.assign(answer=answer_branch)
@@ -350,6 +350,7 @@ def run_hybrid_corrective_lc(
     user_query: str,
     history_limit: int = 5,
     selected_files: list = None,
+    session_id: str = GLOBAL_SESSION_ID,
 ):
     """
     Answer one question with 2-Round Fused Hybrid Corrective RAG (LangChain LCEL).
@@ -358,7 +359,7 @@ def run_hybrid_corrective_lc(
     """
     global _CHAIN
     logger.info("=== Starting Hybrid Corrective RAG (LangChain LCEL) ===")
-    logger.info(f"User Query: '{user_query}'")
+    logger.info(f"Session: '{session_id}' | User Query: '{user_query}'")
 
     if global_hybrid_col.count() == 0:
         logger.error("Global Hybrid DB is empty. Please upload and index documents first.")
@@ -367,14 +368,27 @@ def run_hybrid_corrective_lc(
     if _CHAIN is None:
         _CHAIN = build_chain()
 
-    result = _CHAIN.invoke({
-        "question": user_query,
-        "history_limit": history_limit,
-        "selected_files": selected_files,
-    })
+    try:
+        result = _CHAIN.invoke({
+            "question": user_query,
+            "history_limit": history_limit,
+            "selected_files": selected_files,
+            "session_id": session_id,
+        })
+    except Exception as exc:
+        logger.critical(f"LangChain Hybrid CRAG execution failed: {exc}", exc_info=True)
+        raise
 
     full_context_text, verified_contexts = format_context(result["docs"])
-    persist_chat_history(GLOBAL_SESSION_ID, user_query, result["answer"], full_context_text)
+    if not verified_contexts:
+        logger.warning("[LC CRAG] No verified chunks survived; returned NOT_COVERED.")
+    else:
+        logger.info(
+            f"Hybrid Corrective RAG (LangChain) completed with {len(verified_contexts)} verified chunk(s)."
+        )
+
+    # Persist under session_id so multi-chat sessions and history summarization stay in sync
+    persist_chat_history(session_id, user_query, result["answer"], full_context_text)
     return result["answer"], verified_contexts
 
 

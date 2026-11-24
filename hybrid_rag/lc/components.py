@@ -1,21 +1,12 @@
-# Shared LangChain building blocks for the LangChain versions of the two pipelines
-# (hybrid_lc.py and hybrid_corrective_lc.py).
-#
-# They mirror hybrid_rag/hybrid.py and hybrid_rag/hybrid_corrective.py step for step, on the
-# same data, so the results can be compared with the originals:
-#   - same ChromaDB collection and vectors (global_hybrid_collection; nothing is re-indexed)
-#   - same models (CHAT_MODEL and EMBEDDING_MODEL from .env), through OpenRouter
-#   - same cost tracking: the HTTP client carries the hook from file_processing.py
-#   - same retrieval: vector search + BM25 keyword search (Arabic-normalized tokenizer),
-#     fused with Reciprocal Rank Fusion (k = 60), plus cached chunk IDs & embeddings
-#   - same prompt: SYS_PROMPT + the last turns of the chat history + context and question
-#
-# What LangChain provides here: the chat model and embeddings (ChatOpenAI, OpenAIEmbeddings),
-# the vector store (Chroma), the retriever interface (BaseRetriever), documents with metadata
-# (Document) and the prompt template (ChatPromptTemplate).
+"""Shared LangChain building blocks for ``hybrid_lc.py`` and ``hybrid_corrective_lc.py``.
 
-import os
+Mirrors ``hybrid_rag/hybrid.py`` and ``hybrid_rag/hybrid_corrective.py`` step for step on the
+same ChromaDB collection, OpenRouter models, cost hook, Arabic-aware BM25 tokenizer, RRF fusion
+(k = 60), and session-scoped chat history so both implementations remain drop-in comparable.
+"""
+
 import logging
+import os
 from functools import lru_cache
 
 import httpx
@@ -31,6 +22,12 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from hybrid_rag.chat_history import load_file_history
+from hybrid_rag.file_processing import (
+    SYS_PROMPT,
+    decompose_multi_questions,
+    format_location,
+    record_cost,
+)
 from hybrid_rag.hybrid import (
     GLOBAL_BM25_CACHE,
     GLOBAL_SESSION_ID,
@@ -39,13 +36,9 @@ from hybrid_rag.hybrid import (
     global_hybrid_col,
     refresh_global_bm25,
 )
-from hybrid_rag.file_processing import (
-    SYS_PROMPT,
-    decompose_multi_questions,
-    format_location,
-    record_cost,
-)
+from hybrid_rag.logging_setup import setup_logging
 
+setup_logging()
 load_dotenv()
 logger = logging.getLogger("rag.lc")
 
@@ -59,7 +52,7 @@ PER_BRANCH = 10            # default chunks taken from each search (vector, BM25
 def _http_client():
     """The HTTP client the models use: the same cost hook as initialize_api(), so every
     LangChain request is recorded in hybrid_rag/cost.py like the original pipelines' ones."""
-    return httpx.Client(event_hooks={"response": [record_cost]})
+    return httpx.Client(timeout=30, event_hooks={"response": [record_cost]})
 
 
 @lru_cache(maxsize=None)
@@ -117,9 +110,11 @@ class BM25ChunkRetriever(BaseRetriever):
 
     @classmethod
     def from_documents(cls, docs, k=PER_BRANCH):
+        """Builds a BM25Okapi index over ``docs`` using the Arabic-aware tokenizer."""
         return cls(docs=docs, bm25=BM25Okapi([bm25_tokenizer(d.page_content) for d in docs]), k=k)
 
     def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun):
+        """Returns the top-k matching Documents for ``query`` via BM25 keyword scoring."""
         return self.bm25.get_top_n(bm25_tokenizer(query), self.docs, n=self.k)
 
 
@@ -142,6 +137,7 @@ def all_chunks():
         ]
         _CORPUS["count"] = count
         _BM25_CACHE.clear()
+        logger.debug(f"[LC] Refreshed LangChain Document corpus cache ({count} chunk(s)).")
     return _CORPUS["docs"]
 
 
@@ -167,8 +163,10 @@ def scope(selected_files=None):
 
 
 def bm25_retriever(docs, where, k):
+    """Returns a cached BM25ChunkRetriever scoped to ``(corpus_count, where_filter, k)``."""
     key = (_CORPUS["count"], str(where), k)
     if key not in _BM25_CACHE:
+        logger.debug(f"[LC] Building cached BM25ChunkRetriever for {len(docs)} chunk(s) (k={k}).")
         _BM25_CACHE[key] = BM25ChunkRetriever.from_documents(docs, k=k)
     return _BM25_CACHE[key]
 
@@ -203,7 +201,9 @@ def hybrid_search(question, top_n, selected_files=None):
             logger.error(f"Dense search failed for sub-query '{sub_q}': {e}", exc_info=True)
             dense = []
         ranked_lists += [dense, bm25.invoke(sub_q)]
-    return reciprocal_rank_fusion(ranked_lists)[:top_n]
+    fused = reciprocal_rank_fusion(ranked_lists)[:top_n]
+    logger.info(f"[LC] Hybrid RRF selected top {len(fused)} unique chunk(s) across sub-queries.")
+    return fused
 
 
 def format_chunk(doc):
@@ -232,9 +232,14 @@ ANSWER_PROMPT = ChatPromptTemplate.from_messages([
 ])
 
 
-def history_messages(limit=5):
-    """The last `limit` turns of the shared chat history as LangChain messages."""
-    turns = load_file_history(GLOBAL_SESSION_ID)[-limit:] if limit else []
+def history_messages(limit=5, session_id=GLOBAL_SESSION_ID):
+    """Loads the last ``limit`` turns for ``session_id`` as LangChain HumanMessage/AIMessage pairs."""
+    all_turns = load_file_history(session_id)
+    turns = all_turns[-limit:] if limit else []
+    logger.info(
+        f"[LC] Using {len(turns)} recent turn(s) from session '{session_id}' "
+        f"(Total saved: {len(all_turns)})."
+    )
     messages = []
     for t in turns:
         messages += [HumanMessage(content=t["query"]), AIMessage(content=t["answer"])]
