@@ -12,15 +12,15 @@ import logging
 import streamlit as st
 from dotenv import load_dotenv
 
-# The two RAG pipelines and their helpers (package hybrid_rag/)
+# The two LangChain LCEL RAG pipelines and shared indexing/history helpers (package hybrid_rag/)
 from hybrid_rag.logging_setup import setup_logging
 from hybrid_rag.hybrid import (
-    run_hybrid_chat_session,
     initialize_hybrid_index,
     get_indexed_files,
     remove_file_from_index,
 )
-from hybrid_rag.hybrid_corrective import run_hybrid_corrective_rag
+from hybrid_rag.lc.hybrid_lc import run_hybrid_lc
+from hybrid_rag.lc.hybrid_corrective_lc import run_hybrid_corrective_lc
 from hybrid_rag.file_processing import SUPPORTED_EXTENSIONS
 from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
@@ -176,7 +176,7 @@ with st.sidebar:
     st.header("3. Conversations")
 
     # Start a brand-new conversation while keeping all previous chats accessible below
-    if st.button("➕ New Chat", use_container_width=True, type="primary"):
+    if st.button("+ New Chat", use_container_width=True, type="primary"):
         new_sid = create_session_id()
         st.session_state["active_session_id"] = new_sid
         st.session_state.pop("history_summary", None)
@@ -314,7 +314,7 @@ if user_query:
                 if rag_type == "Hybrid RAG":
                     answer, retrieved_contexts = run_tracked(
                         rag_type,
-                        run_hybrid_chat_session,
+                        run_hybrid_lc,
                         user_query,
                         selected_files=selected_files,
                         session_id=active_session_id,
@@ -322,7 +322,7 @@ if user_query:
                 elif rag_type == "Hybrid Corrective RAG":
                     answer, retrieved_contexts = run_tracked(
                         rag_type,
-                        run_hybrid_corrective_rag,
+                        run_hybrid_corrective_lc,
                         user_query,
                         selected_files=selected_files,
                         session_id=active_session_id,

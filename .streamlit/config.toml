@@ -1,0 +1,4 @@
+[theme]
+# Calm sky blue accent replacing Streamlit's default bright red (#FF4B4B)
+# Preserves automatic Light / Dark mode support across all pages
+primaryColor = "#0EA5E9"

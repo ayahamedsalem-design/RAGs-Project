@@ -10,7 +10,7 @@ Both pipelines split multi-part questions into sub-questions, keep a rolling win
 ## Project structure
 
 ```
-app.py                     Streamlit chat: pick a pipeline, upload PDFs, ask questions
+App.py                     Streamlit chat: pick a pipeline, upload PDFs, ask questions
 pages/
   Usage.py                 cost dashboard (spend, requests, tokens, cost per question)
 hybrid_rag/                the two pipelines and everything they share
@@ -62,7 +62,7 @@ All three are required: the pipelines read the model names from `.env` and have 
 ## Running the app
 
 ```powershell
-.venv\Scripts\python.exe -m streamlit run app.py
+.venv\Scripts\python.exe -m streamlit run App.py
 ```
 
 Open http://localhost:8501.
