@@ -16,7 +16,7 @@ LOG_DIR = PROJECT_ROOT / "logs"
 LOG_ENTRY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\[(DEBUG|INFO|WARNING|ERROR|CRITICAL)\]")
 
 st.set_page_config(page_title="System Logs", page_icon="📜", layout="wide")
-st.title("📜 System Logs")
+st.title("System Logs")
 st.caption("Inspect and filter application logs (`logs/app.log`) and error logs (`logs/errors.log`).")
 
 
