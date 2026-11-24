@@ -1,3 +1,9 @@
+"""Unified OpenRouter API setup, query decomposition, OCR, and multi-format file chunking.
+
+Supports both unstructured documents (PDF with OCR fallback, DOCX, PPTX, TXT/MD, Images)
+and structured data files (CSV, Excel, JSON), producing consistent text chunks and location metadata.
+"""
+
 import os
 import re
 import csv
@@ -86,6 +92,7 @@ def format_location(meta: dict) -> str:
 # ==========================================
 
 def initialize_api():
+    """Creates an OpenAI-compatible OpenRouter client wired with the automatic cost-tracking hook."""
     load_dotenv()
     api_key = os.getenv("OPENROUTER_API_KEY")
 
@@ -226,12 +233,14 @@ def find_tesseract_cmd() -> str | None:
 
 
 def is_ocr_enabled(use_ocr: bool | None) -> bool:
+    """Returns whether OCR fallback is enabled (explicit flag overrides ``OCR_ENABLED`` env var)."""
     if use_ocr is not None:
         return bool(use_ocr)
     return os.getenv("OCR_ENABLED", "true").strip().lower() not in ("0", "false", "no", "off")
 
 
 def _resolve_ocr_language(ocr_lang: str) -> str:
+    """Validates the Tesseract binary and resolves requested language packs against installed ones."""
     tesseract_cmd = find_tesseract_cmd()
     if not tesseract_cmd:
         raise RuntimeError(
@@ -408,6 +417,7 @@ def _read_text_with_encoding(file_path: str) -> str:
 
 
 def _detect_csv_delimiter(sample_text: str) -> str:
+    """Sniffs the column delimiter from the first 4 KB of a CSV file, defaulting to comma."""
     try:
         dialect = csv.Sniffer().sniff(sample_text[:4096], delimiters=",;\t|")
         return dialect.delimiter
@@ -416,6 +426,7 @@ def _detect_csv_delimiter(sample_text: str) -> str:
 
 
 def _format_cell_value(val) -> str:
+    """Normalizes a tabular cell value to clean single-line text, treating NaN/None as empty."""
     if val is None:
         return ""
     # Handle pandas NaN / NaT without importing pandas at top-level
@@ -553,6 +564,7 @@ def _chunk_dataframe_smart(
 
 
 def _extract_csv(file_path: str, file_name: str, chunk_size: int) -> tuple[list[str], list[dict]]:
+    """Loads a CSV file with auto-detected encoding/delimiter and chunks rows with header context."""
     import pandas as pd
 
     raw_text = _read_text_with_encoding(file_path)
@@ -564,6 +576,7 @@ def _extract_csv(file_path: str, file_name: str, chunk_size: int) -> tuple[list[
 
 
 def _extract_excel(file_path: str, file_name: str, chunk_size: int) -> tuple[list[str], list[dict]]:
+    """Extracts and smart-chunks every worksheet in an Excel workbook (.xlsx/.xls)."""
     import pandas as pd
 
     try:
@@ -614,6 +627,7 @@ def _flatten_record(obj, prefix: str = "") -> list[str]:
 
 
 def _extract_json(file_path: str, file_name: str, chunk_size: int, chunk_overlap: int) -> tuple[list[str], list[dict]]:
+    """Flattens JSON arrays/objects into searchable key-value records and chunks them cleanly."""
     raw = _read_text_with_encoding(file_path)
     data = json.loads(raw)
 
@@ -717,6 +731,7 @@ def _extract_pdf(
     ocr_dpi: int | None,
     progress_callback=None,
 ) -> tuple[list[str], list[dict]]:
+    """Extracts text per PDF page, runs OCR fallback on scanned pages, and splits into page-tagged chunks."""
     reader = PdfReader(valid_path)
     total_pages = len(reader.pages)
 
@@ -826,6 +841,7 @@ def _table_rows_to_chunks(
 
 
 def _extract_docx(file_path: str, file_name: str, chunk_size: int, chunk_overlap: int) -> tuple[list[str], list[dict]]:
+    """Extracts Word document paragraphs (grouped by headings) and embedded tables in reading order."""
     try:
         from docx import Document as DocxDocument
         from docx.document import Document as _DocxDoc
@@ -897,6 +913,7 @@ def _extract_docx(file_path: str, file_name: str, chunk_size: int, chunk_overlap
 
 
 def _extract_pptx(file_path: str, file_name: str, chunk_size: int, chunk_overlap: int) -> tuple[list[str], list[dict]]:
+    """Extracts PowerPoint slide text, tables, and speaker notes with per-slide location metadata."""
     try:
         from pptx import Presentation
     except ImportError as exc:
@@ -962,6 +979,7 @@ def _extract_pptx(file_path: str, file_name: str, chunk_size: int, chunk_overlap
 def _extract_text_or_markdown(
     file_path: str, file_name: str, file_type: str, chunk_size: int, chunk_overlap: int
 ) -> tuple[list[str], list[dict]]:
+    """Extracts plain text or Markdown (splitting by headings to keep section titles in metadata)."""
     raw = _read_text_with_encoding(file_path).strip()
     if not raw:
         return [], []
@@ -1027,6 +1045,7 @@ def _extract_text_or_markdown(
 def _extract_image_ocr(
     file_path: str, file_name: str, file_type: str, chunk_size: int, chunk_overlap: int, ocr_lang: str | None
 ) -> tuple[list[str], list[dict]]:
+    """Runs Tesseract OCR on an image file and splits the extracted text into chunks."""
     if pytesseract is None or Image is None:
         raise RuntimeError(
             "Image OCR requires 'pytesseract' and 'pillow' (pip install pytesseract pillow)."

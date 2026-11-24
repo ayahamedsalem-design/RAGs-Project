@@ -1,3 +1,5 @@
+"""Streamlit Usage dashboard displaying token consumption and USD spend from ``logs/cost_log.csv``."""
+
 # Usage dashboard: what the RAG pipelines cost, in the style of OpenRouter's activity page.
 #
 # Streamlit shows every file in pages/ as an extra page in the sidebar, so this needs no
