@@ -34,7 +34,7 @@ A production-oriented, **bilingual (English & Arabic)** Retrieval-Augmented Gene
 - **Bilingual English & Arabic Retrieval:** Combines semantic dense embeddings (`openai/text-embedding-3-small`) with an Arabic-aware `BM25ChunkRetriever` (diacritic/tatweel removal, Alef/Ya normalization) fused via Reciprocal Rank Fusion (`k = 60`) for strong lexical and semantic recall across mixed-language collections.
 - **15 Supported File Formats + OCR:** Ingests unstructured documents (`PDF` with automatic Tesseract `ara+eng` OCR fallback for scanned books, `DOCX`, `PPTX`, `TXT`, `MD`, and images) alongside structured datasets (`CSV`, `XLSX`, `XLS`, `JSON`) with smart row-batching and structured-data protection.
 - **Source & Location Grounding:** Every retrieved chunk carries rich metadata (`Page`, `Slide`, `Sheet/Rows`, `Table`, `Records`, `Section`, or `Image`) enforced by the system prompt for verifiable citations.
-- **Multi-Session Chat & Flexible History Summarization:** Create new chats (`+ New Chat`), switch between saved conversations, delete individual chats or clear all history, and summarize the active chat, any custom subset of chats, or all chats at once.
+- **Multi-Session Chat, 6-Turn Rolling Summary Buffer & Flexible Summarization:** Create new chats (`+ New Chat`), switch between saved conversations, delete individual chats or clear all history; once a chat exceeds **6 turns**, older turns automatically compact into a collapsible **`Earlier conversation summary`** expander (reusing `summarize_cross_file_history`) while injecting the summary into LLM memory so nothing is lost.
 - **Real-Time Cost & Token Dashboard (`Usage`):** Automatically intercepts every OpenRouter HTTP response (including LangChain calls, embeddings, CRAG grading, and history summaries), logs exact token counts and USD charges to `logs/cost_log.csv`, and cross-checks against live OpenRouter API key/account credits.
 - **In-App System Logs Viewer (`Logs`):** Inspect rotating `logs/app.log` and `logs/errors.log` directly in Streamlit with multiline stack-trace grouping, severity filtering, keyword search, and download.
 
@@ -83,7 +83,7 @@ Implemented in [`hybrid_rag/lc/hybrid_lc.py`](hybrid_rag/lc/hybrid_lc.py) as a c
 
 1. **Multi-Question Decomposition:** Splits compound or numbered user prompts into focused sub-questions (`decompose_multi_questions`).
 2. **Dual Retrieval + RRF:** For each sub-question, runs dense vector search (`Chroma.similarity_search`, `k = 10`) and sparse keyword search (`BM25ChunkRetriever`, `k = 10`), then merges all ranked lists with Reciprocal Rank Fusion (`RRF_K = 60`) and selects the top `top_k = 6` unique chunks. If dense search fails transiently, it gracefully degrades to BM25 results.
-3. **Context & Session Memory Assembly:** Formats chunks with source/location headers (`[Source: <file> | <location>]`) and loads the rolling window of the last `5` turns for the active `session_id`.
+3. **Context & Session Memory Assembly:** Formats chunks with source/location headers (`[Source: <file> | <location>]`) and loads any rolling earlier-turn summary (`SystemMessage`) plus the latest `6` verbatim turns for the active `session_id`.
 4. **Generation & Persistence:** Executes `ANSWER_PROMPT | get_llm(temperature=0.2) | StrOutputParser()` and persists the turn to `chat_history.json` under the active session.
 
 ### 2. 2-Round Fused Hybrid Corrective RAG (`HybridCorrectiveLC`)
