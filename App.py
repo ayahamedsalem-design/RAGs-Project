@@ -24,7 +24,6 @@ from hybrid_rag.lc.hybrid_corrective_lc import run_hybrid_corrective_lc
 from hybrid_rag.lc.crag_graph import run_crag_graph
 from hybrid_rag.lc.agent_graph import run_agentic_rag
 from hybrid_rag.file_processing import SUPPORTED_EXTENSIONS
-from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
 from hybrid_rag.chat_history import (
     load_file_history,
@@ -32,9 +31,7 @@ from hybrid_rag.chat_history import (
     clear_all_history,
     list_sessions,
     create_session_id,
-    load_sessions_history,
     delete_session,
-    SUMMARY_ENTRY_TYPE,
 )
 
 # Cost tracking (see hybrid_rag/cost.py): tokens and US dollars per question
@@ -188,7 +185,6 @@ with st.sidebar:
     if st.button("+ New Chat", use_container_width=True, type="primary"):
         new_sid = create_session_id()
         st.session_state["active_session_id"] = new_sid
-        st.session_state.pop("history_summary", None)
         logger.info(f"Started new chat session '{new_sid}'.")
         st.rerun()
 
@@ -214,7 +210,6 @@ with st.sidebar:
             ):
                 if not is_active:
                     st.session_state["active_session_id"] = sid
-                    st.session_state.pop("history_summary", None)
                     logger.info(f"Switched active chat session to '{sid}'.")
                     st.rerun()
 
@@ -231,80 +226,18 @@ with st.sidebar:
             st.session_state["active_session_id"] = (
                 remaining[0] if remaining else create_session_id()
             )
-            st.session_state.pop("history_summary", None)
             st.rerun()
     with col_clear:
         if st.button("Clear All", use_container_width=True, disabled=not saved_sessions):
             clear_all_history()
             st.session_state["active_session_id"] = create_session_id()
-            st.session_state.pop("history_summary", None)
             st.success("All history cleared!")
             st.rerun()
-
-    st.markdown("---")
-    # Flexible summarization: defaults to current chat, supports multi-chat or all chats (empty)
-    default_summary_ids = [active_session_id] if active_session_id in saved_ids else []
-    chats_to_summarize = st.multiselect(
-        "Chats to summarize (empty = all):",
-        options=saved_ids,
-        default=default_summary_ids,
-        format_func=lambda sid: title_map.get(sid, sid),
-        key=f"summarize_select_{active_session_id}",
-    )
-
-    if st.button("Summarize History", use_container_width=True):
-        target_ids = chats_to_summarize or None
-        selected_history = load_sessions_history(target_ids)
-        if not selected_history:
-            st.warning("No history available to summarize.")
-        else:
-            scope_label = (
-                f"{len(chats_to_summarize)} selected chat(s)"
-                if chats_to_summarize
-                else f"all {len(saved_sessions)} chat(s)"
-            )
-            logger.info(
-                f"Summarizing {len(selected_history)} turn(s) across {scope_label}."
-            )
-            with st.spinner("Summarizing conversation history..."):
-                # Format both compacted earlier-turn summaries and recent verbatim Q&A turns
-                # so the manual summary covers 100% of every selected chat session.
-                history_lines = []
-                for item in selected_history:
-                    session_label = title_map.get(item.get("file_name"), item.get("file_name"))
-                    if item.get("entry_type") == SUMMARY_ENTRY_TYPE:
-                        if item.get("summary"):
-                            history_lines.append(
-                                f"[{session_label} — Earlier Summary ({item.get('summarized_count', 0)} turns)]: "
-                                f"{item.get('summary')}"
-                            )
-                    else:
-                        history_lines.append(
-                            f"[{session_label}] Q: {item.get('query')} | A: {item.get('answer')}"
-                        )
-                history_text = "\n".join(history_lines)
-                try:
-                    # The summary is a model request too, so it gets its own cost row
-                    with cost.track("history_summary", "Summarize History"):
-                        st.session_state["history_summary"] = execute_with_retry(
-                            summarize_cross_file_history, history_text
-                        )
-                except Exception as e:
-                    logger.error(f"Summary generation failed: {e}", exc_info=True)
-                    st.error(f"Failed to generate summary: {e}")
 
 
 # ==========================================
 # 2. Main Area: Chat Interface
 # ==========================================
-if st.session_state.get("history_summary"):
-    with st.expander("📝 History Summary", expanded=True):
-        st.markdown(st.session_state["history_summary"])
-        show_cost("Summarize History")
-        if st.button("Dismiss Summary", key="dismiss_history_summary"):
-            st.session_state.pop("history_summary", None)
-            st.rerun()
-
 # Load the active session's rolling summary (if >6 turns) plus its latest 6 verbatim Q&A turns
 earlier_summary, summarized_count = load_session_summary(active_session_id)
 active_history = load_file_history(active_session_id)
