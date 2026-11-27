@@ -7,6 +7,8 @@ same ChromaDB collection, OpenRouter models, cost hook, Arabic-aware BM25 tokeni
 
 import logging
 import os
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
 import httpx
@@ -118,10 +120,12 @@ class BM25ChunkRetriever(BaseRetriever):
         return self.bm25.get_top_n(bm25_tokenizer(query), self.docs, n=self.k)
 
 
+# Bound cached file-subset BM25 retrievers to prevent unbounded RAM growth
+MAX_BM25_CACHE = 16
 # In-memory cache of LangChain Documents (rebuilt only when ChromaDB's chunk count changes)
 _CORPUS = {"count": -1, "docs": []}
-# Cache of BM25ChunkRetriever instances keyed by (corpus_count, file_filter_str, k)
-_BM25_CACHE = {}
+# LRU cache of BM25ChunkRetriever instances keyed by (corpus_count, file_filter_str, k)
+_BM25_CACHE: OrderedDict = OrderedDict()
 
 
 def all_chunks():
@@ -168,13 +172,18 @@ def scope(selected_files=None):
 
 
 def bm25_retriever(docs, where, k):
-    """Returns a cached BM25ChunkRetriever scoped to ``(corpus_count, where_filter, k)``."""
+    """Returns an LRU-cached BM25ChunkRetriever scoped to ``(corpus_count, where_filter, k)``."""
     key = (_CORPUS["count"], str(where), k)
-    # Build once per unique (corpus version, file scope, k) and reuse on subsequent queries
-    if key not in _BM25_CACHE:
-        logger.debug(f"[LC] Building cached BM25ChunkRetriever for {len(docs)} chunk(s) (k={k}).")
-        _BM25_CACHE[key] = BM25ChunkRetriever.from_documents(docs, k=k)
-    return _BM25_CACHE[key]
+    # Build once per unique (corpus version, file scope, k) and evict oldest beyond MAX_BM25_CACHE
+    if key in _BM25_CACHE:
+        _BM25_CACHE.move_to_end(key)
+        return _BM25_CACHE[key]
+    logger.debug(f"[LC] Building cached BM25ChunkRetriever for {len(docs)} chunk(s) (k={k}).")
+    retriever = BM25ChunkRetriever.from_documents(docs, k=k)
+    _BM25_CACHE[key] = retriever
+    if len(_BM25_CACHE) > MAX_BM25_CACHE:
+        _BM25_CACHE.popitem(last=False)
+    return retriever
 
 
 # ---------- Hybrid retrieval ----------
@@ -194,22 +203,32 @@ def reciprocal_rank_fusion(ranked_lists, k=RRF_K):
 
 def hybrid_search(question, top_n, selected_files=None):
     """Top top_n chunks for one (sub-)question or a whole question: for each sub-question,
-    vector search + BM25 (PER_BRANCH each), then Reciprocal Rank Fusion over all the lists."""
+    vector search + BM25 (PER_BRANCH each, parallelized when >1 sub-question), then RRF."""
     docs, where = scope(selected_files)
     if not docs:
         return []
     n = min(PER_BRANCH, len(docs))
     bm25 = bm25_retriever(docs, where, n)
     store = get_vector_store()
-    ranked_lists = []
-    # Split compound questions so each sub-question retrieves its own focused dense + sparse lists
-    for sub_q in decompose_multi_questions(question):
+    sub_queries = decompose_multi_questions(question)
+
+    def _search_one(sub_q: str) -> list[list[Document]]:
         try:
             dense = store.similarity_search(sub_q, k=n, filter=where)
         except Exception as e:                       # like hybrid.py: keep the BM25 results
             logger.error(f"Dense search failed for sub-query '{sub_q}': {e}", exc_info=True)
             dense = []
-        ranked_lists += [dense, bm25.invoke(sub_q)]
+        return [dense, bm25.invoke(sub_q)]
+
+    # Split compound questions and retrieve each sub-question in parallel when >1 sub-question
+    ranked_lists = []
+    if len(sub_queries) == 1:
+        ranked_lists.extend(_search_one(sub_queries[0]))
+    else:
+        with ThreadPoolExecutor(max_workers=min(4, len(sub_queries))) as pool:
+            for pair in pool.map(_search_one, sub_queries):
+                ranked_lists.extend(pair)
+
     # Fuse all dense & sparse rankings into the final deduplicated top_n Documents
     fused = reciprocal_rank_fusion(ranked_lists)[:top_n]
     logger.info(f"[LC] Hybrid RRF selected top {len(fused)} unique chunk(s) across sub-queries.")

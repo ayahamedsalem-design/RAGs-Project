@@ -182,8 +182,8 @@ def decompose_multi_questions(user_query: str) -> list:
 Rules:
 1. DO NOT answer the questions.
 2. DO NOT generate, hallucinate, or add any new questions.
-3. Extract only the questions exactly as they are implied or stated in the user input.
-4. If the user input contains multiple questions merged together, separate them logically.
+3. Extract only the questions implied or stated in the user input.
+4. ONLY split into multiple questions when they ask about genuinely separate topics or numbered items. If two clauses ask about the SAME entity using pronouns (e.g. "Who wrote X and what is its relation to Y?" or "من مؤلف X وما علاقته بـ Y؟"), keep them together as ONE single question — OR if you split them, explicitly replace every pronoun with the full entity name so EVERY sub-question is 100% self-contained.
 5. If there is no question in the input, return an empty list.
 
 Output your response STRICTLY in valid JSON format using the following structure:
@@ -193,12 +193,23 @@ User Input:
 {user_query}"""
 
     try:
-        response = client_ai.chat.completions.create(
-            model=chat_model,
-            messages=[{"role": "user", "content": extraction_prompt}],
-            temperature=0.0,
-            response_format={"type": "json_object"},
-        )
+        # Disable chain-of-thought reasoning for fast, low-cost deterministic JSON decomposition
+        try:
+            response = client_ai.chat.completions.create(
+                model=chat_model,
+                messages=[{"role": "user", "content": extraction_prompt}],
+                temperature=0.0,
+                response_format={"type": "json_object"},
+                extra_body={"reasoning": {"enabled": False}},
+            )
+        except Exception:
+            # Fallback for providers/models that reject the OpenRouter `reasoning` parameter
+            response = client_ai.chat.completions.create(
+                model=chat_model,
+                messages=[{"role": "user", "content": extraction_prompt}],
+                temperature=0.0,
+                response_format={"type": "json_object"},
+            )
 
         result_text = response.choices[0].message.content
         parsed_json = json.loads(result_text)
