@@ -24,7 +24,11 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
-from hybrid_rag.chat_history import load_file_history, persist_chat_history
+from hybrid_rag.chat_history import (
+    load_file_history,
+    load_session_summary,
+    persist_chat_history,
+)
 from hybrid_rag.hybrid import GLOBAL_BM25_CACHE, GLOBAL_SESSION_ID, global_hybrid_col, refresh_global_bm25
 from hybrid_rag.lc.components import format_context, get_llm, history_messages, hybrid_search
 from hybrid_rag.lc.crag_graph import run_crag_graph_stateless
@@ -198,14 +202,18 @@ def _build_tools(
     @tool
     def summarize_conversation_history() -> str:
         """Summarize the conversation history of the current active chat session."""
-        # Read saved turns for the active session and delegate to the shared @traceable summarizer
+        # Read both any compacted earlier-turn summary and the latest visible turns for the active session
+        earlier_summary, _ = load_session_summary(session_id)
         turns = load_file_history(session_id)
-        if not turns:
+        if not turns and not earlier_summary:
             return "There is no prior conversation history in this chat session yet."
-        history_text = "\n".join(
-            f"Q: {t.get('query')} | A: {t.get('answer')}" for t in turns
-        )
-        return summarize_cross_file_history(history_text)
+        parts = []
+        if earlier_summary:
+            parts.append(f"[Earlier Conversation Summary]:\n{earlier_summary}")
+        if turns:
+            parts.append("\n".join(f"Q: {t.get('query')} | A: {t.get('answer')}" for t in turns))
+        # Reuse the shared @traceable summarizer across the full session context
+        return summarize_cross_file_history("\n\n".join(parts))
 
     return [
         list_indexed_documents,
@@ -273,7 +281,7 @@ def build_agent_graph(tools: list):
 
 def run_agentic_rag(
     user_query: str,
-    history_limit: int = 5,
+    history_limit: int = 6,
     selected_files: list = None,
     session_id: str = GLOBAL_SESSION_ID,
 ):

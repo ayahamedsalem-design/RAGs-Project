@@ -453,7 +453,7 @@ def run_crag_graph_stateless(
 
 def run_crag_graph(
     user_query: str,
-    history_limit: int = 5,
+    history_limit: int = 6,
     selected_files: list = None,
     session_id: str = GLOBAL_SESSION_ID,
 ):

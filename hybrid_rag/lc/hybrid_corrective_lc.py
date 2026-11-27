@@ -364,7 +364,7 @@ _CHAIN = None
 
 def run_hybrid_corrective_lc(
     user_query: str,
-    history_limit: int = 5,
+    history_limit: int = 6,
     selected_files: list = None,
     session_id: str = GLOBAL_SESSION_ID,
 ):

@@ -24,7 +24,11 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.retrievers import BaseRetriever
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-from hybrid_rag.chat_history import load_file_history
+from hybrid_rag.chat_history import (
+    DEFAULT_HISTORY_WINDOW,
+    load_file_history,
+    load_session_summary,
+)
 from hybrid_rag.file_processing import (
     SYS_PROMPT,
     decompose_multi_questions,
@@ -440,15 +444,34 @@ ANSWER_PROMPT = ChatPromptTemplate.from_messages([
 ])
 
 
-def history_messages(limit=5, session_id=GLOBAL_SESSION_ID):
-    """Loads the last ``limit`` turns for ``session_id`` as LangChain HumanMessage/AIMessage pairs."""
-    all_turns = load_file_history(session_id)
-    turns = all_turns[-limit:] if limit else []
-    logger.info(
-        f"[LC] Using {len(turns)} recent turn(s) from session '{session_id}' "
-        f"(Total saved: {len(all_turns)})."
-    )
+def history_messages(limit=DEFAULT_HISTORY_WINDOW, session_id=GLOBAL_SESSION_ID):
+    """Loads the rolling earlier-turn summary (if any) plus the last ``limit`` verbatim turns
+    for ``session_id`` as LangChain messages."""
+    # Stateless callers (e.g., evaluation or nested CRAG sub-graph calls) pass limit=0
+    if not limit:
+        return []
+
     messages = []
+    # Prepend the rolling summary of older compacted turns as a SystemMessage so the LLM
+    # never loses early conversation context even after 20+ questions.
+    earlier_summary, summarized_count = load_session_summary(session_id)
+    if earlier_summary:
+        messages.append(
+            SystemMessage(
+                content=(
+                    f"[Summary of {summarized_count} earlier conversation turn(s) in this chat]:\n"
+                    f"{earlier_summary}"
+                )
+            )
+        )
+
+    # Append the latest `limit` full Q&A turns verbatim (default 6) for exact follow-up handling
+    all_turns = load_file_history(session_id)
+    turns = all_turns[-limit:]
+    logger.info(
+        f"[LC] Using {len(turns)} recent turn(s) + "
+        f"{summarized_count} summarized earlier turn(s) from session '{session_id}'."
+    )
     for t in turns:
         messages += [HumanMessage(content=t["query"]), AIMessage(content=t["answer"])]
     return messages

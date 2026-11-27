@@ -51,6 +51,7 @@ A production-grade, **bilingual (English & Arabic)** Retrieval-Augmented Generat
 - **High-Precision Bilingual English & Arabic Retrieval:** Combines **4,096-dim `qwen/qwen3-embedding-8b`** dense vectors with an upgraded **Arabic-aware `BM25ChunkRetriever`** (diacritics/tatweel removal, Alef/Ya/`ة→ه` folding, Arabic-Indic digit normalization `٠-٩→0-9`, and light prefix stemming), fused via Reciprocal Rank Fusion (`k = 60`), reranked locally with **ONNX FlashRank Multilingual**, and expanded with **`±1` adjacent neighbor chunks**.
 - **Full LangSmith Tracing (`hybrid_rag/tracing.py`):** Captures complete hierarchical execution trees across LCEL chains, LangGraph nodes/edges, custom `@traceable` spans (reranking, sub-query retrieval, query decomposition, history summarization), and wrapped OpenAI-SDK calls (Vision OCR & embeddings) with zero-overhead no-op fallback when disabled.
 - **15 Supported File Formats + Vision LLM OCR:** Uses **Gemini 2.5 Flash Vision OCR** (`OCR_ENGINE=vision`, `~$0.00020/page`) for high-accuracy verbatim Arabic/English & table transcription on scanned PDFs and standalone images, with automatic offline **Tesseract (`ara+eng`)** fallback.
+- **Rolling Summary Buffer Memory (6-Turn Window):** Keeps the latest **6 full Q&A turns** visible and verbatim while automatically compacting older overflow turns into a single persistent running summary (reusing `summarize_cross_file_history` with reasoning disabled), displayed in a clean collapsible expander above the chat and injected as a `SystemMessage` across all four pipelines.
 - **Real-Time Cost Analytics (`Usage`) & Live Log Inspector (`Logs`):** Intercepts every OpenRouter HTTP response (including LangChain, LangGraph, embeddings, Vision OCR, Verifier, and summarizer calls) into `logs/cost_log.csv` with live OpenRouter credit verification and multiline traceback log viewing.
 
 ---
@@ -234,7 +235,7 @@ flowchart TD
 | `question` | `str` | Caller (`START`) | Original user query |
 | `selected_files` | `list[str] \| None` | Caller (`START`) | Sidebar file filter scope (`None` = global DB) |
 | `session_id` | `str` | Caller (`START`) | Active chat session ID for memory loading |
-| `history_limit` | `int` | Caller (`START`) | Number of recent turns to load (`5` interactive, `0` stateless) |
+| `history_limit` | `int` | Caller (`START`) | Number of recent verbatim turns to load alongside any rolling summary (`6` interactive, `0` stateless) |
 | `sub_queries` | `list[str]` | `decompose` | Self-contained decomposed sub-questions |
 | `docs` | `list[Document]` | `retrieve_and_grade` | Deduplicated, graded, neighbor-expanded chunks (capped at `MAX_CONTEXT = 6`) |
 | `missing` | `str` | `retrieve_and_grade` | Aggregated aspects not covered by retrieved documents |
@@ -316,7 +317,7 @@ class AgentState(TypedDict):
 | 2 | **`search_documents_fast`** | `(query: str, target_files: list[str] \| None = None) -> str` | `hybrid_search(query, top_n=6)` (Dense Qwen3 + Arabic BM25 + RRF + FlashRank) | Straightforward, single-topic factual lookups (used on **91.7%** of English queries in evaluation). |
 | 3 | **`search_documents_deep`** | `(query: str, target_files: list[str] \| None = None) -> str` | `run_crag_graph_stateless(...)` — full **2-Round CRAG StateGraph + Neighbor Expansion + Verifier** | Complex, multi-part, analytical, or hard Arabic OCR questions — or as an automatic escalation if `search_documents_fast` returns weak evidence (used on **72.2%** of Arabic queries in evaluation). |
 | 4 | **`search_structured_data`** | `(query: str, target_files: list[str] \| None = None) -> str` | Filters `GLOBAL_BM25_CACHE` strictly to `data_kind == "structured"` (CSV / Excel / JSON) and runs `hybrid_search(..., top_n=8)` | Questions about spreadsheets, tables, CSV rows, or JSON records. |
-| 5 | **`summarize_conversation_history`** | `() -> str` | Loads active session turns via `load_file_history(session_id)` and calls `summarize_cross_file_history` | When the user explicitly asks inside chat to summarize the current conversation. |
+| 5 | **`summarize_conversation_history`** | `() -> str` | Loads any rolling earlier-turn summary (`load_session_summary`) + recent turns (`load_file_history`) and calls `summarize_cross_file_history` | When the user explicitly asks inside chat to summarize the current conversation. |
 
 ---
 
@@ -328,7 +329,7 @@ Both LCEL pipelines remain first-class options in `App.py`, live in `hybrid_rag/
 
 1. **Fast Multi-Question Decomposition:** Splits compound prompts via `decompose_multi_questions` (`disable_reasoning=True`, anti-dangling-pronoun rule).
 2. **Parallel Dual Retrieval + RRF + FlashRank:** Runs dense vector search (`Chroma.similarity_search`, `k = 10`) and sparse keyword search (`BM25ChunkRetriever`, `k = 10`) in parallel across sub-queries, fuses via RRF (`RRF_K = 60`), pulls `pool_limit = 12` candidates, and reranks to `top_k = 6` via saturation-aware ONNX FlashRank.
-3. **Context, Memory & Traced Generation:** Assembles cited context + rolling `5`-turn session history, executes `ANSWER_PROMPT | get_llm(temperature=0.2) | StrOutputParser()` with `build_trace_config("HybridLC", ...)`, and persists to `chat_history.json`.
+3. **Context, Memory & Traced Generation:** Assembles cited context + rolling earlier-turn summary (`SystemMessage`) + latest `6`-turn session history, executes `ANSWER_PROMPT | get_llm(temperature=0.2) | StrOutputParser()` with `build_trace_config("HybridLC", ...)`, and persists to `chat_history.json` (auto-compacting turns beyond 6).
 
 ### 2. 2-Round Fused Hybrid Corrective RAG (`HybridCorrectiveLC` — [`hybrid_rag/lc/hybrid_corrective_lc.py`](hybrid_rag/lc/hybrid_corrective_lc.py))
 
@@ -388,8 +389,8 @@ The UI uses a clean sky-blue theme (`primaryColor = "#0EA5E9"` in [`.streamlit/c
 1. **Main Chat Workspace ([`App.py`](App.py)):**
    - **Knowledge Base Manager:** Upload one or multiple files into the shared global ChromaDB collection, monitor live indexing progress, scope queries to specific files via checkboxes, or delete individual files from the index.
    - **4-Way Query Architecture Selector:** Switch live between **Hybrid RAG**, **Hybrid Corrective RAG**, **CRAG StateGraph (LangGraph)**, and **Agentic RAG (LangGraph)**.
-   - **Multi-Session Conversations:** Start fresh threads (`+ New Chat`), switch between saved conversations (ordered by most recent activity with turn counts), delete individual chats, or clear all history.
-   - **Flexible History Summarization:** Summarize the active chat, any custom subset of chats, or all saved sessions (`hybrid_rag/summarizer.py`).
+   - **Multi-Session Conversations & Rolling Summary Buffer:** Start fresh threads (`+ New Chat`), switch between saved conversations (ordered by most recent activity with full turn counts and preserved first-question titles), delete individual chats, or clear all history. Once a chat exceeds **6 turns**, older turns automatically compact into a collapsible **`Earlier conversation summary`** expander above the chat while keeping the latest 6 full turns cleanly visible and preserving full LLM memory.
+   - **Flexible History Summarization:** Summarize the active chat (including any compacted earlier turns), any custom subset of chats, or all saved sessions (`hybrid_rag/summarizer.py`).
    - **Transparent Evidence & Cost Display:** Every assistant reply displays an expandable **Retrieved Context Chunks** viewer and a per-answer cost caption (API requests, input/output/reasoning tokens, and exact USD spend).
 2. **Usage & Cost Analytics ([`pages/Usage.py`](pages/Usage.py)):**
    - Interactive OpenRouter-style activity dashboard reading `logs/cost_log.csv` across all four pipelines (`hybrid_lc`, `hybrid_corrective_lc`, `crag_graph`, `agentic_rag`) plus `ingest_global` and `summarize`.
@@ -431,8 +432,8 @@ RAGs-Project/
 │   ├── hybrid.py                         # Shared ChromaDB collection, upgraded Arabic BM25 cache, batch indexing & native Hybrid RAG
 │   ├── hybrid_corrective.py              # Shared CRAG constants, softened grader prompt/parser & native 2-Round CRAG
 │   ├── file_processing.py                # 15-format extraction, Gemini 2.5 Flash Vision OCR + Tesseract fallback, fast query decomposition
-│   ├── chat_history.py                   # Multi-session persistent conversation store (chat_history.json)
-│   ├── summarizer.py                     # Single-, multi-, and all-chat conversation history summarizer (@traceable)
+│   ├── chat_history.py                   # Multi-session persistent store + 6-turn rolling summary buffer (chat_history.json)
+│   ├── summarizer.py                     # Shared @traceable summarizer (manual cross-file + automatic rolling compaction)
 │   ├── cost.py                           # Thread-local request/token/USD tracker (logs/cost_log.csv)
 │   ├── retry.py                          # Exponential-backoff retry utility for transient API errors
 │   └── logging_setup.py                  # Idempotent rotating file & console logging setup
