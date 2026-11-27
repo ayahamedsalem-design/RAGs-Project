@@ -23,11 +23,13 @@ from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
 from hybrid_rag.chat_history import (
     load_file_history,
+    load_session_summary,
     clear_all_history,
     list_sessions,
     create_session_id,
     load_sessions_history,
     delete_session,
+    SUMMARY_ENTRY_TYPE,
 )
 
 # Unified 7-pipeline registry and ChromaDB coordinator (hybrid_rag + other_rags + ext_rag)
@@ -250,13 +252,22 @@ with st.sidebar:
             )
             logger.info(f"Summarizing {len(selected_history)} turn(s) across {scope_label}.")
             with st.spinner("Summarizing conversation history..."):
-                history_text = "\n".join(
-                    [
-                        f"[{title_map.get(item.get('file_name'), item.get('file_name'))}] "
-                        f"Q: {item.get('query')} | A: {item.get('answer')}"
-                        for item in selected_history
-                    ]
-                )
+                # Format both compacted earlier-turn summaries and recent verbatim Q&A turns
+                # so the manual summary covers 100% of every selected chat session.
+                history_lines = []
+                for item in selected_history:
+                    session_label = title_map.get(item.get("file_name"), item.get("file_name"))
+                    if item.get("entry_type") == SUMMARY_ENTRY_TYPE:
+                        if item.get("summary"):
+                            history_lines.append(
+                                f"[{session_label} — Earlier Summary ({item.get('summarized_count', 0)} turns)]: "
+                                f"{item.get('summary')}"
+                            )
+                    else:
+                        history_lines.append(
+                            f"[{session_label}] Q: {item.get('query')} | A: {item.get('answer')}"
+                        )
+                history_text = "\n".join(history_lines)
                 try:
                     # The summary is a model request too, so it gets its own cost row
                     with cost.track("history_summary", "Summarize History"):
@@ -279,9 +290,21 @@ if st.session_state.get("history_summary"):
             st.session_state.pop("history_summary", None)
             st.rerun()
 
+# Load the active session's rolling summary (if >6 turns) plus its latest 6 verbatim Q&A turns
+earlier_summary, summarized_count = load_session_summary(active_session_id)
 active_history = load_file_history(active_session_id)
 
-# Render chat history for the active conversation
+# Display older compacted turns inside a single clean collapsible expander above the chat
+# so long conversations never clutter the screen while keeping earlier context accessible.
+if earlier_summary:
+    turn_word = "turn" if summarized_count == 1 else "turns"
+    with st.expander(
+        f"Earlier conversation summary ({summarized_count} earlier {turn_word} compacted)",
+        expanded=False,
+    ):
+        st.markdown(earlier_summary)
+
+# Render the latest visible Q&A turns (up to 6) for the active conversation
 for message in active_history:
     with st.chat_message("user"):
         st.markdown(message["query"])

@@ -9,7 +9,9 @@ from datetime import datetime
 from pathlib import Path
 
 from hybrid_rag.chat_history import (
+    delete_session,
     load_file_history,
+    load_session_summary,
     load_all_history,
     persist_chat_history,
 )
@@ -31,11 +33,16 @@ a new topic, return it unchanged. Reply with the rewritten question only, no oth
 
 # ---------- Storage (backed by chat_history.json) ----------
 def recent_turns(session_name, n=MEMORY_TURNS, filepath=None):
-    """The last n (question, answer) pairs for session_name, oldest first."""
+    """The rolling earlier summary (if any) plus the last n (question, answer) pairs, oldest first."""
     target = filepath or HISTORY_FILE
+    turns = []
+    # Prepend compacted earlier-turn summary so Ext Naive / Ext Corrective retain full context
+    earlier_summary, summarized_count = load_session_summary(session_name, filepath=target)
+    if earlier_summary and n > 0:
+        turns.append((f"[Earlier {summarized_count} turn(s) summary]", earlier_summary))
     items = load_file_history(session_name, filepath=target)
     tail = items[-n:] if n > 0 else []
-    turns = [(item.get("query", ""), item.get("answer", "")) for item in tail]
+    turns.extend((item.get("query", ""), item.get("answer", "")) for item in tail)
     logger.debug("Using %d earlier turns from %s for session %r", len(turns), target, session_name)
     return turns
 
@@ -52,17 +59,12 @@ def save_turn(session_name, question, standalone, answer, sources, system, cost_
 
 
 def forget_session(session_name, filepath=None):
-    """Remove all turns for session_name from chat_history.json. Returns True if any were removed."""
+    """Remove all turns and any rolling summary for session_name from chat_history.json."""
     target = filepath or HISTORY_FILE
-    path = Path(target)
-    if not path.exists():
+    removed = delete_session(session_name, filepath=target)
+    if removed == 0:
         return False
-    all_items = load_all_history(filepath=target)
-    remaining = [item for item in all_items if item.get("file_name") != session_name]
-    if len(remaining) == len(all_items):
-        return False
-    path.write_text(json.dumps(remaining, indent=4, ensure_ascii=False), encoding="utf-8")
-    logger.info('Deleted conversation "%s" from %s', session_name, target)
+    logger.info('Deleted conversation "%s" from %s (%d record(s))', session_name, target, removed)
     return True
 
 

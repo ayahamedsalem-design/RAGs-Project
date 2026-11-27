@@ -14,7 +14,11 @@ from rank_bm25 import BM25Okapi
 
 try:    
     from hybrid_rag.logging_setup import setup_logging
-    from hybrid_rag.chat_history import persist_chat_history, load_file_history
+    from hybrid_rag.chat_history import (
+        persist_chat_history,
+        load_file_history,
+        build_history_messages,
+    )
     from hybrid_rag.pdf_processing import (    
         initialize_api,
         resolve_file_name, 
@@ -24,7 +28,11 @@ try:
     )
 except ModuleNotFoundError:
     from logging_setup import setup_logging
-    from chat_history import persist_chat_history, load_file_history
+    from chat_history import (
+        persist_chat_history,
+        load_file_history,
+        build_history_messages,
+    )
     from pdf_processing import (    
         initialize_api,
         resolve_file_name, 
@@ -373,7 +381,7 @@ def retrieve_hybrid_context(user_query: str, top_k: int = 6, selected_files: lis
 def run_hybrid_chat_session(
     user_query: str,
     top_k: int = 6,
-    history_limit: int = 5,
+    history_limit: int = 6,
     selected_files: list = None,
     session_id: str = GLOBAL_SESSION_ID,
 ):
@@ -393,13 +401,9 @@ def run_hybrid_chat_session(
         user_query, top_k=top_k, selected_files=selected_files
     )
 
-    # 2. Load rolling window history for the active session
+    # 2. Load rolling summary (if >6 turns) + latest verbatim turns for the active session
     logger.info(f"Loading conversation history for session '{session_id}'...")
-    global_history = load_file_history(session_id)
-    recent_history = (
-        global_history[-history_limit:] if len(global_history) > history_limit else global_history
-    )
-    logger.info(f"Using {len(recent_history)} recent turns from history (Total saved: {len(global_history)}).")
+    history_msgs = build_history_messages(session_id, limit=history_limit)
 
     # 3. Build prompt and invoke LLM
     current_turn_prompt = f"""[Context from Global Database]:
@@ -409,11 +413,7 @@ def run_hybrid_chat_session(
 {user_query}
 """
 
-    messages_to_send = [{"role": "system", "content": SYS_PROMPT}]
-    for item in recent_history:
-        messages_to_send.append({"role": "user", "content": item["query"]})
-        messages_to_send.append({"role": "assistant", "content": item["answer"]})
-
+    messages_to_send = [{"role": "system", "content": SYS_PROMPT}] + history_msgs
     messages_to_send.append({"role": "user", "content": current_turn_prompt})
 
     logger.info(f"Invoking LLM '{CHAT_MODEL}'...")

@@ -12,7 +12,11 @@ import numpy as np
 
 try:
     from hybrid_rag.logging_setup import setup_logging
-    from hybrid_rag.chat_history import persist_chat_history, load_file_history
+    from hybrid_rag.chat_history import (
+        persist_chat_history,
+        load_file_history,
+        build_history_messages,
+    )
     from hybrid_rag.pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
     from hybrid_rag.hybrid import (
         get_hybrid_search_state,
@@ -21,7 +25,11 @@ try:
     )
 except ModuleNotFoundError:
     from logging_setup import setup_logging
-    from chat_history import persist_chat_history, load_file_history
+    from chat_history import (
+        persist_chat_history,
+        load_file_history,
+        build_history_messages,
+    )
     from pdf_processing import initialize_api, decompose_multi_questions, SYS_PROMPT
     from hybrid import (
         get_hybrid_search_state,
@@ -375,7 +383,7 @@ def corrective_retrieve_hybrid(question: str, log: Log, selected_files: list = N
 
 def run_hybrid_corrective_rag(
     user_query: str,
-    history_limit: int = 5,
+    history_limit: int = 6,
     selected_files: list = None,
     session_id: str = GLOBAL_SESSION_ID,
 ):
@@ -427,14 +435,8 @@ def run_hybrid_corrective_rag(
     ]
     full_context_text = "\n\n---\n\n".join(verified_contexts)
 
-    global_history = load_file_history(session_id)
-    recent_history = (
-        global_history[-history_limit:] if len(global_history) > history_limit else global_history
-    )
-    logger.info(
-        f"Using {len(recent_history)} recent turns from session '{session_id}' "
-        f"(Total saved: {len(global_history)})."
-    )
+    # Load rolling earlier-turn summary (if any) + latest verbatim turns for the active session
+    history_msgs = build_history_messages(session_id, limit=history_limit)
 
     combined_missing = "; ".join(set(all_missing_parts))
     sys_inst = SYS_PROMPT
@@ -444,12 +446,7 @@ def run_hybrid_corrective_rag(
             "Answer what the sources support and say clearly which parts the documents do not cover."
         )
 
-    messages = [{"role": "system", "content": sys_inst}]
-    for item in recent_history:
-        messages.extend([
-            {"role": "user", "content": item["query"]},
-            {"role": "assistant", "content": item["answer"]},
-        ])
+    messages = [{"role": "system", "content": sys_inst}] + history_msgs
 
     messages.append({
         "role": "user",

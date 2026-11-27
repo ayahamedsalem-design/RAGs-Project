@@ -4,7 +4,11 @@ import os
 import logging
 
 from hybrid_rag.logging_setup import setup_logging
-from hybrid_rag.chat_history import persist_chat_history, load_file_history
+from hybrid_rag.chat_history import (
+    persist_chat_history,
+    load_file_history,
+    build_history_messages,
+)
 from hybrid_rag.pdf_processing import (
     initialize_api,
     decompose_multi_questions,
@@ -35,7 +39,7 @@ CHAT_MODEL = os.getenv("CHAT_MODEL")
 def run_basic_rag(
     user_query: str,
     top_k_per_query: int = 3,
-    history_limit: int = 5,
+    history_limit: int = 6,
     selected_files: list = None,
     session_id: str = GLOBAL_SESSION_ID,
 ):
@@ -100,15 +104,9 @@ def run_basic_rag(
         full_context_text = "\n\n---\n\n".join(formatted_contexts)
     logger.info(f"Retrieved {len(formatted_contexts)} unique chunks across all sub-queries.")
 
-    # 3. Load rolling window history for the active session
+    # 3. Load rolling earlier-turn summary (if >6 turns) + latest verbatim turns for the active session
     logger.info(f"Loading conversation history for session '{session_id}'...")
-    global_history = load_file_history(session_id)
-    recent_history = (
-        global_history[-history_limit:] if len(global_history) > history_limit else global_history
-    )
-    logger.info(
-        f"Using {len(recent_history)} recent turns from history (Total saved: {len(global_history)})."
-    )
+    history_msgs = build_history_messages(session_id, limit=history_limit)
 
     # 4. Build prompt and invoke OpenRouter CHAT_MODEL (tracked automatically via initialize_api)
     prompt = f"""[Context from Global Database]:
@@ -118,11 +116,7 @@ def run_basic_rag(
 {user_query}
 """
 
-    messages_to_send = [{"role": "system", "content": SYS_PROMPT}]
-    for item in recent_history:
-        messages_to_send.append({"role": "user", "content": item["query"]})
-        messages_to_send.append({"role": "assistant", "content": item["answer"]})
-
+    messages_to_send = [{"role": "system", "content": SYS_PROMPT}] + history_msgs
     messages_to_send.append({"role": "user", "content": prompt})
 
     logger.info(f"Sending prompt to generation model '{CHAT_MODEL}'...")
