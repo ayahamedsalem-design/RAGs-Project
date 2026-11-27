@@ -40,16 +40,20 @@ from hybrid_rag.hybrid_corrective import (
 )
 from hybrid_rag.lc.components import (
     bm25_retriever,
+    expand_with_neighbors,
     format_context,
     get_cached_id_maps,
     get_embeddings,
     get_llm,
     get_vector_store,
     history_messages,
+    is_rerank_enabled,
     reciprocal_rank_fusion,
+    rerank_documents,
     scope,
 )
 from hybrid_rag.logging_setup import setup_logging
+from hybrid_rag.tracing import build_trace_config, traceable
 
 setup_logging()
 logger = logging.getLogger("rag.lc.hybrid_corrective")
@@ -77,18 +81,24 @@ def search_hybrid_rrf_lc(
         return []
 
     effective_k = min(k, len(docs))
-    bm25 = bm25_retriever(docs, where, effective_k)
+    # Apply FlashRank reranking on Round-1 retrieval (skip redundant ONNX pass on small Round-2 fetches)
+    use_rr = is_rerank_enabled() and via_label == "question"
+    pool_k = min(max(effective_k, 15), len(docs)) if use_rr else effective_k
+    bm25 = bm25_retriever(docs, where, pool_k)
     store = get_vector_store()
     doc_to_id, id_to_emb = get_cached_id_maps()
 
     try:
-        dense = store.similarity_search_by_vector(qvec, k=effective_k, filter=where)
+        dense = store.similarity_search_by_vector(qvec, k=pool_k, filter=where)
     except Exception as e:
         logger.error(f"[{via_label}] Dense search failed for '{query_text}': {e}", exc_info=True)
         dense = []
 
     sparse = bm25.invoke(query_text)
-    fused = reciprocal_rank_fusion([dense, sparse])[:effective_k]
+    fused = reciprocal_rank_fusion([dense, sparse])[:pool_k]
+    # Rerank Round-1 candidates with saturation-aware ONNX FlashRank before passing to the batch grader
+    if use_rr:
+        fused = rerank_documents(query_text, fused, top_n=effective_k)
 
     enriched = []
     for idx, d in enumerate(fused):
@@ -134,6 +144,7 @@ def _is_reference_doc(doc: Document) -> bool:
     return citation_density(doc.page_content) >= REFERENCE_THRESHOLD
 
 
+@traceable(name="grade_documents_lc", run_type="chain")
 def grade_documents_lc(question: str, cands: list[Document]) -> dict:
     """Filters reference lists deterministically (unstructured only), then grades remaining Documents in one LCEL call."""
     refs = [i for i, d in enumerate(cands, 1) if _is_reference_doc(d)]
@@ -183,6 +194,7 @@ def grade_documents_lc(question: str, cands: list[Document]) -> dict:
 
 
 # ---------- 3. 2-Round Corrective Retrieval per Sub-Question ----------
+@traceable(name="corrective_retrieve_sub_query", run_type="retriever")
 def corrective_retrieve_sub_query(payload: dict) -> dict:
     """Runs the 2-round CRAG loop for a single sub-question and returns verified Documents + missing note."""
     sub_q = payload["sub_query"]
@@ -286,6 +298,10 @@ def retrieve_and_merge_lc(state: dict) -> dict:
                 merged_by_id[cid] = d
 
     final_docs = sorted(merged_by_id.values(), key=lambda d: -d.metadata["sim"])[:MAX_CONTEXT]
+    # Expand small verified chunk sets with immediate adjacent chunks (+1/-1) from the same PDF
+    final_docs = expand_with_neighbors(
+        final_docs, max_total=MAX_CONTEXT, max_neighbors=2, is_noise_fn=_is_reference_doc
+    )
     combined_missing = "; ".join(dict.fromkeys(missing_parts))
     logger.info(f"[LC CRAG] Compiled {len(final_docs)} unique verified chunk(s) for generation.")
     return {"docs": final_docs, "missing": combined_missing}
@@ -369,12 +385,23 @@ def run_hybrid_corrective_lc(
         _CHAIN = build_chain()
 
     try:
-        result = _CHAIN.invoke({
-            "question": user_query,
-            "history_limit": history_limit,
-            "selected_files": selected_files,
-            "session_id": session_id,
-        })
+        result = _CHAIN.invoke(
+            {
+                "question": user_query,
+                "history_limit": history_limit,
+                "selected_files": selected_files,
+                "session_id": session_id,
+            },
+            config=build_trace_config(
+                run_name="HybridCorrectiveLC",
+                tags=["hybrid_corrective_lc", "crag", "lcel", "bilingual"],
+                metadata={
+                    "pipeline": "hybrid_corrective_lc",
+                    "session_id": session_id,
+                    "selected_files": selected_files or ["ALL"],
+                },
+            ),
+        )
     except Exception as exc:
         logger.critical(f"LangChain Hybrid CRAG execution failed: {exc}", exc_info=True)
         raise

@@ -69,13 +69,17 @@ GRADER_PROMPT = """You check search results for a document question-answering sy
 You receive a QUESTION and numbered CANDIDATE excerpts from documents.
 
 1. For each candidate, decide whether it states facts that answer the question, fully or
-   partly. Reference lists, bibliography entries, citation titles and passages that only
-   mention the same topic without the answer are NOT relevant.
+   partly. Keep secondary/supporting candidates that supply additional list items,
+   numbers, dates, definitions, or complementary details — do not discard a useful
+   supporting chunk just because another chunk already mentions the topic. For Arabic
+   or OCR-extracted passages, tolerate minor spelling or OCR glitches when the passage
+   clearly addresses the question. Reference lists, bibliography entries, citation titles,
+   and passages that only mention the same topic without factual substance are NOT relevant.
 2. Split the question into its separate parts (1 to 4 short parts). A question asking
    about two things, such as "how large are X and Y", has two parts. For each part,
-   say whether the relevant candidates actually state the answer to it.
+   say whether the relevant candidates actually state the full answer to it.
 3. Write up to 3 short search queries that could find the unanswered parts in the
-   documents, using the documents' likely wording.
+   documents, using the documents' likely wording (and matching the document's language).
 4. Say whether the question asks about more than one document (for example
    "each document", "which documents", or a comparison between documents).
 

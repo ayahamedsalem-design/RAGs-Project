@@ -71,20 +71,47 @@ GLOBAL_SESSION_ID = "global_chat_session"
 
 
 ARABIC_DIACRITICS_RE = re.compile(r"[\u064B-\u065F\u0670\u0640]")
+# Map Eastern Arabic-Indic (٠-٩) and Persian (۰-۹) digits to Western ASCII digits (0-9)
+ARABIC_DIGITS_TABLE = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+# Common Arabic proclitic + definite article prefixes stripped during BM25 light stemming
+ARABIC_PREFIXES = ("وال", "بال", "كال", "فال", "ولل", "لل", "ال")
+# Protected words whose leading "ال" is part of the root/identity
+ARABIC_PROTECTED_WORDS = {"الله", "اللهم", "الذي", "التي", "الذين", "اللاتي", "اللواتي"}
 
 
 def normalize_arabic(text: str) -> str:
-    """Strips Arabic diacritics/tatweel and unifies common letter variants for BM25 matching."""
+    """Normalizes Arabic text and digits for high-recall bilingual BM25 matching."""
+    # Remove diacritics (harakat) and tatweel elongation
     text = ARABIC_DIACRITICS_RE.sub("", text)
+    # Normalize Alef variants (أ إ آ ٱ -> ا), Alef Maqsura (ى -> ي), and Ta Marbuta (ة -> ه)
     text = re.sub(r"[أإآٱ]", "ا", text)
     text = text.replace("ى", "ي")
+    text = text.replace("ة", "ه")
+    # Unify Eastern Arabic-Indic / Persian numerals with Western ASCII digits (e.g. ٩٢ -> 92)
+    text = text.translate(ARABIC_DIGITS_TABLE)
     return text
 
 
+def _light_stem_arabic_token(token: str) -> str:
+    """Strips common Arabic definite-article/conjunction prefixes while preserving short roots."""
+    # Skip protected function/identity words (e.g., الله / الذي / التي) and short tokens (< 5 chars)
+    if token in ARABIC_PROTECTED_WORDS or len(token) < 5:
+        return token
+    # Only stem tokens starting with an Arabic Unicode character (leave English/numeric tokens untouched)
+    if not ("\u0600" <= token[0] <= "\u06FF"):
+        return token
+    # Match longest compound prefixes first (وال/بال/...) while guaranteeing at least a 3-char root remains
+    for prefix in ARABIC_PREFIXES:
+        if token.startswith(prefix) and len(token) - len(prefix) >= 3:
+            return token[len(prefix) :]
+    return token
+
+
 def bm25_tokenizer(text: str) -> list:
-    """Cleans, normalizes Arabic, and tokenizes text into lowercase words for BM25."""
+    """Cleans, normalizes Arabic/digits, light-stems Arabic prefixes, and tokenizes for BM25."""
     normalized = normalize_arabic(text.lower())
-    return re.findall(r"\b\w+\b", normalized)
+    raw_tokens = re.findall(r"\b\w+\b", normalized)
+    return [_light_stem_arabic_token(tok) for tok in raw_tokens]
 
 
 def refresh_global_bm25():

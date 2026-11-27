@@ -23,6 +23,7 @@ from hybrid_rag.lc.components import (
     hybrid_search,
 )
 from hybrid_rag.logging_setup import setup_logging
+from hybrid_rag.tracing import build_trace_config
 
 setup_logging()
 logger = logging.getLogger("rag.lc.hybrid")
@@ -85,7 +86,18 @@ def run_hybrid_lc(
                 "history_limit": history_limit,
                 "selected_files": selected_files,
                 "session_id": session_id,
-            }
+            },
+            # Attach LangSmith run name, searchable tags, and session/file metadata (no-op if tracing off)
+            config=build_trace_config(
+                run_name="HybridLC",
+                tags=["hybrid_lc", "lcel", "bilingual"],
+                metadata={
+                    "pipeline": "hybrid_lc",
+                    "session_id": session_id,
+                    "top_k": top_k,
+                    "selected_files": selected_files or ["ALL"],
+                },
+            ),
         )
     except Exception as exc:
         logger.critical(f"LangChain Hybrid RAG execution failed: {exc}", exc_info=True)

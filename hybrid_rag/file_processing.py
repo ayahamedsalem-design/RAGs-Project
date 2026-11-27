@@ -5,9 +5,11 @@ and structured data files (CSV, Excel, JSON), producing consistent text chunks a
 """
 
 import os
+import io
 import re
 import csv
 import json
+import base64
 import shutil
 import logging
 import tempfile
@@ -38,8 +40,10 @@ except ImportError:
 
 try:
     from hybrid_rag.logging_setup import setup_logging
+    from hybrid_rag.tracing import traceable, wrap_openai_client
 except ModuleNotFoundError:
     from logging_setup import setup_logging
+    from tracing import traceable, wrap_openai_client
 
 # Cost tracking (hybrid_rag/cost.py). If this file is run on its own from inside hybrid_rag/,
 # the package can't be imported: cost tracking is then simply off and nothing else changes.
@@ -92,18 +96,20 @@ def format_location(meta: dict) -> str:
 # ==========================================
 
 def initialize_api():
-    """Creates an OpenAI-compatible OpenRouter client wired with the automatic cost-tracking hook."""
+    """Creates an OpenAI-compatible OpenRouter client wired with cost tracking and LangSmith tracing."""
     load_dotenv()
     api_key = os.getenv("OPENROUTER_API_KEY")
 
     if cost is None:
-        return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=30)
-    return OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=api_key,
-        timeout=30,
-        http_client=httpx.Client(event_hooks={"response": [record_cost]}),
-    )
+        client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=30)
+    else:
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+            timeout=30,
+            http_client=httpx.Client(event_hooks={"response": [record_cost]}),
+        )
+    return wrap_openai_client(client)
 
 
 def record_cost(response):
@@ -162,6 +168,7 @@ def get_valid_file_path(file_source) -> str:
 get_valid_pdf_path = get_valid_file_path
 
 
+@traceable(name="decompose_multi_questions", run_type="chain")
 def decompose_multi_questions(user_query: str) -> list:
     """Decomposes compound queries using an LLM to guarantee high accuracy."""
     logger.info(f"Using LLM to decompose query: '{user_query}'")
@@ -174,8 +181,8 @@ def decompose_multi_questions(user_query: str) -> list:
 Rules:
 1. DO NOT answer the questions.
 2. DO NOT generate, hallucinate, or add any new questions.
-3. Extract only the questions exactly as they are implied or stated in the user input.
-4. If the user input contains multiple questions merged together, separate them logically.
+3. Extract only the questions implied or stated in the user input.
+4. ONLY split into multiple questions when they ask about genuinely separate topics or numbered items. If two clauses ask about the SAME entity using pronouns (e.g. "Who wrote X and what is its relation to Y?" or "من مؤلف X وما علاقته بـ Y؟"), keep them together as ONE single question — OR if you split them, explicitly replace every pronoun with the full entity name so EVERY sub-question is 100% self-contained.
 5. If there is no question in the input, return an empty list.
 
 Output your response STRICTLY in valid JSON format using the following structure:
@@ -185,12 +192,22 @@ User Input:
 {user_query}"""
 
     try:
-        response = client_ai.chat.completions.create(
-            model=chat_model,
-            messages=[{"role": "user", "content": extraction_prompt}],
-            temperature=0.0,
-            response_format={"type": "json_object"},
-        )
+        try:
+            response = client_ai.chat.completions.create(
+                model=chat_model,
+                messages=[{"role": "user", "content": extraction_prompt}],
+                temperature=0.0,
+                response_format={"type": "json_object"},
+                extra_body={"reasoning": {"enabled": False}},
+            )
+        except Exception:
+            # Fallback for providers/models that reject the OpenRouter `reasoning` parameter
+            response = client_ai.chat.completions.create(
+                model=chat_model,
+                messages=[{"role": "user", "content": extraction_prompt}],
+                temperature=0.0,
+                response_format={"type": "json_object"},
+            )
 
         result_text = response.choices[0].message.content
         parsed_json = json.loads(result_text)
@@ -291,6 +308,72 @@ def _group_contiguous_pages(page_indices: list[int], max_chunk: int) -> list[lis
     return groups
 
 
+VISION_OCR_PROMPT = (
+    "You are an expert bilingual (Arabic & English) OCR transcription engine. "
+    "Transcribe ALL visible text from this scanned page verbatim as printed.\n"
+    "Rules:\n"
+    "1. Preserve exact Arabic and English wording, spelling, punctuation, headings, and lists.\n"
+    "2. Preserve all numbers, Hijri/Gregorian dates, percentages, and table values accurately.\n"
+    "3. Keep main body text clean and place any page footnotes clearly at the bottom.\n"
+    "4. Do NOT translate, summarize, add commentary, or wrap the output in markdown fences. "
+    "Return ONLY the transcribed text."
+)
+
+
+def _resolve_ocr_engine() -> str:
+    """Resolves active OCR engine: 'vision' (OpenRouter Vision LLM) or 'tesseract' (offline)."""
+    load_dotenv()
+    # Default to Vision LLM OCR when OCR_ENGINE is unset; fall back to offline Tesseract if no API key exists
+    configured = (os.getenv("OCR_ENGINE") or "vision").strip().lower()
+    if configured in ("vision", "llm", "gemini", "auto"):
+        if os.getenv("OPENROUTER_API_KEY"):
+            return "vision"
+        logger.warning("[OCR] OPENROUTER_API_KEY missing; falling back to Tesseract OCR.")
+        return "tesseract"
+    return "tesseract"
+
+
+def _ocr_image_vision(img, client, vision_model: str) -> str:
+    """Transcribes a PIL image using an OpenRouter Vision LLM (e.g., google/gemini-2.5-flash)."""
+    # Cap image dimensions to 1800px to keep token/bandwidth cost low (~$0.0002/page) while preserving Arabic glyphs
+    work_img = img.convert("RGB")
+    max_dim = 1800
+    if max(work_img.size) > max_dim:
+        work_img.thumbnail((max_dim, max_dim))
+
+    # Encode as optimized JPEG (quality=85) and wrap in a base64 data URI for OpenRouter vision input
+    buf = io.BytesIO()
+    work_img.save(buf, format="JPEG", quality=85, optimize=True)
+    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+
+    # Retry once on transient vision API hiccups before allowing caller to fall back to Tesseract
+    last_err = None
+    for attempt in range(2):
+        try:
+            resp = client.chat.completions.create(
+                model=vision_model,
+                temperature=0.0,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": VISION_OCR_PROMPT},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+                            },
+                        ],
+                    }
+                ],
+            )
+            return (resp.choices[0].message.content or "").strip()
+        except Exception as exc:
+            last_err = exc
+            if attempt == 0:
+                logger.warning(f"[Vision OCR] Attempt 1 failed ({exc}); retrying...")
+    raise RuntimeError(f"Vision OCR failed after 2 attempts: {last_err}") from last_err
+
+
 def ocr_pdf_pages(
     pdf_path: str,
     page_indices: list[int],
@@ -300,38 +383,70 @@ def ocr_pdf_pages(
     progress_callback=None,
 ) -> dict[int, str]:
     """
-    Runs Tesseract OCR on specific 0-based page indices of a PDF using either PyMuPDF
-    or pdf2image/poppler for rendering (both support JBIG2, CCITT, JPEG2000, etc.)
-    and parallel Tesseract workers.
+    Runs OCR on specific 0-based page indices of a PDF using either:
+      - Vision-LLM OCR via OpenRouter (``OCR_ENGINE=vision``, default ``google/gemini-2.5-flash``)
+        with automatic per-page fallback to Tesseract if a Vision call fails.
+      - Offline Tesseract OCR (``OCR_ENGINE=tesseract``).
+    Renders pages via PyMuPDF or pdf2image/poppler in parallel batches.
     """
-    if pytesseract is None or Image is None:
-        raise RuntimeError(
-            "OCR dependencies are missing. Install 'pytesseract' and 'pillow' "
-            "(pip install pytesseract pillow)."
-        )
+    if Image is None:
+        raise RuntimeError("OCR requires 'pillow' (pip install pillow).")
     if fitz is None and convert_from_path is None:
         raise RuntimeError(
             "No PDF renderer installed for OCR. Install 'pdf2image' (with poppler-utils) "
             "or 'pymupdf' (pip install pdf2image  OR  pip install pymupdf)."
         )
 
-    effective_lang = _resolve_ocr_language(ocr_lang)
+    engine = _resolve_ocr_engine()
+    vision_model = os.getenv("OCR_VISION_MODEL", "google/gemini-2.5-flash")
+    vision_client = initialize_api() if engine == "vision" else None
 
-    def _run_tesseract(img) -> str:
+    # Resolve Tesseract up front if Tesseract is the primary engine, or lazily as fallback
+    effective_lang = None
+    if engine == "tesseract":
+        if pytesseract is None:
+            raise RuntimeError(
+                "Tesseract OCR requires 'pytesseract' and 'pillow' (pip install pytesseract pillow)."
+            )
+        effective_lang = _resolve_ocr_language(ocr_lang)
+    elif pytesseract is not None and find_tesseract_cmd():
         try:
-            return pytesseract.image_to_string(img, lang=effective_lang, config="--psm 3")
+            effective_lang = _resolve_ocr_language(ocr_lang)
+        except Exception:
+            effective_lang = None
+
+    def _run_ocr_on_image(img) -> str:
+        try:
+            if engine == "vision" and vision_client is not None:
+                try:
+                    return _ocr_image_vision(img, vision_client, vision_model)
+                except Exception as exc:
+                    if pytesseract is not None and effective_lang:
+                        logger.warning(
+                            f"[Vision OCR] Falling back to Tesseract on page due to error: {exc}"
+                        )
+                        return pytesseract.image_to_string(
+                            img.convert("L"), lang=effective_lang, config="--psm 3"
+                        )
+                    raise
+            return pytesseract.image_to_string(
+                img.convert("L"), lang=effective_lang, config="--psm 3"
+            )
         finally:
             img.close()
 
     total_ocr = len(page_indices)
     results: dict[int, str] = {}
+    # Vision OCR works sharply at 160-180 DPI (much lighter/faster); Tesseract uses requested DPI
+    render_dpi = min(dpi, 180) if engine == "vision" else dpi
     batch_size = max(4, max_workers * 4)
     done = 0
     renderer_name = "pymupdf" if fitz is not None else "poppler (pdf2image)"
 
     logger.info(
-        f"[OCR] Running OCR on {total_ocr} page(s) via {renderer_name} "
-        f"(lang='{effective_lang}', dpi={dpi}, workers={max_workers})..."
+        f"[OCR] Running {engine.upper()} OCR on {total_ocr} page(s) via {renderer_name} "
+        f"(model='{vision_model if engine == 'vision' else effective_lang}', "
+        f"dpi={render_dpi}, workers={max_workers})..."
     )
 
     if fitz is not None:
@@ -343,12 +458,12 @@ def ocr_pdf_pages(
                     rendered_batch = []
 
                     for p_idx in batch_indices:
-                        pix = doc[p_idx].get_pixmap(dpi=dpi, colorspace=fitz.csGRAY)
+                        pix = doc[p_idx].get_pixmap(dpi=render_dpi, colorspace=fitz.csGRAY)
                         img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
                         rendered_batch.append((p_idx, img))
 
                     futures = [
-                        (p_idx, executor.submit(_run_tesseract, img))
+                        (p_idx, executor.submit(_run_ocr_on_image, img))
                         for p_idx, img in rendered_batch
                     ]
 
@@ -374,14 +489,14 @@ def ocr_pdf_pages(
                 last_page = group[-1] + 1
                 images = convert_from_path(
                     pdf_path,
-                    dpi=dpi,
+                    dpi=render_dpi,
                     grayscale=True,
                     first_page=first_page,
                     last_page=last_page,
                     thread_count=max_workers,
                 )
                 futures = [
-                    (p_idx, executor.submit(_run_tesseract, img))
+                    (p_idx, executor.submit(_run_ocr_on_image, img))
                     for p_idx, img in zip(group, images)
                 ]
                 for p_idx, future in futures:
@@ -1045,14 +1160,31 @@ def _extract_text_or_markdown(
 def _extract_image_ocr(
     file_path: str, file_name: str, file_type: str, chunk_size: int, chunk_overlap: int, ocr_lang: str | None
 ) -> tuple[list[str], list[dict]]:
-    """Runs Tesseract OCR on an image file and splits the extracted text into chunks."""
-    if pytesseract is None or Image is None:
-        raise RuntimeError(
-            "Image OCR requires 'pytesseract' and 'pillow' (pip install pytesseract pillow)."
-        )
-    resolved_lang = _resolve_ocr_language(ocr_lang or os.getenv("OCR_LANG", "ara+eng"))
+    """Runs Vision-LLM OCR (with Tesseract fallback) on an image file and splits text into chunks."""
+    if Image is None:
+        raise RuntimeError("Image OCR requires 'pillow' (pip install pillow).")
+
+    engine = _resolve_ocr_engine()
+    vision_model = os.getenv("OCR_VISION_MODEL", "google/gemini-2.5-flash")
+    text = ""
+
     with Image.open(file_path) as img:
-        text = pytesseract.image_to_string(img.convert("L"), lang=resolved_lang, config="--psm 3").strip()
+        # Primary path: Gemini 2.5 Flash Vision OCR via OpenRouter for clean bilingual & table text
+        if engine == "vision":
+            try:
+                client = initialize_api()
+                text = _ocr_image_vision(img, client, vision_model)
+            except Exception as exc:
+                logger.warning(f"[Vision OCR] Image OCR failed ({exc}); falling back to Tesseract...")
+        # Fallback path: offline grayscale Tesseract OCR (ara+eng) if Vision OCR is off or failed
+        if not text:
+            if pytesseract is None:
+                raise RuntimeError(
+                    "Image OCR fallback requires 'pytesseract' and 'pillow' (pip install pytesseract pillow)."
+                )
+            resolved_lang = _resolve_ocr_language(ocr_lang or os.getenv("OCR_LANG", "ara+eng"))
+            text = pytesseract.image_to_string(img.convert("L"), lang=resolved_lang, config="--psm 3").strip()
+
     if not text:
         return [], []
 

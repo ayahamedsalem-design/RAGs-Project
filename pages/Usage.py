@@ -34,6 +34,8 @@ st.set_page_config(page_title="Usage", page_icon="💰", layout="wide")
 PIPELINES = [  # (name in cost_log.csv, label on the page)
     ("hybrid", "Hybrid RAG"),
     ("crag_hybrid", "Hybrid Corrective RAG"),
+    ("crag_graph", "CRAG StateGraph (LangGraph)"),
+    ("agentic_rag", "Agentic RAG (LangGraph)"),
 ]
 # Everything else: indexing (ingest_global), history summaries, and rows from the pipelines
 # that were removed (Ext Naive/Corrective, Basic, Parent-Child, ...), so old spending still shows

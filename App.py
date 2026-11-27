@@ -21,6 +21,8 @@ from hybrid_rag.hybrid import (
 )
 from hybrid_rag.lc.hybrid_lc import run_hybrid_lc
 from hybrid_rag.lc.hybrid_corrective_lc import run_hybrid_corrective_lc
+from hybrid_rag.lc.crag_graph import run_crag_graph
+from hybrid_rag.lc.agent_graph import run_agentic_rag
 from hybrid_rag.file_processing import SUPPORTED_EXTENSIONS
 from hybrid_rag.summarizer import summarize_cross_file_history
 from hybrid_rag.retry import execute_with_retry
@@ -57,6 +59,8 @@ st.set_page_config(page_title="Global Knowledge Base RAG", page_icon="🤖", lay
 COST_SYSTEM = {
     "Hybrid RAG": "hybrid",
     "Hybrid Corrective RAG": "crag_hybrid",
+    "CRAG StateGraph (LangGraph)": "crag_graph",
+    "Agentic RAG (LangGraph)": "agentic_rag",
 }
 
 
@@ -84,7 +88,8 @@ def show_cost(user_query):
 
 st.title("Enterprise Global RAG System ")
 st.markdown(
-    "Query across **ALL** your indexed documents with Hybrid RAG or Hybrid Corrective RAG (2-Round CRAG)."
+    "Query across **ALL** your indexed documents with Hybrid RAG, Hybrid Corrective RAG, "
+    "CRAG StateGraph (LangGraph), or Agentic RAG (LangGraph)."
 )
 st.divider()
 
@@ -168,6 +173,8 @@ with st.sidebar:
         (
             "Hybrid RAG",
             "Hybrid Corrective RAG",
+            "CRAG StateGraph (LangGraph)",
+            "Agentic RAG (LangGraph)",
         ),
         index=0,
     )
@@ -310,8 +317,10 @@ if user_query:
     with st.chat_message("assistant"):
         with st.spinner(f"Running {rag_type}..."):
             try:
-                # run_tracked = the usual execute_with_retry + cost tracking (see the top)
+                # Route the query to whichever of the 4 architectures is selected in the sidebar
+                # (run_tracked wraps each call with execute_with_retry + cost.track)
                 if rag_type == "Hybrid RAG":
+                    # Architecture 1: Single-round LCEL Hybrid RRF + FlashRank
                     answer, retrieved_contexts = run_tracked(
                         rag_type,
                         run_hybrid_lc,
@@ -320,9 +329,28 @@ if user_query:
                         session_id=active_session_id,
                     )
                 elif rag_type == "Hybrid Corrective RAG":
+                    # Architecture 2: 2-Round LCEL CRAG + Neighbor Expansion + RunnableBranch short-circuit
                     answer, retrieved_contexts = run_tracked(
                         rag_type,
                         run_hybrid_corrective_lc,
+                        user_query,
+                        selected_files=selected_files,
+                        session_id=active_session_id,
+                    )
+                elif rag_type == "CRAG StateGraph (LangGraph)":
+                    # Architecture 3: LangGraph cyclic StateGraph adding a Hallucination & Citation Verifier
+                    answer, retrieved_contexts = run_tracked(
+                        rag_type,
+                        run_crag_graph,
+                        user_query,
+                        selected_files=selected_files,
+                        session_id=active_session_id,
+                    )
+                elif rag_type == "Agentic RAG (LangGraph)":
+                    # Architecture 4: LangGraph 5-tool autonomous agent with MAX_AGENT_STEPS=4 cap
+                    answer, retrieved_contexts = run_tracked(
+                        rag_type,
+                        run_agentic_rag,
                         user_query,
                         selected_files=selected_files,
                         session_id=active_session_id,

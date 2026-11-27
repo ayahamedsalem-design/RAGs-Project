@@ -4,6 +4,7 @@ import logging
 import os
 
 from hybrid_rag.file_processing import initialize_api
+from hybrid_rag.tracing import traceable
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ client_ai = initialize_api()
 CHAT_MODEL = os.getenv("CHAT_MODEL")
 
 
+@traceable(name="summarize_cross_file_history", run_type="chain")
 def summarize_cross_file_history(history_text: str) -> str:
     """Summarizes one or more chat sessions using the configured ``CHAT_MODEL``."""
     prompt = f"""You are a helpful assistant. Summarize the following chat history covering multiple files. Highlight the main topics discussed, the types of documents analyzed, and the key insights provided:
