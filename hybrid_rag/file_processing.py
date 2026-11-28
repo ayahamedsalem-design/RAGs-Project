@@ -346,14 +346,21 @@ def _ocr_image_vision(img, client, vision_model: str) -> str:
     work_img.save(buf, format="JPEG", quality=85, optimize=True)
     b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
+    # Cap output tokens and disable extended reasoning for pure verbatim OCR:
+    # 1. Prevents OpenRouter from reserving huge credit holds per in-flight request (avoids HTTP 402).
+    # 2. Eliminates unnecessary thinking/reasoning token spend and speeds up page transcription.
+    vision_max_tokens = int(os.getenv("OCR_VISION_MAX_TOKENS", "2500"))
+
     # Retry once on transient vision API hiccups before allowing caller to fall back to Tesseract
     last_err = None
     for attempt in range(2):
         try:
-            resp = client.chat.completions.create(
-                model=vision_model,
-                temperature=0.0,
-                messages=[
+            create_kwargs = {
+                "model": vision_model,
+                "temperature": 0.0,
+                "max_tokens": vision_max_tokens,
+                "extra_body": {"reasoning": {"enabled": False}},
+                "messages": [
                     {
                         "role": "user",
                         "content": [
@@ -365,7 +372,11 @@ def _ocr_image_vision(img, client, vision_model: str) -> str:
                         ],
                     }
                 ],
-            )
+            }
+            # On retry after a bad-request error, drop extra_body in case a custom vision model rejects it
+            if attempt == 1 and last_err is not None and "400" in str(last_err):
+                create_kwargs.pop("extra_body", None)
+            resp = client.chat.completions.create(**create_kwargs)
             return (resp.choices[0].message.content or "").strip()
         except Exception as exc:
             last_err = exc
@@ -439,20 +450,22 @@ def ocr_pdf_pages(
     results: dict[int, str] = {}
     # Vision OCR works sharply at 160-180 DPI (much lighter/faster); Tesseract uses requested DPI
     render_dpi = min(dpi, 180) if engine == "vision" else dpi
-    batch_size = max(4, max_workers * 4)
+    # Cap concurrent Vision LLM requests to avoid OpenRouter in-flight credit reservation spikes (HTTP 402)
+    effective_workers = min(max_workers, 4) if engine == "vision" else max_workers
+    batch_size = max(4, effective_workers * 4)
     done = 0
     renderer_name = "pymupdf" if fitz is not None else "poppler (pdf2image)"
 
     logger.info(
         f"[OCR] Running {engine.upper()} OCR on {total_ocr} page(s) via {renderer_name} "
         f"(model='{vision_model if engine == 'vision' else effective_lang}', "
-        f"dpi={render_dpi}, workers={max_workers})..."
+        f"dpi={render_dpi}, workers={effective_workers})..."
     )
 
     if fitz is not None:
         doc = fitz.open(pdf_path)
         try:
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            with ThreadPoolExecutor(max_workers=effective_workers) as executor:
                 for start in range(0, total_ocr, batch_size):
                     batch_indices = page_indices[start : start + batch_size]
                     rendered_batch = []
@@ -483,7 +496,7 @@ def ocr_pdf_pages(
             doc.close()
     else:
         groups = _group_contiguous_pages(sorted(page_indices), max_chunk=batch_size)
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with ThreadPoolExecutor(max_workers=effective_workers) as executor:
             for group in groups:
                 first_page = group[0] + 1
                 last_page = group[-1] + 1
