@@ -316,7 +316,9 @@ VISION_OCR_PROMPT = (
     "2. Preserve all numbers, Hijri/Gregorian dates, percentages, and table values accurately.\n"
     "3. Keep main body text clean and place any page footnotes clearly at the bottom.\n"
     "4. Do NOT translate, summarize, add commentary, or wrap the output in markdown fences. "
-    "Return ONLY the transcribed text."
+    "Return ONLY the transcribed text.\n"
+    "5. NEVER repeat decorative leader dots (e.g., '......') or long runs of dashes/underscores "
+    "in tables of contents; replace any dot leaders with a single ' - '."
 )
 
 
@@ -377,7 +379,10 @@ def _ocr_image_vision(img, client, vision_model: str) -> str:
             if attempt == 1 and last_err is not None and "400" in str(last_err):
                 create_kwargs.pop("extra_body", None)
             resp = client.chat.completions.create(**create_kwargs)
-            return (resp.choices[0].message.content or "").strip()
+            raw_text = (resp.choices[0].message.content or "").strip()
+            # Collapse any runaway decorative dot/dash leaders (common on TOC pages) into a clean separator
+            cleaned_text = re.sub(r"[.\u2026_]{4,}", " - ", raw_text)
+            return cleaned_text
         except Exception as exc:
             last_err = exc
             if attempt == 0:
